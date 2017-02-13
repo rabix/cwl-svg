@@ -33,7 +33,7 @@ export class GraphNode extends Shape {
 
     private name: Snap.Element;
 
-    constructor(position: Partial<NodePosition>, dataModel, paper: Snap.Paper) {
+    constructor(position: Partial<NodePosition>, dataModel: { id: string }, paper: Snap.Paper) {
 
         super();
 
@@ -145,12 +145,18 @@ export class GraphNode extends Shape {
 
     public addPort(port: OutputPort | InputPort): void {
 
-        const portClasses = [port instanceof InputPort ? "input-port" : "output-port"];
-        const drawn       = port.draw().addClass(portClasses.join(" "));
-        this.group.add(drawn);
-        const portStore = port instanceof InputPort ? this.inputs : this.outputs;
-        portStore.push(port);
+        let portClass        = "input-port";
+        let portStore: any[] = this.inputs;
 
+        if (port instanceof OutputPort) {
+            portClass = "output-port";
+            portStore = this.outputs;
+        }
+
+        const drawn = port.draw().addClass(portClass);
+        this.group.add(drawn);
+
+        portStore.push(port);
 
         this.distributePorts();
 

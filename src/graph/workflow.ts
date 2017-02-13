@@ -48,12 +48,12 @@ export class Workflow {
             }
 
             if (!sourceVertex.node) {
-                console.error("Source vertex not found for edge.", connection);
+                console.error("Source vertex not found for edge " + connection.source.id, connection);
                 return;
             }
 
             if (!destVertex.node) {
-                console.error("Destination vertex not found for edge", connection);
+                console.error("Destination vertex not found for edge " + connection.destination.id, connection);
                 return;
             }
 
@@ -71,7 +71,6 @@ export class Workflow {
                     innerPath
                 ).addClass(`edge ${sourceSide}-${sourceStepId} ${destSide}-${destStepId}`)
             );
-
         });
 
         this.eventHub.on("workflow.arrange", (connections: Edge[]) => {
@@ -80,21 +79,50 @@ export class Workflow {
             const width   = this.paper.node.clientWidth;
             const height  = this.paper.node.clientHeight;
 
+            const workflowIns = new Map<any[], string>();
+
             connections.forEach(c => {
 
-                const [, sName] = c.source.id.split("/");
-                const [, dName] = c.destination.id.split("/");
+                let [, sName, spName] = c.source.id.split("/");
+                let [, dName, dpName] = c.destination.id.split("/");
 
                 tracker[sName] || (tracker[sName] = []);
                 (tracker[dName] || (tracker[dName] = [])).push(tracker[sName]);
+                if (sName === spName) {
+                    workflowIns.set(tracker[sName], sName);
+                }
             });
 
-            const trace = arr => 1 + ( arr.length ? Math.max(...arr.map(trace)) : 0);
+            const trace = (arr, visited: Set<any>) => {
+                visited.add(arr);
+                return 1 + ( arr.length ? Math.max(...arr.filter(e => !visited.has(e)).map((e) => trace(e, visited))) : 0);
+            };
 
-            for (let k in tracker) {
-                const zone = trace(tracker[k]) - 1;
-                (zones[zone] || (zones[zone] = [])).push(Snap(`.node.${k}`));
-            }
+
+            const trackerKeys = Object.keys(tracker);
+            const idToZoneMap = trackerKeys.reduce(
+                (acc, k) => Object.assign(acc, {[k]: trace(tracker[k], new Set()) - 1}), {}
+            );
+
+            trackerKeys.forEach(k => {
+                tracker[k].filter(p => workflowIns.has(p)).forEach(pre => {
+                    idToZoneMap[workflowIns.get(pre)] = idToZoneMap[k] - 1;
+                });
+            });
+
+            trackerKeys.forEach(k => {
+
+                try {
+                    const snap = Snap(`.node.${k}`);
+                    const zone = idToZoneMap[k];
+                    if (!snap) {
+                        throw new Error("Cant find node " + k);
+                    }
+                    (zones[zone] || (zones[zone] = [])).push(snap);
+                } catch (ex) {
+                    console.error("ERROR", k, ex, tracker);
+                }
+            });
 
             const columnCount = Object.keys(zones).length + 1;
             const columnWidth = (width / columnCount);

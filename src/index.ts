@@ -4399,13 +4399,37 @@ const basicWF = {
 const workflow = new Workflow(new Snap("#svg"));
 const wf       = WorkflowFactory.from(bcbio as any);
 
-const connections = wf.connections.filter(c => c.isVisible && (c.source.type === "StepInput" || c.source.type === "StepOutput" ) && (c.destination.type === "StepInput" || c.destination.type === "StepOutput"));
-console.log("Connections", connections);
+// const connections = wf.connections.filter(c => c.isVisible
+//
+// && (c.source.type === "StepInput" || c.source.type === "StepOutput" )
+// && (c.destination.type === "StepInput" || c.destination.type === "StepOutput"));
+
+const connections = wf.connections.filter(c => c.isVisible
+&& c.source.type !== "Step"
+&& c.destination.type !== "Step");
+connections.forEach(c => {
+    if (c.source.type == "WorkflowInput") {
+        c.source.id = `out/${c.source.id}/${c.source.id}`;
+    }
+
+    if (c.destination.type === "WorkflowOutput") {
+        c.destination.id = `in/${c.destination.id}/${c.destination.id}`;
+    }
+});
 
 console.log("Model", wf);
 
 console.time("draw");
 wf.steps.forEach(s => workflow.command("app.create", s));
+wf.outputs.forEach(o => workflow.command("app.create", Object.assign(o, {
+    in: [{id: o.id, isVisible: true}]
+})));
+
+wf.inputs.forEach(i => workflow.command("app.create", Object.assign(i, {
+    out: [{id: i.id, isVisible: true}]
+})));
+
+
 workflow.command("workflow.arrange", connections);
 
 connections.forEach(c => workflow.command("connection.create", c));

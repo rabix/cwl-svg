@@ -14,7 +14,7 @@ export class IOPort extends Shape {
     private connection: Snap.Element;
     private connectionFormat = "M {x1} {y1}, C {bx1} {by1} {bx2} {by2} {x2} {y2}";
 
-    protected portModel: V1WorkflowStepInputModel | V1WorkflowStepOutputModel;
+    public portModel: V1WorkflowStepInputModel | V1WorkflowStepOutputModel;
 
     protected handle: Snap.Element;
     protected title: Snap.Element;
@@ -47,7 +47,7 @@ export class IOPort extends Shape {
 
     draw(): Snap.Element {
         this.handle = this.drawHandle();
-        this.title  = this.drawTitle(this.portModel.id || "").addClass("label unselectable");
+        this.title = this.drawTitle(this.portModel.id || "").addClass("label unselectable");
 
         this.drawingElements.circleGroup = this.handle;
 
@@ -99,14 +99,8 @@ export class IOPort extends Shape {
                 id: (this.constructor.name)
             });
         }, (ev: any) => {
-            console.log("Path is now", path);
-            // path.remove();
-            // if (ev.composedPath().find(el => el.getAttribute("id") === "InputPort")) {
-            //     console.log("Dropped on input port");
-            //
-            // } else {
-            //     // path.remove();
-            // }
+
+            path.remove();
         });
     }
 
@@ -124,8 +118,8 @@ export class IOPort extends Shape {
         if (!forceDirection) {
             return `M ${x1} ${y1}, C ${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
         }
-        const outDir = x1 + Math.abs(x1-x2)/2;
-        const inDir = x2 - Math.abs(x1-x2)/2;
+        const outDir = x1 + Math.abs(x1 - x2) / 2;
+        const inDir  = x2 - Math.abs(x1 - x2) / 2;
 
 
         return `M ${x1} ${y1}, C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;

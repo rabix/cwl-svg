@@ -5,6 +5,8 @@ export type WorkflowEventType =
     "workflow.arrange" |
     "connection.create" |
     "workflow.scale" |
+    "output.create" |
+    "input.create" |
     "connection.remove";
 
 export class EventHub {
@@ -12,6 +14,8 @@ export class EventHub {
         "app.create": [],
         "app.delete": [],
         "workflow.scale": [],
+        "input.create": [],
+        "output.create": [],
         "node.move": [],
         "connection.create": [],
         "connection.remove": [],
