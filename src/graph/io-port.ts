@@ -9,7 +9,7 @@ export class IOPort extends Shape {
 
     protected paper: Snap.Paper;
 
-    private radius = 6;
+    private radius = 5;
 
     private connection: Snap.Element;
     private connectionFormat = "M {x1} {y1}, C {bx1} {by1} {bx2} {by2} {x2} {y2}";
@@ -36,9 +36,10 @@ export class IOPort extends Shape {
 
     protected drawHandle(): Snap.Element {
 
+        const [,,id] = this.portModel.connectionId.split("/");
         const outer = this.paper.circle(0, 0, this.radius).addClass("port");
 
-        return this.paper.group(outer).addClass(`io-port ${this.portModel.id}`);
+        return this.paper.group(outer).addClass(`io-port ${id}`);
     }
 
     protected drawTitle(content) {
@@ -47,7 +48,8 @@ export class IOPort extends Shape {
 
     draw(): Snap.Element {
         this.handle = this.drawHandle();
-        this.title = this.drawTitle(this.portModel.id || "").addClass("label unselectable");
+        const [,,id] = this.portModel.connectionId.split("/");
+        this.title = this.drawTitle(id).addClass("label unselectable");
 
         this.drawingElements.circleGroup = this.handle;
 
@@ -106,10 +108,6 @@ export class IOPort extends Shape {
 
     private attachDrop() {
         this.group.mouseup((ev) => {
-            if (this instanceof InputPort) {
-
-            }
-            console.log("Mouse up", ev);
         });
     }
 

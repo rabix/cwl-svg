@@ -1,9 +1,18 @@
-$background: rgb(48, 48, 48);
+// Color Scheme
+$color-background: rgb(48, 48, 48);
+$color-primary: #537388;
+$color-primary-alt: #2e556f;
+$color-secondary: #9a3daf;
+$color-tertiary: #e64d23;
+$color-neutral: rgb(121, 121, 121);
+$color-warning: rgb(246, 147, 54);
+$color-danger: rgb(214, 18, 33);
 
-$node-background-color: rgb(83, 115, 136);
-
+// Color Application
+$background: $color-background;
+$node-background-color: $color-primary;
 $port-background-color: rgb(121, 121, 121);
-$port-highlight-color: rgb(250, 148, 0);
+$port-highlight-color: $color-tertiary;
 $port-label-color: white;
 
 $edge-inner-color: white;
@@ -39,6 +48,12 @@ svg.cwl-workflow {
       }
     }
 
+    &.edge-hover {
+      .outer {
+        stroke: $port-highlight-color;
+      }
+    }
+
     .drag-handle {
       transition: all .3s;
       stroke: $background;
@@ -60,6 +75,7 @@ svg.cwl-workflow {
     }
 
     .label {
+      text-anchor: "middle";
       fill: $font-color;
       text-shadow: 1px 1px 4px $background;
     }

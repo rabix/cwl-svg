@@ -1,27 +1,25 @@
 {
-    "name": "cwl-svg",
-    "license": "Apache-2.0",
-    "author": "Ivan Batic <ivan.batic@live.com> (http://github.com/ivanbatic)",
-    "description": "A library for generating an interactive SVG visualization of CWL workflows",
-    "version": "0.0.1",
-    "dependencies": {
-        "core-js": "^2.4.1",
-        "reflect-metadata": "^0.1.9",
-        "rxjs": "^5.1.0",
-        "snapsvg": "0.5.1"
-    },
-    "devDependencies": {
-        "@types/core-js": "0.9.35",
-        "@types/snapsvg": "0.4.27",
-        "css-loader": "^0.26.1",
-        "cwlts": "^1.10.6",
-        "node-sass": "^4.5.0",
-        "sass-loader": "^5.0.1",
-        "source-map-loader": "^0.1.6",
-        "style-loader": "^0.13.1",
-        "systemjs": "^0.20.2",
-        "ts-loader": "2.0.0",
-        "typescript": "^2.1.5",
-        "webpack": "^2.2.1"
-    }
+  "name": "cwl-svg",
+  "license": "Apache-2.0",
+  "author": "Ivan Batic <ivan.batic@live.com> (http://github.com/ivanbatic)",
+  "description": "A library for generating an interactive SVG visualization of CWL workflows",
+  "version": "0.0.1",
+  "dependencies": {
+    "core-js": "^2.4.1",
+    "snapsvg": "0.5.1"
+  },
+  "devDependencies": {
+    "@types/core-js": "0.9.35",
+    "@types/snapsvg": "0.4.27",
+    "css-loader": "^0.26.1",
+    "cwlts": "^1.10.20",
+    "node-sass": "^4.5.0",
+    "sass-loader": "^5.0.1",
+    "source-map-loader": "^0.1.6",
+    "style-loader": "^0.13.1",
+    "systemjs": "^0.20.2",
+    "ts-loader": "2.0.0",
+    "typescript": "^2.1.6",
+    "webpack": "^2.2.1"
+  }
 }

@@ -39,8 +39,11 @@ export class Workflow {
             let [sourceSide, sourceStepId, sourcePort] = connection.source.id.split("/");
             let [destSide, destStepId, destPort]       = connection.destination.id.split("/");
 
-            const sourceVertex: Snap.Element = new Snap(`.${sourceStepId} .output-port .${sourcePort}`);
-            const destVertex: Snap.Element   = new Snap(`.${destStepId} .input-port .${destPort}`);
+            const sourceVertex: Snap.Element = Snap(`.${sourceStepId} .output-port .${sourcePort}`);
+            const destVertex: Snap.Element = Snap(`.${destStepId} .input-port .${destPort}`);
+
+            const sourceNode = Snap(`.node.${sourceStepId}`);
+            const destNode = Snap(`.node.${destStepId}`);
 
             if (connection.source.type === connection.destination.type) {
                 console.error("Cant draw connection between nodes of the same type.", connection);
@@ -58,26 +61,35 @@ export class Workflow {
             }
 
             let sourceRect = sourceVertex.node.getBoundingClientRect();
-            let destRect   = destVertex.node.getBoundingClientRect();
-            const pathStr  = IOPort.makeConnectionPath(sourceRect.left, sourceRect.top, destRect.left, destRect.top);
-
+            let destRect = destVertex.node.getBoundingClientRect();
+            const pathStr = IOPort.makeConnectionPath(sourceRect.left, sourceRect.top, destRect.left, destRect.top);
 
             const outerPath = this.paper.path(pathStr).addClass(`outer sub-edge`);
             const innerPath = this.paper.path(pathStr).addClass("inner sub-edge");
+            const pathGroup = this.paper.group(
+                outerPath,
+                innerPath
+            ).addClass(`edge ${sourceSide}-${sourceStepId} ${destSide}-${destStepId}`);
 
-            this.group.add(
-                this.paper.group(
-                    outerPath,
-                    innerPath
-                ).addClass(`edge ${sourceSide}-${sourceStepId} ${destSide}-${destStepId}`)
-            );
+            this.group.add(pathGroup);
+
+            const hoverClass = "edge-hover";
+            pathGroup.hover(() => {
+                sourceNode.addClass(hoverClass);
+                destNode.addClass(hoverClass);
+            }, () => {
+                sourceNode.removeClass(hoverClass);
+                destNode.removeClass(hoverClass);
+            });
+
+
         });
 
         this.eventHub.on("workflow.arrange", (connections: Edge[]) => {
             const tracker = {};
-            const zones   = {};
-            const width   = this.paper.node.clientWidth;
-            const height  = this.paper.node.clientHeight;
+            const zones = {};
+            const width = this.paper.node.clientWidth;
+            const height = this.paper.node.clientHeight;
 
             const workflowIns = new Map<any[], string>();
 
@@ -128,7 +140,7 @@ export class Workflow {
             const columnWidth = (width / columnCount);
 
             for (let z in zones) {
-                const rowCount  = zones[z].length + 1;
+                const rowCount = zones[z].length + 1;
                 const rowHeight = height / rowCount;
 
                 zones[z].forEach((el: Snap.Element, i) => {

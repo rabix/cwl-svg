@@ -5,7 +5,6 @@ import {Shape} from "./shape";
 import Matrix = Snap.Matrix;
 
 export type NodePosition = { x: number, y: number };
-export type NodeAttributes = { fill: string, stroke: string; strokeWidth: number };
 
 export class GraphNode extends Shape {
 
@@ -23,9 +22,6 @@ export class GraphNode extends Shape {
     protected radius = 40;
 
     private circleGroup: Snap.Element;
-
-    private inputHoverZone: Snap.Element;
-    private outputHoverZone: Snap.Element;
 
     private dataModel: {
         id: string,
@@ -52,26 +48,12 @@ export class GraphNode extends Shape {
 
         const innerCircle = this.paper.circle(0, 0, this.radius * .8).addClass("inner");
 
-        this.name = this.paper.text(0, this.radius + 30, this.dataModel.id).attr({
-            "text-anchor": "middle",
-        }).addClass("label");
+        this.name = this.paper.text(0, this.radius + 30, this.dataModel.id).addClass("label");
 
-        this.inputHoverZone = this.paper.rect(this.radius * -2, this.radius * -1.5, 150 - this.radius, this.radius + 100)
-            .transform("")
-            .addClass("node-input-hover-zone");
-
-        this.outputHoverZone = this.paper.rect(0, this.radius * -1.5, 150 - this.radius, this.radius + 100)
-            .transform("")
-            .addClass("node-output-hover-zone");
 
         this.circleGroup = this.paper.group(outerCircle, innerCircle).transform("").addClass("drag-handle");
 
-        this.group.add(
-            this.inputHoverZone,
-            this.outputHoverZone,
-            this.circleGroup,
-            this.name
-        );
+        this.group.add(this.circleGroup,this.name);
 
         this.attachDragBehaviour(this.circleGroup);
 
@@ -80,8 +62,6 @@ export class GraphNode extends Shape {
 
     public scale(coef: number) {
         this.circleGroup.transform(this.circleGroup.matrix.clone().scale(coef, coef));
-        this.inputHoverZone.transform(this.inputHoverZone.matrix.clone().scale(coef, coef));
-        this.outputHoverZone.transform(this.outputHoverZone.matrix.clone().scale(coef, coef));
         this.radius = this.circleGroup.getBBox().width / 2;
         this.name.attr({
             y: this.radius + 30
@@ -161,7 +141,7 @@ export class GraphNode extends Shape {
         this.distributePorts();
 
 
-        if (portStore.length > 6 && portStore.length <= 18) {
+        if (portStore.length > 6 && portStore.length <= 30) {
 
             const [a, b]      = portStore.slice(-2).map(i => i.group.getBBox());
             const overlapping = a.y + a.height >= b.y;
