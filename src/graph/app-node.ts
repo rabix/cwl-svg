@@ -20,8 +20,12 @@ export class AppNode extends GraphNode {
 
     public draw(): Snap.Element {
         const drawing = super.draw();
-        (this.step.in || []).filter(s => s.isVisible).map(s => new InputPort(this.paper, s)).forEach(p => this.addPort(p));
-        (this.step.out || []).filter(s => s.isVisible).map(s => new OutputPort(this.paper, s)).forEach(p => this.addPort(p));
+
+        const comparator = (a, b) => {
+            return a.id.localeCompare(b.id);
+        }
+        (this.step.in || []).filter(s => s.isVisible).sort(comparator).map(s => new InputPort(this.paper, s)).forEach(p => this.addPort(p));
+        (this.step.out || []).filter(s => s.isVisible).sort(comparator).map(s => new OutputPort(this.paper, s)).forEach(p => this.addPort(p));
 
         return drawing;
     }

@@ -1,7 +1,18 @@
-import {Edge, StepModel} from "cwlts/models";
-import {EventHub, WorkflowEventType} from "../utils/event-hub";
+import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
+import {EventHub} from "../utils/event-hub";
 import {AppNode} from "./app-node";
 import {IOPort} from "./io-port";
+
+Snap.plugin(function (Snap, Element, Paper, glob) {
+    const proto = Element.prototype;
+
+    proto.toFront = function () {
+        this.appendTo(this.node.parentNode);
+    };
+    proto.toBack = function () {
+        this.prependTo(this.node.parentNode);
+    };
+});
 
 export class Workflow {
     private paper: Snap.Paper;
@@ -11,33 +22,91 @@ export class Workflow {
     public readonly eventHub: EventHub;
 
 
-    constructor(paper: Snap.Paper) {
+    constructor(paper: Snap.Paper, model?: WorkflowModel) {
         this.paper = paper;
 
+        const dragRect = this.paper.rect(0, 0, "100%" as any, "100%" as any);
         this.group = this.paper.group().addClass("workflow");
 
-        this.eventHub = new EventHub();
+        {
+
+            let originalMatrix;
+            dragRect.drag((dx, dy) => {
+                this.group.transform(originalMatrix.clone().translate(dx, dy));
+            }, () => {
+                originalMatrix = this.group.transform().localMatrix;
+            }, () => {
+
+            });
+        }
+
+
+        this.eventHub = new EventHub([
+            "connection.create",
+            "app.create",
+            "app.create.input",
+            "app.create.output",
+            "workflow.arrange",
+            "workflow.scale",
+            "workflow.fit",
+            "workflow.make"
+        ]);
 
         this.attachEvents();
+
+        if (model) {
+            this.renderModel(model);
+        }
     }
 
-    command(event: WorkflowEventType, ...data: any[]) {
+    command(event: string, ...data: any[]) {
         this.eventHub.emit(event, ...data);
     }
 
+    private renderModel(model: WorkflowModel) {
+        model.steps.forEach(s => this.command("app.create", s));
+        model.outputs.forEach(o => this.command("app.create.output", o);
+        model.inputs.forEach(e => this.command("app.create.input", e);
+        model.connections.forEach(c => this.command("connection.create", c));
+        document.querySelectorAll(".node").forEach(e => Snap(e).toFront());
+        this.command("workflow.fit");
+    }
 
     private attachEvents() {
+
+        this.eventHub.on("app.create.input", (input: WorkflowStepInputModel) => {
+            this.command("app.create", Object.assign(input, {
+                out: [{
+                    connectionId: input.connectionId, isVisible: true
+                }]
+            }))
+        });
+
+        this.eventHub.on("app.create.output", (input: WorkflowStepOutputModel) => {
+            this.command("app.create", Object.assign(input, {
+                in: [{
+                    connectionId: input.connectionId, isVisible: true
+                }]
+            }))
+        });
+
         this.eventHub.on("app.create", (step: StepModel) => {
             const n = new AppNode({
-                x: Math.random() * 1000,
-                y: Math.random() * 1000
+                x: step.customProps["sbg:x"] || Math.random() * 1000,
+                y: step.customProps["sbg:y"] || Math.random() * 1000
             }, step, this.paper);
             this.group.add(n.draw());
         });
 
         this.eventHub.on("connection.create", (connection: Edge) => {
+
+            if (!connection.isVisible || connection.source.type === "Step" || connection.destination.type === "Step") {
+                // console.warn("Skipping rendering of an invisible connection.", connection);
+                return;
+            }
+
             let [sourceSide, sourceStepId, sourcePort] = connection.source.id.split("/");
-            let [destSide, destStepId, destPort]       = connection.destination.id.split("/");
+            let [destSide, destStepId, destPort] = connection.destination.id.split("/");
 
             const sourceVertex: Snap.Element = Snap(`.${sourceStepId} .output-port .${sourcePort}`);
             const destVertex: Snap.Element = Snap(`.${destStepId} .input-port .${destPort}`);
@@ -152,7 +221,33 @@ export class Workflow {
 
         this.eventHub.on("workflow.scale", (c) => {
             this.group.transform(new Snap.Matrix().scale(c, c));
+            const labelScale = 1 + (1 - c) / (c * 1.5);
+
+            this.paper.node.querySelectorAll(".node .label").forEach(el => {
+                Snap(el).transform(`s${labelScale},${labelScale}`);
+            });
         });
 
+        this.eventHub.on("workflow.fit", () => {
+            let {clientWidth: paperWidth, clientHeight: paperHeight} = this.paper.node;
+            let wfBounds = this.group.node.getBoundingClientRect();
+            const padding = 200;
+
+            const verticalScale = (wfBounds.height + padding) / paperHeight;
+            const horizontalScale = (wfBounds.width + padding) / paperWidth;
+
+            const scaleFactor = Math.max(verticalScale, horizontalScale);
+
+            this.command("workflow.scale", 1 / scaleFactor);
+
+            const moveFactor = scaleFactor;
+            let paperBounds = this.paper.node.getBoundingClientRect();
+            wfBounds = this.group.node.getBoundingClientRect();
+
+            const moveY = moveFactor * -wfBounds.top + moveFactor * Math.abs(paperBounds.height - wfBounds.height) / 2;
+            const moveX = moveFactor * -wfBounds.left + moveFactor * Math.abs(paperBounds.width - wfBounds.width) / 2;
+
+            this.group.transform(this.group.transform().localMatrix.clone().translate(moveX, moveY));
+        });
     }
 }

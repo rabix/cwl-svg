@@ -33,8 +33,8 @@ export class GraphNode extends Shape {
 
         super();
 
-        this.paper     = paper;
-        this.group     = this.paper.g().addClass("node " + dataModel.id);
+        this.paper = paper;
+        this.group = this.paper.g().addClass("node " + dataModel.id);
         this.dataModel = dataModel;
 
         Object.assign(this.position, position);
@@ -53,7 +53,7 @@ export class GraphNode extends Shape {
 
         this.circleGroup = this.paper.group(outerCircle, innerCircle).transform("").addClass("drag-handle");
 
-        this.group.add(this.circleGroup,this.name);
+        this.group.add(this.circleGroup, this.name);
 
         this.attachDragBehaviour(this.circleGroup);
 
@@ -83,26 +83,33 @@ export class GraphNode extends Shape {
     protected attachDragBehaviour(el) {
 
         let groupBBox;
-        let originalMatrix;
-        let inputEdges  = new Map<Snap.Element, any>();
+        let localMatrix;
+        let globalMatrix;
+        let inputEdges = new Map<Snap.Element, any>();
         let outputEdges = new Map<Snap.Element, any>();
+        let scaleReverse;
 
         el.drag((dx: number, dy: number) => {
 
-            this.group.transform(originalMatrix.clone().translate(dx, dy));
+            const moveX = dx * scaleReverse;
+            const moveY = dy * scaleReverse;
+
+            this.group.transform(localMatrix.clone().translate(moveX, moveY));
             inputEdges.forEach((path, edge) => {
                 edge.attr({
-                    d: IOPort.makeConnectionPath(path[0][1], path[0][2], path[1][5] + dx, path[1][6] + dy)
+                    d: IOPort.makeConnectionPath(path[0][1], path[0][2], path[1][5] + moveX, path[1][6] + moveY)
                 })
             });
             outputEdges.forEach((path, edge) => {
                 edge.attr({
-                    d: IOPort.makeConnectionPath(path[0][1] + dx, path[0][2] + dy, path[1][5], path[1][6])
+                    d: IOPort.makeConnectionPath(path[0][1] + moveX, path[0][2] + moveY, path[1][5], path[1][6])
                 })
             })
         }, (x, y, ev) => {
-            groupBBox      = this.group.getBBox();
-            originalMatrix = this.group.matrix;
+            groupBBox = this.group.getBBox();
+            localMatrix = this.group.transform().localMatrix;
+            globalMatrix = this.group.transform().globalMatrix;
+            scaleReverse = 1/globalMatrix.get(3);
 
             document.querySelectorAll(`.in-${this.dataModel.id} .sub-edge`)
                 .forEach(edge => {
@@ -125,7 +132,7 @@ export class GraphNode extends Shape {
 
     public addPort(port: OutputPort | InputPort): void {
 
-        let portClass        = "input-port";
+        let portClass = "input-port";
         let portStore: any[] = this.inputs;
 
         if (port instanceof OutputPort) {
@@ -141,9 +148,9 @@ export class GraphNode extends Shape {
         this.distributePorts();
 
 
-        if (portStore.length > 6 && portStore.length <= 30) {
+        if (portStore.length > 6 && portStore.length <= 20) {
 
-            const [a, b]      = portStore.slice(-2).map(i => i.group.getBBox());
+            const [a, b] = portStore.slice(-2).map(i => i.group.getBBox());
             const overlapping = a.y + a.height >= b.y;
             if (overlapping) {
                 this.scale(1.08);

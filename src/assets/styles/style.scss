@@ -17,7 +17,7 @@ $port-label-color: white;
 
 $edge-inner-color: white;
 $edge-inner-width: 2px;
-$edge-outer-color: $background;
+$edge-outer-color: $color-background;
 $edge-outer-width: 5px;
 
 $font-family: sans-serif;
@@ -28,12 +28,18 @@ svg.cwl-workflow {
   background: $background;
   font-family: $font-family;
   color: $font-color;
+  padding: 0;
+  display: block;
 
   -webkit-transform: translateZ(0);
   -moz-transform: translateZ(0);
   -ms-transform: translateZ(0);
   -o-transform: translateZ(0);
   transform: translateZ(0);
+
+  .workflow {
+    @extend .noselect;
+  }
 
   .node {
 
@@ -75,7 +81,7 @@ svg.cwl-workflow {
     }
 
     .label {
-      text-anchor: "middle";
+      text-anchor: middle;
       fill: $font-color;
       text-shadow: 1px 1px 4px $background;
     }
@@ -121,7 +127,7 @@ svg.cwl-workflow {
       stroke: $edge-inner-color;
     }
     .outer {
-      stroke-width: 6px;
+      stroke-width: 7px;
       stroke: $edge-outer-color;
     }
   }
@@ -162,4 +168,15 @@ svg.cwl-workflow {
   //  font-weight: 500;
   //}
 
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none;
+  /* Non-prefixed version, currently
+                                   supported by Chrome and Opera */
 }
