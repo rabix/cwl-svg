@@ -2,6 +2,7 @@ import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutp
 import {EventHub} from "../utils/event-hub";
 import {AppNode} from "./app-node";
 import {IOPort} from "./io-port";
+import "snapsvg-cjs";
 
 Snap.plugin(function (Snap, Element, Paper, glob) {
     const proto = Element.prototype;
@@ -64,12 +65,14 @@ export class Workflow {
     }
 
     private renderModel(model: WorkflowModel) {
+        console.time("Graph Rendering");
         model.steps.forEach(s => this.command("app.create", s));
-        model.outputs.forEach(o => this.command("app.create.output", o);
-        model.inputs.forEach(e => this.command("app.create.input", e);
+        model.outputs.forEach(o => this.command("app.create.output", o));
+        model.inputs.forEach(e => this.command("app.create.input", e));
         model.connections.forEach(c => this.command("connection.create", c));
         document.querySelectorAll(".node").forEach(e => Snap(e).toFront());
         this.command("workflow.fit");
+        console.timeEnd("Graph Rendering");
     }
 
     private attachEvents() {
@@ -131,7 +134,13 @@ export class Workflow {
 
             let sourceRect = sourceVertex.node.getBoundingClientRect();
             let destRect = destVertex.node.getBoundingClientRect();
-            const pathStr = IOPort.makeConnectionPath(sourceRect.left, sourceRect.top, destRect.left, destRect.top);
+            let paperRect = this.paper.node.getBoundingClientRect();
+            const pathStr = IOPort.makeConnectionPath(
+                sourceRect.left - paperRect.left,
+                sourceRect.top - paperRect.top,
+                destRect.left - paperRect.left,
+                destRect.top - paperRect.top
+            );
 
             const outerPath = this.paper.path(pathStr).addClass(`outer sub-edge`);
             const innerPath = this.paper.path(pathStr).addClass("inner sub-edge");
@@ -221,7 +230,7 @@ export class Workflow {
 
         this.eventHub.on("workflow.scale", (c) => {
             this.group.transform(new Snap.Matrix().scale(c, c));
-            const labelScale = 1 + (1 - c) / (c * 1.5);
+            const labelScale = 1 + (1 - c) / (c * 2);
 
             this.paper.node.querySelectorAll(".node .label").forEach(el => {
                 Snap(el).transform(`s${labelScale},${labelScale}`);
@@ -230,6 +239,7 @@ export class Workflow {
 
         this.eventHub.on("workflow.fit", () => {
             let {clientWidth: paperWidth, clientHeight: paperHeight} = this.paper.node;
+            let clientBounds = this.paper.node.getBoundingClientRect();
             let wfBounds = this.group.node.getBoundingClientRect();
             const padding = 200;
 
@@ -240,12 +250,11 @@ export class Workflow {
 
             this.command("workflow.scale", 1 / scaleFactor);
 
-            const moveFactor = scaleFactor;
             let paperBounds = this.paper.node.getBoundingClientRect();
             wfBounds = this.group.node.getBoundingClientRect();
 
-            const moveY = moveFactor * -wfBounds.top + moveFactor * Math.abs(paperBounds.height - wfBounds.height) / 2;
-            const moveX = moveFactor * -wfBounds.left + moveFactor * Math.abs(paperBounds.width - wfBounds.width) / 2;
+            const moveY = scaleFactor * -wfBounds.top + scaleFactor * clientBounds.top + scaleFactor * Math.abs(paperBounds.height - wfBounds.height) / 2;
+            const moveX = scaleFactor * -wfBounds.left + scaleFactor * clientBounds.left + scaleFactor * Math.abs(paperBounds.width - wfBounds.width) / 2;
 
             this.group.transform(this.group.transform().localMatrix.clone().translate(moveX, moveY));
         });

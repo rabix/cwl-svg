@@ -2,5 +2,7 @@
 
 rm -rf compiled
 tsc
+cp -r src/assets compiled/assets
+cp package.json compiled/package.json
 cd compiled
-npm publish cwl-svg
+#npm publish cwl-svg

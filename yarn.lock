@@ -768,9 +768,9 @@ esutils@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.2.tgz#0abf4f1caa5bcb1f7a9d8acc6dea4faaa04bac9b"
 
-eve@~0.5.1:
-  version "0.5.3"
-  resolved "https://registry.yarnpkg.com/eve/-/eve-0.5.3.tgz#6c2f6588f7d0b392044d245ba5af9d7cfe237f42"
+eve@~0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/eve/-/eve-0.4.2.tgz#7eea0afc0e4efb7c9365615315a3576833ead2ae"
 
 events@^1.0.0:
   version "1.1.1"
@@ -2271,11 +2271,17 @@ signal-exit@^3.0.0:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.2.tgz#b5fdc08f1287ea1178628e415e25132b73646c6d"
 
-snapsvg@0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/snapsvg/-/snapsvg-0.5.1.tgz#0caf52c79189a290746fc446cc5e863f6bdddfe3"
+snapsvg-cjs@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/snapsvg-cjs/-/snapsvg-cjs-0.0.4.tgz#106ca5b82a79824101f06c568e1a2563659c451d"
   dependencies:
-    eve "~0.5.1"
+    snapsvg "0.4.0"
+
+snapsvg@0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/snapsvg/-/snapsvg-0.4.0.tgz#e0767014167825957de7e125c29b0fa89796ea03"
+  dependencies:
+    eve "~0.4.2"
 
 sntp@1.x.x:
   version "1.0.9"

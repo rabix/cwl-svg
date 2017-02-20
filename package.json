@@ -6,7 +6,7 @@
   "version": "0.0.4",
   "dependencies": {
     "core-js": "^2.4.1",
-    "snapsvg": "0.5.1"
+    "snapsvg-cjs": "0.0.4"
   },
   "devDependencies": {
     "@types/core-js": "0.9.35",
