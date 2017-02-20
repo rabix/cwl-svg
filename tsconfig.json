@@ -5,8 +5,10 @@
         "moduleResolution": "node",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
+        "declaration": true,
         "sourceMap": true,
-        "outDir": "compiled",
+        "noEmitHelpers": false,
+        "outDir": "./compiled",
         "lib": [
             "dom",
             "es6"
