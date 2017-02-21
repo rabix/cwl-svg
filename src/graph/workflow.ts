@@ -20,6 +20,8 @@ export class Workflow {
 
     private group: Snap.Element;
 
+    private scale = 1;
+
     public readonly eventHub: EventHub;
 
 
@@ -28,6 +30,13 @@ export class Workflow {
 
         const dragRect = this.paper.rect(0, 0, "100%" as any, "100%" as any);
         this.group = this.paper.group().addClass("workflow");
+
+
+        this.paper.node.addEventListener("mousewheel", ev => {
+            console.log("Delta", ev.deltaY);
+            this.command("workflow.scale", this.getScale() + ev.deltaY / 500);
+            ev.stopPropagation();
+        }, true);
 
         {
 
@@ -43,14 +52,20 @@ export class Workflow {
 
 
         this.eventHub = new EventHub([
+            /** @link connection.create */
             "connection.create",
+            /** @link app.create */
             "app.create",
+            /** @link app.create.input */
             "app.create.input",
+            /** @link app.create.output */
             "app.create.output",
+            /** @link workflow.arrange */
             "workflow.arrange",
+            /** @link workflow.scale */
             "workflow.scale",
+            /** @link workflow.fit */
             "workflow.fit",
-            "workflow.make"
         ]);
 
         this.attachEvents();
@@ -64,6 +79,10 @@ export class Workflow {
         this.eventHub.emit(event, ...data);
     }
 
+    getScale() {
+        return this.scale;
+    }
+
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
         model.steps.forEach(s => this.command("app.create", s));
@@ -71,12 +90,14 @@ export class Workflow {
         model.inputs.forEach(e => this.command("app.create.input", e));
         model.connections.forEach(c => this.command("connection.create", c));
         document.querySelectorAll(".node").forEach(e => Snap(e).toFront());
-        this.command("workflow.fit");
         console.timeEnd("Graph Rendering");
     }
 
     private attachEvents() {
 
+        /**
+         * @name app.create.input
+         */
         this.eventHub.on("app.create.input", (input: WorkflowStepInputModel) => {
             this.command("app.create", Object.assign(input, {
                 out: [{
@@ -85,6 +106,9 @@ export class Workflow {
             }))
         });
 
+        /**
+         * @name app.create.output
+         */
         this.eventHub.on("app.create.output", (input: WorkflowStepOutputModel) => {
             this.command("app.create", Object.assign(input, {
                 in: [{
@@ -93,6 +117,9 @@ export class Workflow {
             }))
         });
 
+        /**
+         * @name app.create
+         */
         this.eventHub.on("app.create", (step: StepModel) => {
             const n = new AppNode({
                 x: step.customProps["sbg:x"] || Math.random() * 1000,
@@ -101,6 +128,9 @@ export class Workflow {
             this.group.add(n.draw());
         });
 
+        /**
+         * @name connection.create
+         */
         this.eventHub.on("connection.create", (connection: Edge) => {
 
             if (!connection.isVisible || connection.source.type === "Step" || connection.destination.type === "Step") {
@@ -135,11 +165,13 @@ export class Workflow {
             let sourceRect = sourceVertex.node.getBoundingClientRect();
             let destRect = destVertex.node.getBoundingClientRect();
             let paperRect = this.paper.node.getBoundingClientRect();
+            let portRadiusOffset = sourceRect.width / 2;
+
             const pathStr = IOPort.makeConnectionPath(
-                sourceRect.left - paperRect.left,
-                sourceRect.top - paperRect.top,
-                destRect.left - paperRect.left,
-                destRect.top - paperRect.top
+                sourceRect.left + portRadiusOffset - paperRect.left,
+                sourceRect.top + portRadiusOffset - paperRect.top,
+                destRect.left + portRadiusOffset - paperRect.left,
+                destRect.top + portRadiusOffset - paperRect.top
             );
 
             const outerPath = this.paper.path(pathStr).addClass(`outer sub-edge`);
@@ -163,6 +195,9 @@ export class Workflow {
 
         });
 
+        /**
+         * @name workflow.arrange
+         */
         this.eventHub.on("workflow.arrange", (connections: Edge[]) => {
             const tracker = {};
             const zones = {};
@@ -228,8 +263,16 @@ export class Workflow {
             }
         });
 
+        /**
+         * @name workflow.scale
+         */
         this.eventHub.on("workflow.scale", (c) => {
-            this.group.transform(new Snap.Matrix().scale(c, c));
+
+            this.scale = c;
+            console.log("Scaling", c);
+            const oldMatrix = this.group.transform().localMatrix.split();
+
+            this.group.transform(new Snap.Matrix().add(c,0, 0, c, oldMatrix.dx, oldMatrix.dy));
             const labelScale = 1 + (1 - c) / (c * 2);
 
             this.paper.node.querySelectorAll(".node .label").forEach(el => {
@@ -237,10 +280,21 @@ export class Workflow {
             });
         });
 
+        /**
+         * @name workflow.fit
+         */
         this.eventHub.on("workflow.fit", () => {
+
+            this.group.transform(new Snap.Matrix());
+
             let {clientWidth: paperWidth, clientHeight: paperHeight} = this.paper.node;
             let clientBounds = this.paper.node.getBoundingClientRect();
             let wfBounds = this.group.node.getBoundingClientRect();
+
+            // if (clientBounds.width > wfBounds.width && clientBounds.height > wfBounds.height) {
+            //     return;
+            // }
+
             const padding = 200;
 
             const verticalScale = (wfBounds.height + padding) / paperHeight;

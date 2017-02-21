@@ -3,6 +3,7 @@ import {IOPort} from "./io-port";
 import {OutputPort} from "./output-port";
 import {Shape} from "./shape";
 import Matrix = Snap.Matrix;
+import {WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
 
 export type NodePosition = { x: number, y: number };
 
@@ -34,7 +35,17 @@ export class GraphNode extends Shape {
         super();
 
         this.paper = paper;
-        this.group = this.paper.g().addClass("node " + dataModel.id);
+
+        let nodeTypeClass = "step";
+        if (dataModel instanceof WorkflowInputParameterModel) {
+            nodeTypeClass = "input";
+        } else if (dataModel instanceof WorkflowOutputParameterModel) {
+            nodeTypeClass = "output";
+        }
+
+        this.group = this.paper.g().addClass(`node ${dataModel.id} ${nodeTypeClass}`).attr({
+            "data-id": dataModel.id
+        });
         this.dataModel = dataModel;
 
         Object.assign(this.position, position);
@@ -109,7 +120,7 @@ export class GraphNode extends Shape {
             groupBBox = this.group.getBBox();
             localMatrix = this.group.transform().localMatrix;
             globalMatrix = this.group.transform().globalMatrix;
-            scaleReverse = 1/globalMatrix.get(3);
+            scaleReverse = 1 / globalMatrix.get(3);
 
             document.querySelectorAll(`.in-${this.dataModel.id} .sub-edge`)
                 .forEach(edge => {

@@ -37,7 +37,7 @@ export class IOPort extends Shape {
     protected drawHandle(): Snap.Element {
 
         const [,,id] = this.portModel.connectionId.split("/");
-        const outer = this.paper.circle(0, 0, this.radius).addClass("port");
+        const outer = this.paper.circle(0, 0, this.radius).addClass("port-handle");
 
         return this.paper.group(outer).addClass(`io-port ${id}`);
     }
@@ -58,8 +58,8 @@ export class IOPort extends Shape {
             this.title
         ).addClass("port");
 
-        this.attachDragBehaviour(this.drawingElements.circleGroup);
-        this.attachDrop();
+        // this.attachDragBehaviour(this.drawingElements.circleGroup);
+        // this.attachDrop();
 
         return this.group;
     }

@@ -25,11 +25,13 @@ $font-color: white;
 
 svg.cwl-workflow {
 
-  background: $background;
+  fill: $background;
   font-family: $font-family;
   color: $font-color;
   padding: 0;
   display: block;
+  width: 100%;
+
 
   -webkit-transform: translateZ(0);
   -moz-transform: translateZ(0);
@@ -98,6 +100,14 @@ svg.cwl-workflow {
 
       &:hover {
         fill: $port-highlight-color;
+      }
+
+      &.output-port .label {
+        text-anchor: start;
+      }
+
+      &.input-port .label {
+        text-anchor: end;
       }
 
       .label {
