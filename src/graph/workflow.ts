@@ -86,8 +86,8 @@ export class Workflow {
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
         model.steps.forEach(s => this.command("app.create", s));
-        model.outputs.forEach(o => this.command("app.create.output", o));
-        model.inputs.forEach(e => this.command("app.create.input", e));
+        model.outputs.filter(o => o.isVisible).forEach(o => this.command("app.create.output", o));
+        model.inputs.filter(e => e.isVisible).forEach(e => this.command("app.create.input", e));
         model.connections.forEach(c => this.command("connection.create", c));
         document.querySelectorAll(".node").forEach(e => Snap(e).toFront());
         console.timeEnd("Graph Rendering");
@@ -109,10 +109,10 @@ export class Workflow {
         /**
          * @name app.create.output
          */
-        this.eventHub.on("app.create.output", (input: WorkflowStepOutputModel) => {
-            this.command("app.create", Object.assign(input, {
+        this.eventHub.on("app.create.output", (output: WorkflowStepOutputModel) => {
+            this.command("app.create", Object.assign(output, {
                 in: [{
-                    connectionId: input.connectionId, isVisible: true
+                    connectionId: output.connectionId, isVisible: true
                 }]
             }))
         });
