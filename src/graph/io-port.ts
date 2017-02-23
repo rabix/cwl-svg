@@ -1,5 +1,5 @@
-import {V1WorkflowStepInputModel} from "cwlts/models/v1.0";
-import {V1WorkflowStepOutputModel} from "cwlts/models/v1.0/V1WorkflowStepOutputModel";
+import {WorkflowStepInputModel} from "cwlts/models";
+import {WorkflowStepOutputModel} from "cwlts/models";
 import {InputPort} from "./input-port";
 import {Shape} from "./shape";
 
@@ -14,7 +14,7 @@ export class IOPort extends Shape {
     private connection: Snap.Element;
     private connectionFormat = "M {x1} {y1}, C {bx1} {by1} {bx2} {by2} {x2} {y2}";
 
-    public portModel: V1WorkflowStepInputModel | V1WorkflowStepOutputModel;
+    public portModel: WorkflowStepInputModel | WorkflowStepOutputModel;
 
     protected handle: Snap.Element;
     protected title: Snap.Element;
