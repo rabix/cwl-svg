@@ -49,7 +49,7 @@ export class IOPort extends Shape {
     draw(): Snap.Element {
         this.handle = this.drawHandle();
         const [,,id] = this.portModel.connectionId.split("/");
-        this.title = this.drawTitle(id).addClass("label unselectable");
+        this.title = this.drawTitle(this.portModel.label || id).addClass("label unselectable");
 
         this.drawingElements.circleGroup = this.handle;
 

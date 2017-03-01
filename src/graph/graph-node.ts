@@ -30,7 +30,10 @@ export class GraphNode extends Shape {
 
     private name: Snap.Element;
 
-    constructor(position: Partial<NodePosition>, dataModel: { id: string }, paper: Snap.Paper) {
+    constructor(position: Partial<NodePosition>, dataModel: {
+                    id: string,
+                    label?: string
+                }, paper: Snap.Paper) {
 
         super();
 
@@ -59,7 +62,7 @@ export class GraphNode extends Shape {
 
         const innerCircle = this.paper.circle(0, 0, this.radius * .8).addClass("inner");
 
-        this.name = this.paper.text(0, this.radius + 30, this.dataModel.id).addClass("label");
+        this.name = this.paper.text(0, this.radius + 30, this.dataModel.label || this.dataModel.id).addClass("label");
 
 
         this.circleGroup = this.paper.group(outerCircle, innerCircle).transform("").addClass("drag-handle");
