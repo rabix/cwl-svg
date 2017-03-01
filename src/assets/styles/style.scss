@@ -44,6 +44,23 @@ svg.cwl-workflow {
     @extend .noselect;
   }
 
+  .edge {
+    .label {
+      font-size: .8em;
+    }
+  }
+
+  .label {
+    text-anchor: middle;
+    fill: $font-color;
+
+    paint-order: stroke;
+    stroke: $background;
+    stroke-width: 4px;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+  }
+
   .node {
 
     .icon {
@@ -74,17 +91,6 @@ svg.cwl-workflow {
       stroke: $color-tertiary;
     }
 
-    &.dragging {
-
-      .drag-handle {
-        stroke-width: 10;
-      }
-
-      .port {
-        display: none;
-      }
-    }
-
     &.edge-hover {
       .outer {
         stroke: $port-highlight-color;
@@ -109,17 +115,6 @@ svg.cwl-workflow {
       stroke: white;
       stroke-width: 2px;
       fill: $background;
-    }
-
-    .label {
-      text-anchor: middle;
-      fill: $font-color;
-
-      paint-order: stroke;
-      stroke: $background;
-      stroke-width: 4px;
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
     }
 
     .inner {

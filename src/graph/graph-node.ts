@@ -71,7 +71,7 @@ export class GraphNode extends Shape {
         if (this.dataModel instanceof StepModel) {
 
             const iconGroup = this.paper.group();
-            this.group.add(iconGroup);
+            this.circleGroup.add(iconGroup);
 
             if (this.dataModel.run.class == "CommandLineTool") {
                 iconGroup.add(
@@ -160,11 +160,9 @@ export class GraphNode extends Shape {
                     outputEdges.set(Snap(edge), Snap.parsePathString(edge.getAttribute("d")));
                 });
 
-            this.group.addClass("dragging");
         }, (ev) => {
             inputEdges.clear();
             outputEdges.clear();
-            this.group.removeClass("dragging")
         });
     }
 

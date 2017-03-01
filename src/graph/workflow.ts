@@ -140,7 +140,6 @@ export class Workflow {
         this.eventHub.on("connection.create", (connection: Edge) => {
 
             if (!connection.isVisible || connection.source.type === "Step" || connection.destination.type === "Step") {
-                // console.warn("Skipping rendering of an invisible connection.", connection);
                 return;
             }
 
@@ -190,12 +189,24 @@ export class Workflow {
             this.group.add(pathGroup);
 
             const hoverClass = "edge-hover";
-            pathGroup.hover(() => {
+
+            let connectionLabel;
+            pathGroup.hover((ev, x, y) => {
                 sourceNode.addClass(hoverClass);
                 destNode.addClass(hoverClass);
+
+                const sourceLabel = sourceStepId === sourcePort ? sourcePort : `${sourceStepId}/${sourcePort}`;
+                const destLabel = destStepId === destPort ? destPort : `${destStepId}/${destPort}`;
+                connectionLabel = this.paper
+                    .text(x, y - 16, `${sourceLabel} ↔ ${destLabel}`)
+                    .addClass("label label-edge");
+                pathGroup.add(connectionLabel);
+                pathGroup.toFront();
             }, () => {
                 sourceNode.removeClass(hoverClass);
                 destNode.removeClass(hoverClass);
+                connectionLabel.remove();
+                pathGroup.toBack();
             });
 
 
