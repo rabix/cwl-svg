@@ -58,7 +58,7 @@ export class IOPort extends Shape {
             this.title
         ).addClass("port");
 
-        // this.attachDragBehaviour(this.drawingElements.circleGroup);
+        // this.attachEventListeners(this.drawingElements.circleGroup);
         // this.attachDrop();
 
         return this.group;

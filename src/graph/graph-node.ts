@@ -66,7 +66,7 @@ export class GraphNode extends Shape {
 
         this.group.add(this.circleGroup, this.name);
 
-        this.attachDragBehaviour(this.circleGroup);
+        this.attachEventListeners(this.circleGroup);
 
         return this.group;
     }
@@ -91,7 +91,7 @@ export class GraphNode extends Shape {
 
     }
 
-    protected attachDragBehaviour(el) {
+    protected attachEventListeners(el) {
 
         let groupBBox;
         let localMatrix;
@@ -100,8 +100,11 @@ export class GraphNode extends Shape {
         let outputEdges = new Map<Snap.Element, any>();
         let scaleReverse;
 
-        el.drag((dx: number, dy: number) => {
+        el.hover(() => {
+            this.group.toFront();
+        });
 
+        el.drag((dx: number, dy: number) => {
             const moveX = dx * scaleReverse;
             const moveY = dy * scaleReverse;
 
@@ -116,7 +119,8 @@ export class GraphNode extends Shape {
                     d: IOPort.makeConnectionPath(path[0][1] + moveX, path[0][2] + moveY, path[1][5], path[1][6])
                 })
             })
-        }, (x, y, ev) => {
+        }, (x, y, ev: MouseEvent) => {
+
             groupBBox = this.group.getBBox();
             localMatrix = this.group.transform().localMatrix;
             globalMatrix = this.group.transform().globalMatrix;
@@ -133,7 +137,6 @@ export class GraphNode extends Shape {
                 });
 
             this.group.addClass("dragging");
-            this.group.toFront();
         }, (ev) => {
             inputEdges.clear();
             outputEdges.clear();

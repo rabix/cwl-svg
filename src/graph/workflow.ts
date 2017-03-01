@@ -31,7 +31,6 @@ export class Workflow {
         const dragRect = this.paper.rect(0, 0, "100%" as any, "100%" as any);
         this.group = this.paper.group().addClass("workflow");
 
-
         this.paper.node.addEventListener("mousewheel", ev => {
             const newScale = this.getScale() + ev.deltaY / 500;
 
