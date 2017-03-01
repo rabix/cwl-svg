@@ -72,7 +72,6 @@ svg.cwl-workflow {
       .port .label {
         transition: all .1s;
         opacity: 1;
-        text-shadow: 1px 1px 4px $background;
       }
     }
 
@@ -85,7 +84,13 @@ svg.cwl-workflow {
     .label {
       text-anchor: middle;
       fill: $font-color;
-      text-shadow: 1px 1px 4px $background;
+
+
+      paint-order: stroke;
+      stroke: $background;
+      stroke-width: 3px;
+      stroke-linecap: butt;
+      stroke-linejoin: miter;
     }
 
     .inner {
@@ -161,24 +166,6 @@ svg.cwl-workflow {
   .node-input-hover-zone {
     pointer-events: none;
   }
-  //
-  //.hover-child.output .output-port,
-  //.hover-child.input .input-port,
-  //.node-output-hover-zone:hover ~ .output-port,
-  //.node-input-hover-zone:hover ~ .input-port {
-  //  .io-port-label {
-  //    transition: all .1s;
-  //    opacity: .4;
-  //  }
-  //}
-  //
-  //.io-port-label:hover,
-  //.io-port:hover .io-port-label {
-  //  transition: all .1s;
-  //  opacity: 1 !important;
-  //  font-weight: 500;
-  //}
-
 }
 
 .noselect {
