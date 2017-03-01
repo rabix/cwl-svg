@@ -33,8 +33,14 @@ export class Workflow {
 
 
         this.paper.node.addEventListener("mousewheel", ev => {
-            console.log("Delta", ev.deltaY);
-            this.command("workflow.scale", this.getScale() + ev.deltaY / 500);
+            const newScale = this.getScale() + ev.deltaY / 500;
+
+            // Prevent scaling to unreasonable proportions.
+            if (newScale <= 0.15 || newScale > 3) {
+                return;
+            }
+
+            this.command("workflow.scale", newScale);
             ev.stopPropagation();
         }, true);
 
@@ -272,7 +278,7 @@ export class Workflow {
             console.log("Scaling", c);
             const oldMatrix = this.group.transform().localMatrix.split();
 
-            this.group.transform(new Snap.Matrix().add(c,0, 0, c, oldMatrix.dx, oldMatrix.dy));
+            this.group.transform(new Snap.Matrix().add(c, 0, 0, c, oldMatrix.dx, oldMatrix.dy));
             const labelScale = 1 + (1 - c) / (c * 2);
 
             this.paper.node.querySelectorAll(".node .label").forEach(el => {
