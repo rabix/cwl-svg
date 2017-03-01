@@ -2,7 +2,7 @@ import {InputPort} from "./input-port";
 import {IOPort} from "./io-port";
 import {OutputPort} from "./output-port";
 import {Shape} from "./shape";
-import {WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
+import {StepModel, WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
 import Matrix = Snap.Matrix;
 
 export type NodePosition = { x: number, y: number };
@@ -64,10 +64,31 @@ export class GraphNode extends Shape {
 
         this.name = this.paper.text(0, this.radius + 30, this.dataModel.label || this.dataModel.id).addClass("label");
 
-
         this.circleGroup = this.paper.group(outerCircle, innerCircle).transform("").addClass("drag-handle");
 
         this.group.add(this.circleGroup, this.name);
+
+        if (this.dataModel instanceof StepModel) {
+
+            const iconGroup = this.paper.group();
+            this.group.add(iconGroup);
+
+            if (this.dataModel.run.class == "CommandLineTool") {
+                iconGroup.add(
+                    this.paper.path("M 0 10 h 15"),
+                    this.paper.path("M -10 10 L 0 0 L -10 -10")
+                ).addClass("icon icon-tool");
+
+            } else if (this.dataModel.run.class === "Workflow") {
+                iconGroup.add(
+                    this.paper.circle(-8, 10, 3),
+                    this.paper.circle(12, 0, 3),
+                    this.paper.circle(-8, -10, 3),
+                    this.paper.line(-8, 10, 12, 0),
+                    this.paper.line(-8, -10, 12, 0),
+                ).addClass("icon icon-workflow")
+            }
+        }
 
         this.attachEventListeners(this.circleGroup);
 
@@ -232,5 +253,9 @@ export class GraphNode extends Shape {
 
             GraphNode.movePortToOuterEdge(this.inputs[i].group, rotationAngle, this.radius);
         }
+    }
+
+    protected drawInnerContent() {
+
     }
 }

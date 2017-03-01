@@ -11,8 +11,6 @@ export class InputPort extends IOPort {
         return this.paper.text(-20, 4, content).attr({
             "text-anchor": "end"
         });
-
     }
-
 
 }

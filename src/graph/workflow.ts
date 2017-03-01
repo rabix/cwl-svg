@@ -117,7 +117,8 @@ export class Workflow {
         this.eventHub.on("app.create.output", (output: WorkflowStepOutputModel) => {
             this.command("app.create", Object.assign(output, {
                 in: [{
-                    connectionId: output.connectionId, isVisible: true
+                    connectionId: output.connectionId,
+                    isVisible: true
                 }]
             }))
         });
