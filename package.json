@@ -17,6 +17,7 @@
     "@types/snapsvg": "0.4.27",
     "css-loader": "^0.26.1",
     "cwlts": "^1.10.21",
+    "json-loader": "0.5.4",
     "node-sass": "^4.5.0",
     "sass-loader": "^5.0.1",
     "source-map-loader": "^0.1.6",

@@ -9,7 +9,7 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 loader: 'ts-loader',
-                exclude: /node_modules/,
+                exclude: /node_modules/
             },
             {
                 enforce: 'pre',
@@ -31,6 +31,10 @@ module.exports = {
                 }, {
                     loader: "sass-loader" // compiles Sass to CSS
                 }]
+            },
+            {
+                test: /\.json$/,
+                use: 'json-loader'
             }
         ]
     },
