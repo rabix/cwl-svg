@@ -32,7 +32,6 @@ svg.cwl-workflow {
   display: block;
   width: 100%;
 
-
   -webkit-transform: translateZ(0);
   -moz-transform: translateZ(0);
   -ms-transform: translateZ(0);
@@ -66,6 +65,7 @@ svg.cwl-workflow {
       transition: all .3s;
       stroke: $background;
       stroke-width: 0;
+      cursor: pointer;
     }
 
     &:hover {
@@ -97,6 +97,7 @@ svg.cwl-workflow {
     .port {
       stroke: 0;
       fill: $port-background-color;
+      cursor: pointer;
 
       &:hover {
         fill: $port-highlight-color;
