@@ -274,7 +274,6 @@ export class Workflow {
         this.eventHub.on("workflow.scale", (c) => {
 
             this.scale = c;
-            console.log("Scaling", c);
             const oldMatrix = this.group.transform().localMatrix.split();
 
             this.group.transform(new Snap.Matrix().add(c, 0, 0, c, oldMatrix.dx, oldMatrix.dy));

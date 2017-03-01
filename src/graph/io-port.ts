@@ -148,7 +148,6 @@ export class IOPort extends Shape {
         }
         const thisRect  = this.group.node.getBoundingClientRect();
         const otherRect = port.group.node.getBoundingClientRect();
-        console.log("Connecting", thisRect, "to", otherRect);
 
         this.connection = this.paper.path(this.makePathStringBetween(
             thisRect.left,
