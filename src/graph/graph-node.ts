@@ -2,8 +2,8 @@ import {InputPort} from "./input-port";
 import {IOPort} from "./io-port";
 import {OutputPort} from "./output-port";
 import {Shape} from "./shape";
-import Matrix = Snap.Matrix;
 import {WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
+import Matrix = Snap.Matrix;
 
 export type NodePosition = { x: number, y: number };
 
@@ -155,6 +155,9 @@ export class GraphNode extends Shape {
         this.group.add(drawn);
 
         portStore.push(port);
+
+        // Ports should be sorted in reverse to comply with the SBG platform's coordinate positioning
+        portStore = portStore.sort((a, b) => -a.portModel.id.localeCompare(b.portModel.id));
 
         this.distributePorts();
 
