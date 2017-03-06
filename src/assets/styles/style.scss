@@ -5,6 +5,7 @@ $color-primary-alt: #2e556f;
 $color-secondary: #886653;
 $color-tertiary: #538881;
 
+$color-success: #7fff24;
 $color-highlight: #e64d23;
 $color-neutral: rgb(121, 121, 121);
 $color-warning: rgb(246, 147, 54);
@@ -165,8 +166,8 @@ svg.cwl-workflow {
       cursor: pointer;
       position: relative;
 
-      &.connection-candidate {
-        stroke: $port-candidate-color;
+      &.connection-suggestion {
+        stroke: $color-success;
         stroke-width: 2px;
       }
 
@@ -175,7 +176,8 @@ svg.cwl-workflow {
       }
 
       &.highlighted,
-      &.connection-candidate {
+      &.visible,
+      &.connection-suggestion {
         .label {
           opacity: 1;
         }

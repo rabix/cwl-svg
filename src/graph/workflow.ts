@@ -451,105 +451,8 @@ export class Workflow {
             target.parentElement.append(target);
         });
 
-        /**
-         * Drag a path from the port
-         */
-        {
-            let edge;
-            let subEdges;
-            let connectionPorts;
-            let highlightedNode;
-            let edgeDirection;
+        this.attachPortDragBehavior();
 
-            this.domEvents.drag(".port", (dx, dy, ev, target) => {
-                const ctm = target.getScreenCTM();
-                const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
-                const origin = this.translateMouseCoords(ctm.e, ctm.f);
-                subEdges.forEach(el => {
-                    el.setAttribute("d",
-                        IOPort.makeConnectionPath(
-                            origin.x,
-                            origin.y,
-                            coords.x,
-                            coords.y,
-                            edgeDirection
-                        )
-                    );
-                });
-
-                const sorted = connectionPorts.map(el => {
-                    const ctm = el.wfCTM;
-                    el.distance = Geometry.distance(coords.x, coords.y, ctm.e, ctm.f);
-                    return el;
-                }).sort((el1, el2) => {
-                    return el1.distance - el2.distance
-                });
-
-                if (highlightedNode) {
-                    highlightedNode.classList.remove("highlighted");
-                }
-                if (sorted.length && sorted[0].distance < 150) {
-                    highlightedNode = sorted[0];
-                    highlightedNode.classList.add("highlighted");
-                }
-
-            }, (ev, target, root) => {
-                edgeDirection = target.classList.contains("input-port") ? "left" : "right";
-                edge = GraphEdge.spawn();
-                edge.classList.add("eventless", "dragged");
-                this.workflow.appendChild(edge);
-                subEdges = Array.from(edge.querySelectorAll(".sub-edge"));
-
-                const targetConnectionId = target.getAttribute("data-connection-id");
-                connectionPorts = (this.model.gatherValidConnectionPoints(targetConnectionId) || [])
-                    .filter(point => point.isVisible)
-                    .map(p => {
-                        const el = this.workflow.querySelector(`[data-connection-id="${p.connectionId}"]`);
-                        el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
-                        el.classList.add("connection-candidate");
-                        return el;
-                    });
-
-                connectionPorts.forEach(el => {
-                    let parentNode;
-                    while ((parentNode = el.parentNode) && !parentNode.classList.contains("node"));
-                    parentNode.classList.add("highlighted", "connection-candidate");
-                });
-                this.workflow.classList.add("has-selection", "edge-dragging");
-
-            }, (ev, target) => {
-
-
-                if (highlightedNode) {
-                    const sourceID = target.getAttribute("data-connection-id");
-                    const destID = highlightedNode.getAttribute("data-connection-id");
-
-                    /**
-                     * If an edge with these connection IDs doesn't already exist, create it,
-                     * Otherwise, prevent creation.
-                     */
-                    if (!GraphEdge.findEdge(this.workflow, sourceID, destID)) {
-                        const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destID);
-                        this.attachEdgeHoverBehavior(newEdge);
-                    }
-
-                    highlightedNode.classList.remove("highlighted");
-                    highlightedNode = undefined;
-                }
-
-                Array.from(this.workflow.querySelectorAll(".connection-candidate")).forEach(el => {
-                    el.classList.remove("connection-candidate", "highlighted");
-                });
-                this.workflow.classList.remove("has-selection", "edge-dragging");
-
-                edgeDirection = undefined;
-                edge.remove();
-                edge = undefined;
-                subEdges = undefined;
-                connectionPorts = undefined;
-            });
-
-        }
 
     }
 
@@ -631,4 +534,142 @@ export class Workflow {
             }
         });
     }
+
+    private attachPortDragBehavior() {
+        let edge;
+        let preferredConnectionPorts;
+        let allConnectionPorts;
+        let highlightedNode;
+        let edgeDirection;
+
+
+        this.domEvents.drag(".port", (dx, dy, ev, target) => {
+            // Gather the necessary positions that we need in order to draw a path
+            const ctm = target.getScreenCTM();
+            const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
+            const origin = this.translateMouseCoords(ctm.e, ctm.f);
+
+            // Draw a path from the origin port to the cursor
+            Array.from(edge.children).forEach((el: SVGPathElement) => {
+                el.setAttribute("d",
+                    IOPort.makeConnectionPath(
+                        origin.x,
+                        origin.y,
+                        coords.x,
+                        coords.y,
+                        edgeDirection
+                    )
+                );
+            });
+
+            const sorted = allConnectionPorts.map(el => {
+                const ctm = el.wfCTM;
+                el.distance = Geometry.distance(coords.x, coords.y, ctm.e, ctm.f);
+                return el;
+            }).sort((el1, el2) => {
+                return el1.distance - el2.distance
+            });
+
+            if (highlightedNode) {
+                const parentNode = this.findParent(highlightedNode, "node");
+                highlightedNode.classList.remove("highlighted");
+                if (!parentNode.classList.contains("connection-suggestion")) {
+                    parentNode.classList.remove("highlighted");
+                }
+            }
+            if (sorted.length && sorted[0].distance < 100) {
+                highlightedNode = sorted[0];
+                highlightedNode.classList.add("highlighted");
+                const parentNode = this.findParent(highlightedNode, "node");
+                parentNode.classList.add("highlighted");
+
+            }
+
+        }, (ev, origin, root) => {
+            const originNode = this.findParent(origin, "node");
+            const isInputPort = origin.classList.contains("input-port");
+
+            // Based on the type of our origin port, determine the direction of the path to draw
+            edgeDirection = isInputPort ? "left" : "right";
+
+            // Draw the edge to the cursor and store the element's reference
+            edge = GraphEdge.spawn();
+            edge.classList.add("eventless", "dragged");
+            this.workflow.appendChild(edge);
+
+            // We need the origin connection ID so we can ask CWLTS for connection recommendations
+            const targetConnectionId = origin.getAttribute("data-connection-id");
+
+            // Have a set of all ports of the opposite type, they are all possible destinations
+            allConnectionPorts = Array.from(
+                this.workflow.querySelectorAll(`.port.${isInputPort ? "output-port" : "input-port"}`)
+            ).filter(el => {
+                // Except the same node that we are dragging from
+                return this.findParent(el, "node") !== originNode;
+            }).map(el => {
+                // Find the position of the port relative to the canvas origin
+                el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
+                return el;
+            });
+
+
+            // Get all valid connection destinations
+            preferredConnectionPorts = (this.model.gatherValidConnectionPoints(targetConnectionId) || [])
+            // Take out just the visible ones
+                .filter(point => point.isVisible)
+                // Find them in the DOM and mark them as connection candidates
+                .map(p => {
+                    const el = this.workflow.querySelector(`[data-connection-id="${p.connectionId}"]`);
+                    el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
+                    el.classList.add("connection-suggestion");
+                    return el;
+                });
+
+            // For all of the valid connection destinations, find their parent node element
+            // and mark it as a highlighted and a connection candidate
+            preferredConnectionPorts.forEach(el => {
+                const parentNode = this.findParent(el, "node");
+                parentNode.classList.add("highlighted", "connection-suggestion");
+            });
+
+
+            // Then mark the workflow itself, so it knows to fade out other stuff
+            this.workflow.classList.add("has-selection", "edge-dragging");
+
+        }, (ev, target) => {
+            if (highlightedNode) {
+                const sourceID = target.getAttribute("data-connection-id");
+                const destID = highlightedNode.getAttribute("data-connection-id");
+
+                /**
+                 * If an edge with these connection IDs doesn't already exist, create it,
+                 * Otherwise, prevent creation.
+                 */
+                if (!GraphEdge.findEdge(this.workflow, sourceID, destID)) {
+                    const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destID);
+                    this.attachEdgeHoverBehavior(newEdge);
+                }
+
+                highlightedNode.classList.remove("highlighted");
+                highlightedNode = undefined;
+            }
+
+            Array.from(this.workflow.querySelectorAll(".connection-suggestion")).forEach(el => {
+                el.classList.remove("connection-suggestion", "highlighted");
+            });
+            this.workflow.classList.remove("has-selection", "edge-dragging");
+
+            edgeDirection = undefined;
+            edge.remove();
+            edge = undefined;
+            preferredConnectionPorts = undefined;
+        });
+    }
+
+    private findParent(el, parentClass) {
+        let parentNode;
+        while ((parentNode = el.parentNode) && !parentNode.classList.contains(parentClass));
+        return parentNode;
+    }
+
 }
