@@ -108,4 +108,16 @@ export class Edge {
         return edge;
     };
 
+    static findEdge(root, sourceConnectionID, destinationConnectionID) {
+        const source = Edge.parseConnectionID(sourceConnectionID);
+        const dest = Edge.parseConnectionID(destinationConnectionID);
+
+        return root.querySelector(`[data-destination-node="${dest.stepID}"][data-destination-port="${dest.portID}"][data-source-node="${source.stepID}"][data-source-port="${source.portID}"]`);
+    }
+
+    static parseConnectionID(cid) {
+        let [side, stepID, portID] = (cid || "//").split("/");
+        return {side, stepID, portID};
+    }
+
 }

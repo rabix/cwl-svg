@@ -518,17 +518,20 @@ export class Workflow {
                 this.workflow.classList.add("has-selection", "edge-dragging");
 
             }, (ev, target) => {
-                edgeDirection = undefined;
-                edge.remove();
-                edge = undefined;
+
 
                 if (highlightedNode) {
-                    const newEdge = GraphEdge.spawnBetweenConnectionIDs(
-                        this.workflow,
-                        target.getAttribute("data-connection-id"),
-                        highlightedNode.getAttribute("data-connection-id")
-                    );
-                    this.attachEdgeHoverBehavior(newEdge);
+                    const sourceID = target.getAttribute("data-connection-id");
+                    const destID = highlightedNode.getAttribute("data-connection-id");
+
+                    /**
+                     * If an edge with these connection IDs doesn't already exist, create it,
+                     * Otherwise, prevent creation.
+                     */
+                    if (!GraphEdge.findEdge(this.workflow, sourceID, destID)) {
+                        const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destID);
+                        this.attachEdgeHoverBehavior(newEdge);
+                    }
 
                     highlightedNode.classList.remove("highlighted");
                     highlightedNode = undefined;
@@ -539,6 +542,9 @@ export class Workflow {
                 });
                 this.workflow.classList.remove("has-selection", "edge-dragging");
 
+                edgeDirection = undefined;
+                edge.remove();
+                edge = undefined;
                 subEdges = undefined;
                 connectionPorts = undefined;
             });
