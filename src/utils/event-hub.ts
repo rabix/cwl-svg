@@ -32,7 +32,7 @@ export class EventHub {
 
     private guard(event, verb) {
         if (!this.handlers[event]) {
-            throw new Error(`Cannot ${verb} a non-supported event “${event}”. 
+            console.warn(`Trying to ${verb} a non-supported event “${event}”. 
             Supported events are: ${Object.keys(this.handlers).join(", ")}”`);
         }
     }

@@ -17,6 +17,8 @@ $port-background-color: rgb(121, 121, 121);
 $port-highlight-color: $color-highlight;
 $port-label-color: white;
 
+$port-candidate-color: white;
+
 $edge-inner-color: white;
 $edge-inner-width: 2px;
 $edge-outer-color: $color-background;
@@ -40,13 +42,35 @@ svg.cwl-workflow {
   -o-transform: translateZ(0);
   transform: translateZ(0);
 
-  .workflow {
-    @extend .noselect;
+  .eventless {
+    pointer-events: none;
   }
 
-  .edge {
-    .label {
-      font-size: .8em;
+  .workflow {
+    @extend .noselect;
+
+    &.has-selection {
+      .node:not(.highlighted) {
+        &.step {
+          .inner {
+            fill: darken($color-primary, 15%);
+          }
+          .outer {
+            stroke: darken($edge-inner-color, 50%);
+          }
+        }
+
+        .label {
+          fill: darken($font-color, 50%);
+        }
+      }
+
+      .edge:not(.highlighted) {
+        .inner {
+          stroke: darken($edge-inner-color, 50%);
+        }
+      }
+
     }
   }
 
@@ -59,9 +83,17 @@ svg.cwl-workflow {
     stroke-width: 4px;
     stroke-linecap: butt;
     stroke-linejoin: miter;
+
   }
 
   .node {
+
+    &.selected {
+      .outer {
+        stroke: $color-highlight !important;
+      }
+
+    }
 
     .icon {
       stroke: $background;
@@ -127,23 +159,41 @@ svg.cwl-workflow {
       stroke: 0;
       fill: $port-background-color;
       cursor: pointer;
+      position: relative;
 
-      &:hover {
+      &.connection-candidate {
+        stroke: $port-candidate-color;
+        stroke-width: 2px;
+      }
+
+      &:hover, &.highlighted {
         fill: $port-highlight-color;
       }
 
+      &.highlighted,
+      &.connection-candidate {
+        .label {
+          opacity: 1;
+        }
+      }
+
+
+
       &.output-port .label {
         text-anchor: start;
+        transform: translate(10px, 0);
       }
 
       &.input-port .label {
         text-anchor: end;
+        transform: translate(-10px, 0);
       }
 
       .label {
+        alignment-baseline: middle;
         transition: all .1s;
         fill: $port-label-color;
-        font-size: .8em;
+        font-size: .9em;
         user-select: none;
         pointer-events: none;
         opacity: 0;
@@ -153,7 +203,8 @@ svg.cwl-workflow {
 
   .edge {
 
-    &:hover .inner {
+    &:hover .inner,
+    &.selected .inner {
       stroke: $port-highlight-color;
     }
 
@@ -169,6 +220,10 @@ svg.cwl-workflow {
     .outer {
       stroke-width: 7px;
       stroke: $edge-outer-color;
+    }
+
+    .label {
+      font-size: .8em;
     }
   }
 

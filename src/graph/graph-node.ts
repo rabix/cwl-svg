@@ -1,5 +1,4 @@
 import {InputPort} from "./input-port";
-import {IOPort} from "./io-port";
 import {OutputPort} from "./output-port";
 import {Shape} from "./shape";
 import {StepModel, WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
@@ -12,190 +11,187 @@ export class GraphNode extends Shape {
 
     public position: NodePosition = {x: 0, y: 0};
 
-    protected inputs: InputPort[] = [];
-
-    protected outputs: OutputPort[] = [];
-
     protected paper: Snap.Paper;
 
     protected group;
 
     protected radius = 40;
 
-    private circleGroup: Snap.Element;
 
-    private dataModel: {
-        id: string,
-    };
-
-    private name: Snap.Element;
-
-    constructor(position: Partial<NodePosition>, dataModel: {
-                    id: string,
-                    label?: string
-                }, paper: Snap.Paper) {
+    constructor(position: Partial<NodePosition>,
+                private dataModel: WorkflowInputParameterModel | WorkflowOutputParameterModel | StepModel,
+                paper: Snap.Paper) {
 
         super();
 
         this.paper = paper;
 
-        let nodeTypeClass = "step";
-        if (dataModel instanceof WorkflowInputParameterModel) {
-            nodeTypeClass = "input";
-        } else if (dataModel instanceof WorkflowOutputParameterModel) {
-            nodeTypeClass = "output";
-        }
-
-        this.group = this.paper.g().addClass(`node ${dataModel.id} ${nodeTypeClass}`).attr({
-            "data-id": dataModel.id
-        });
         this.dataModel = dataModel;
 
         Object.assign(this.position, position);
+    }
+
+    private makeIconFragment(model) {
+        if (model instanceof StepModel) {
+
+            if (model.run.class == "CommandLineTool") {
+
+                return `
+                    <g class="icon icon-tool">
+                        <path d="M 0 10 h 15"></path>
+                        <path d="M -10 10 L 0 0 L -10 -10"></path>
+                    </g>
+                `;
+
+            } else if (model.run.class === "Workflow") {
+                return `
+                    <g class="icon icon-workflow">
+                        <circle cx="-8" cy="10" r="3"></circle>
+                        <circle cx="12" cy="0" r="3"></circle>
+                        <circle cx="-8" cy="-10" r="3"></circle>
+                        <line x1="-8" y1="10" x2="12" y2="0"></line>
+                        <line x1="-8" y1="-10" x2="12" y2="0"></line>
+                    </g>
+                `;
+            }
+        }
+        return "";
+    }
+
+
+    public makeTemplate(): string {
+
+        let nodeTypeClass = "step";
+        if (this.dataModel instanceof WorkflowInputParameterModel) {
+            nodeTypeClass = "input";
+        } else if (this.dataModel instanceof WorkflowOutputParameterModel) {
+            nodeTypeClass = "output";
+        }
+        const iconTemplate = this.makeIconFragment(this.dataModel);
+
+        const inputPortTemplates = (this.dataModel.in || [])
+            .filter(p => p.isVisible)
+            .sort((a, b) => -a.id.localeCompare(b.id))
+            .map((p, i, arr) => GraphNode.makePortTemplate(
+                p,
+                "input",
+                GraphNode.createPortMatrix(arr.length, i, this.radius, "input").toString()
+            ))
+            .reduce((acc, tpl) => acc + tpl, "");
+
+        const outputPortTemplates = (this.dataModel.out || [])
+            .filter(p => p.isVisible)
+            .sort((a, b) => -a.id.localeCompare(b.id))
+            .map((p, i, arr) => GraphNode.makePortTemplate(
+                p,
+                "output",
+                GraphNode.createPortMatrix(arr.length, i, this.radius, "output").toString()
+            ))
+            .reduce((acc, tpl) => acc + tpl, "");
+
+        const template = `
+            <g class="node ${this.dataModel.id} ${nodeTypeClass}"
+               transform="matrix(1, 0, 0, 1, ${this.position.x}, ${this.position.y})"
+               data-id="${this.dataModel.id}">
+        
+                <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
+                    <circle cx="0" cy="0" r="${this.radius}" class="outer"></circle>
+                    <circle cx="0" cy="0" r="${this.radius * .8}" class="inner"></circle>
+                    ${iconTemplate}
+                </g>
+                <text x="0" y="${this.radius + 30}" class="label">${this.dataModel.label || this.dataModel.id}</text>
+                ${inputPortTemplates}
+                ${outputPortTemplates}
+            </g>
+        `;
+
+        return template;
     }
 
     public draw(): Snap.Element {
 
         this.group.transform(new Snap.Matrix().translate(this.position.x, this.position.y));
 
-        const outerCircle = this.paper.circle(0, 0, this.radius).addClass("outer");
-
-        const innerCircle = this.paper.circle(0, 0, this.radius * .8).addClass("inner");
-
-        this.name = this.paper.text(0, this.radius + 30, this.dataModel.label || this.dataModel.id).addClass("label");
-
-        this.circleGroup = this.paper.group(outerCircle, innerCircle).transform("").addClass("drag-handle");
-
-        this.group.add(this.circleGroup, this.name);
+        let iconFragment = ``;
 
         if (this.dataModel instanceof StepModel) {
 
-            const iconGroup = this.paper.group();
-            this.circleGroup.add(iconGroup);
-
             if (this.dataModel.run.class == "CommandLineTool") {
-                iconGroup.add(
-                    this.paper.path("M 0 10 h 15"),
-                    this.paper.path("M -10 10 L 0 0 L -10 -10")
-                ).addClass("icon icon-tool");
+
+                iconFragment = `
+                    <g class="icon icon-tool">
+                        <path d="M 0 10 h 15"></path>
+                        <path d="M -10 10 L 0 0 L -10 -10"></path>
+                    </g>
+                `;
 
             } else if (this.dataModel.run.class === "Workflow") {
-                iconGroup.add(
-                    this.paper.circle(-8, 10, 3),
-                    this.paper.circle(12, 0, 3),
-                    this.paper.circle(-8, -10, 3),
-                    this.paper.line(-8, 10, 12, 0),
-                    this.paper.line(-8, -10, 12, 0),
-                ).addClass("icon icon-workflow")
+                iconFragment = `
+                    <g class="icon icon-workflow">
+                        <circle cx="-8" cy="10" r="3"></circle>
+                        <circle cx="12" cy="0" r="3"></circle>
+                        <circle cx="-8" cy="-10" r="3"></circle>
+                        <line x1="-8" y1="10" x2="12" y2="0"></line>
+                        <line x1="-8" y1="-10" x2="12" y2="0"></line>
+                    </g>
+                `;
             }
         }
 
-        this.attachEventListeners(this.circleGroup);
+        this.group.add(Snap.parse(`
+            <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
+                <circle cx="0" cy="0" r="${this.radius}" class="outer"></circle>
+                <circle cx="0" cy="0" r="${this.radius * .8}" class="inner"></circle>
+                ${iconFragment}
+            </g>
+            <text x="0" y="${this.radius + 30}" class="label">${this.dataModel.label || this.dataModel.id}</text>
+        `));
+
+        // this.attachEventListeners(this.circleGroup);
 
         return this.group;
     }
 
-    public scale(coef: number) {
-        this.circleGroup.transform(this.circleGroup.matrix.clone().scale(coef, coef));
-        this.radius = this.circleGroup.getBBox().width / 2;
-        this.name.attr({
-            y: this.radius + 30
-        })
+    private static makePortTemplate(port: OutputPort | InputPort, type: "input" | "output",
+                                    transform = "matrix(1, 0, 0, 1, 0, 0)"): string {
 
-    }
+        const portClass = type === "input" ? "input-port" : "output-port";
+        const label = port.label || port.id;
+        const template = `
+            <g class="port ${portClass} ${port.id}" transform="${transform || 'matrix(1, 0, 0, 1, 0, 0)'}"
+               data-connection-id="${port.connectionId}"
+               data-port-id="${port.id}"
+            >
+                <g class="io-port ${port.id}">
+                    <circle cx="0" cy="0" r="5" class="port-handle"></circle>
+                </g>
+                <text x="0" y="0" class="label unselectable">${label}</text>
+            </g>
+            
+        `;
 
-    public create<T>(portType: new (...args: any[]) => T, options): T {
-        switch (portType as any) {
-            case InputPort:
-            case OutputPort:
-                return new portType(this.paper, options);
-            default:
-                throw new Error("Cannot create IOPort of type: " + portType);
-        }
-
-    }
-
-    protected attachEventListeners(el) {
-
-        let groupBBox;
-        let localMatrix;
-        let globalMatrix;
-        let inputEdges = new Map<Snap.Element, any>();
-        let outputEdges = new Map<Snap.Element, any>();
-        let scaleReverse;
-
-        el.hover(() => {
-            this.group.toFront();
-        });
-
-        el.drag((dx: number, dy: number) => {
-            const moveX = dx * scaleReverse;
-            const moveY = dy * scaleReverse;
-
-            this.group.transform(localMatrix.clone().translate(moveX, moveY));
-            inputEdges.forEach((path, edge) => {
-                edge.attr({
-                    d: IOPort.makeConnectionPath(path[0][1], path[0][2], path[1][5] + moveX, path[1][6] + moveY)
-                })
-            });
-            outputEdges.forEach((path, edge) => {
-                edge.attr({
-                    d: IOPort.makeConnectionPath(path[0][1] + moveX, path[0][2] + moveY, path[1][5], path[1][6])
-                })
-            })
-        }, (x, y, ev: MouseEvent) => {
-
-            groupBBox = this.group.getBBox();
-            localMatrix = this.group.transform().localMatrix;
-            globalMatrix = this.group.transform().globalMatrix;
-            scaleReverse = 1 / globalMatrix.get(3);
-
-            document.querySelectorAll(`.in-${this.dataModel.id} .sub-edge`)
-                .forEach(edge => {
-                    inputEdges.set(Snap(edge), Snap.parsePathString(edge.getAttribute("d")));
-                });
-
-            document.querySelectorAll(`.out-${this.dataModel.id} .sub-edge`)
-                .forEach(edge => {
-                    outputEdges.set(Snap(edge), Snap.parsePathString(edge.getAttribute("d")));
-                });
-
-        }, (ev) => {
-            inputEdges.clear();
-            outputEdges.clear();
-        });
+        return template;
     }
 
     public addPort(port: OutputPort | InputPort): void {
 
-        let portClass = "input-port";
-        let portStore: any[] = this.inputs;
+        const template = GraphNode.makePortTemplate(port);
 
-        if (port instanceof OutputPort) {
-            portClass = "output-port";
-            portStore = this.outputs;
-        }
-
-        const drawn = port.draw().addClass(portClass);
-        this.group.add(drawn);
-
-        portStore.push(port);
+        this.group.add(Snap.parse(template));
 
         // Ports should be sorted in reverse to comply with the SBG platform's coordinate positioning
-        portStore = portStore.sort((a, b) => -a.portModel.id.localeCompare(b.portModel.id));
+        // portStore = portStore.sort((a, b) => -a.portModel.id.localeCompare(b.portModel.id));
 
         this.distributePorts();
-
-
-        if (portStore.length > 6 && portStore.length <= 20) {
-
-            const [a, b] = portStore.slice(-2).map(i => i.group.getBBox());
-            const overlapping = a.y + a.height >= b.y;
-            if (overlapping) {
-                this.scale(1.08);
-                this.distributePorts();
-            }
-        }
+        // if (portStore.length > 6 && portStore.length <= 20) {
+        //
+        //     const [a, b] = portStore.slice(-2).map(i => i.group.getBBox());
+        //     const overlapping = a.y + a.height >= b.y;
+        //     if (overlapping) {
+        //         this.scale(1.08);
+        //         this.distributePorts();
+        //     }
+        // }
     }
 
     /**
@@ -220,12 +216,16 @@ export class GraphNode extends Shape {
      * Repositions input and output ports to their designated places on the outer edge
      * of the node and scales the node in the process if necessary.
      */
-    private distributePorts() {
+    public distributePorts() {
+
+        const outputs = Array.from(this.group.node.querySelectorAll(".output-port")).map(p => Snap(p));
+        const inputs = Array.from(this.group.node.querySelectorAll(".input-port")).map(p => Snap(p));
+
         const availableAngle = 140;
         let rotationAngle;
 
         // Distribute output ports
-        for (let i = 0; i < this.outputs.length; i++) {
+        for (let i = 0; i < outputs.length; i++) {
             rotationAngle =
                 // Starting rotation angle
                 (-availableAngle / 2) +
@@ -233,27 +233,55 @@ export class GraphNode extends Shape {
                     // Angular offset by element index
                     (i + 1)
                     // Angle between elements
-                    * availableAngle / (this.outputs.length + 1)
+                    * availableAngle / (outputs.length + 1)
                 );
 
-            GraphNode.movePortToOuterEdge(this.outputs[i].group, rotationAngle, this.radius);
+            GraphNode.movePortToOuterEdge(outputs[i], rotationAngle, this.radius);
         }
 
         // Distribute input ports
-        for (let i = 0; i < this.inputs.length; i++) {
+        for (let i = 0; i < inputs.length; i++) {
             rotationAngle =
                 // Determines the starting rotation angle
                 180 - (availableAngle / -2)
                 // Determines the angular offset modifier for the current index
                 - (i + 1)
                 // Determines the angular offset
-                * availableAngle / (this.inputs.length + 1);
+                * availableAngle / (inputs.length + 1);
 
-            GraphNode.movePortToOuterEdge(this.inputs[i].group, rotationAngle, this.radius);
+            GraphNode.movePortToOuterEdge(inputs[i], rotationAngle, this.radius);
         }
     }
 
-    protected drawInnerContent() {
+    public static createPortMatrix(totalPortLength: number,
+                                   portIndex: number,
+                                   radius: number,
+                                   type: "input" | "output"): Snap.Matrix {
+        const availableAngle = 140;
 
+        let rotationAngle =
+            // Starting rotation angle
+            (-availableAngle / 2) +
+            (
+                // Angular offset by element index
+                (portIndex + 1)
+                // Angle between elements
+                * availableAngle / (totalPortLength + 1)
+            );
+
+        if (type === "input") {
+            rotationAngle =
+                // Determines the starting rotation angle
+                180 - (availableAngle / -2)
+                // Determines the angular offset modifier for the current index
+                - (portIndex + 1)
+                // Determines the angular offset
+                * availableAngle / (totalPortLength + 1);
+        }
+
+        return new Snap.Matrix()
+            .rotate(rotationAngle, 0, 0)
+            .translate(radius, 0)
+            .rotate(-rotationAngle, 0, 0);
     }
 }

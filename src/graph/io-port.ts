@@ -1,6 +1,4 @@
-import {WorkflowStepInputModel} from "cwlts/models";
-import {WorkflowStepOutputModel} from "cwlts/models";
-import {InputPort} from "./input-port";
+import {WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
 import {Shape} from "./shape";
 
 export class IOPort extends Shape {
@@ -17,51 +15,19 @@ export class IOPort extends Shape {
     public portModel: WorkflowStepInputModel | WorkflowStepOutputModel;
 
     protected handle: Snap.Element;
-    protected title: Snap.Element;
-
-    protected drawingElements = {
-
-        circleGroup: null,
-        innerCircle: null,
-        outerCircle: null,
-
-        title: null
-    };
 
     constructor(paper: Snap.Paper, portModel) {
         super();
-        this.paper     = paper;
+        this.paper = paper;
         this.portModel = portModel;
     }
 
     protected drawHandle(): Snap.Element {
 
-        const [,,id] = this.portModel.connectionId.split("/");
+        const [, , id] = this.portModel.connectionId.split("/");
         const outer = this.paper.circle(0, 0, this.radius).addClass("port-handle");
 
         return this.paper.group(outer).addClass(`io-port ${id}`);
-    }
-
-    protected drawTitle(content) {
-        return this.paper.text(0, 0, content);
-    }
-
-    draw(): Snap.Element {
-        this.handle = this.drawHandle();
-        const [,,id] = this.portModel.connectionId.split("/");
-        this.title = this.drawTitle(this.portModel.label || id).addClass("label unselectable");
-
-        this.drawingElements.circleGroup = this.handle;
-
-        this.group = this.paper.group(
-            this.drawingElements.circleGroup,
-            this.title
-        ).addClass("port");
-
-        // this.attachEventListeners(this.drawingElements.circleGroup);
-        // this.attachDrop();
-
-        return this.group;
     }
 
     private attachDragBehaviour(el: Snap.Element) {
@@ -114,13 +80,13 @@ export class IOPort extends Shape {
     public static makeConnectionPath(x1, y1, x2, y2, forceDirection = true): string {
 
         if (!forceDirection) {
-            return `M ${x1} ${y1}, C ${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
+            return `M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
         }
         const outDir = x1 + Math.abs(x1 - x2) / 2;
-        const inDir  = x2 - Math.abs(x1 - x2) / 2;
+        const inDir = x2 - Math.abs(x1 - x2) / 2;
 
 
-        return `M ${x1} ${y1}, C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
+        return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
 
     }
 
@@ -146,7 +112,7 @@ export class IOPort extends Shape {
             this.connection.remove();
             this.connection = undefined;
         }
-        const thisRect  = this.group.node.getBoundingClientRect();
+        const thisRect = this.group.node.getBoundingClientRect();
         const otherRect = port.group.node.getBoundingClientRect();
 
         this.connection = this.paper.path(this.makePathStringBetween(

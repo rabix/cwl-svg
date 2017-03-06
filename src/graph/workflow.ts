@@ -1,10 +1,22 @@
-import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
+import {
+    Edge,
+    StepModel,
+    WorkflowInputParameterModel,
+    WorkflowModel,
+    WorkflowOutputParameterModel,
+    WorkflowStepInputModel,
+    WorkflowStepOutputModel
+} from "cwlts/models";
+import "snapsvg-cjs";
 import {EventHub} from "../utils/event-hub";
 import {AppNode} from "./app-node";
+import {GraphNode} from "./graph-node";
+import {Edge as GraphEdge} from "./edge";
+import {DomEvents} from "../utils/dom-events";
 import {IOPort} from "./io-port";
-import "snapsvg-cjs";
+import {Geometry} from "../utils/geometry";
 
-Snap.plugin(function (Snap, Element, Paper, glob) {
+Snap.plugin(function (Snap, Element) {
     const proto = Element.prototype;
 
     proto.toFront = function () {
@@ -24,12 +36,31 @@ export class Workflow {
 
     public readonly eventHub: EventHub;
 
+    private domEvents;
 
-    constructor(paper: Snap.Paper, model?: WorkflowModel) {
+    private workflow: SVGElement;
+
+    private svgRoot: SVGSVGElement;
+
+    private model: WorkflowModel;
+
+    constructor(paper: Snap.Paper, model: WorkflowModel) {
         this.paper = paper;
 
-        const dragRect = this.paper.rect(0, 0, "100%" as any, "100%" as any);
-        this.group = this.paper.group().addClass("workflow");
+        this.svgRoot = paper.node;
+
+        this.model = model;
+
+        this.domEvents = new DomEvents(this.paper.node as HTMLElement);
+
+        this.paper.node.innerHTML = `
+            <rect x="0" y="0" width="100%" height="100%" class="pan-handle" transform="matrix(1,0,0,1,0,0)"></rect>
+            <g class="workflow" transform="matrix(1,0,0,1,0,0)"></g>
+        `;
+
+        this.workflow = this.paper.node.querySelector(".workflow") as any;
+
+        this.group = Snap(this.workflow);
 
         this.paper.node.addEventListener("mousewheel", ev => {
             const newScale = this.getScale() + ev.deltaY / 500;
@@ -43,24 +74,11 @@ export class Workflow {
             ev.stopPropagation();
         }, true);
 
-        {
-
-            let originalMatrix;
-            dragRect.drag((dx, dy) => {
-                this.group.transform(originalMatrix.clone().translate(dx, dy));
-            }, () => {
-                originalMatrix = this.group.transform().localMatrix;
-            }, () => {
-
-            });
-        }
-
-
         this.eventHub = new EventHub([
             /** @link connection.create */
             "connection.create",
-            /** @link app.create */
-            "app.create",
+            /** @link app.create.step */
+            "app.create.step",
             /** @link app.create.input */
             "app.create.input",
             /** @link app.create.output */
@@ -78,10 +96,21 @@ export class Workflow {
         if (model) {
             this.renderModel(model);
         }
+        console.time("Event Listeners");
+        this.addEventListeners(this.paper.node);
+        console.timeEnd("Event Listeners");
     }
 
     command(event: string, ...data: any[]) {
         this.eventHub.emit(event, ...data);
+    }
+
+    on(event: string, handler) {
+        this.eventHub.on(event, handler);
+    }
+
+    off(event, handler) {
+        this.eventHub.off(event, handler);
     }
 
     getScale() {
@@ -90,13 +119,39 @@ export class Workflow {
 
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
-        model.steps.forEach(s => this.command("app.create", s));
-        model.outputs.filter(o => o.isVisible).forEach(o => this.command("app.create.output", o));
-        model.inputs.filter(e => e.isVisible).forEach(e => this.command("app.create.input", e));
-        model.connections.forEach(c => this.command("connection.create", c));
-        document.querySelectorAll(".node").forEach(e => Snap(e).toFront());
+
+        const nodes = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
+        const graphNodes = nodes.map(n => {
+            const patch = [{connectionId: n.connectionId, isVisible: true, id: n.id}];
+
+            if (n instanceof WorkflowInputParameterModel) {
+                const copy = Object.create(n);
+                return Object.assign(copy, {out: patch});
+
+
+            } else if (n instanceof WorkflowOutputParameterModel) {
+                const copy = Object.create(n);
+                return Object.assign(copy, {in: patch});
+            }
+
+            return n;
+        }).map((node) => new GraphNode({
+                x: node.customProps["sbg:x"] || Math.random() * 500,
+                y: node.customProps["sbg:y"] || Math.random() * 500
+            }, node, this.paper)
+        );
+
+        const nodesTpl = graphNodes.reduce((tpl, node) => tpl + node.makeTemplate(), "");
+        this.workflow.innerHTML += nodesTpl;
+
+        const edgesTpl = model.connections.map(c => GraphEdge.makeTemplate(c, this.paper)).reduce((acc, tpl) => acc + tpl, "");
+        this.workflow.innerHTML += edgesTpl;
         console.timeEnd("Graph Rendering");
+        console.time("Ordering");
+        document.querySelectorAll(".node").forEach(e => Snap(e).toFront());
+        console.timeEnd("Ordering");
     }
+
 
     private attachEvents() {
 
@@ -104,9 +159,11 @@ export class Workflow {
          * @name app.create.input
          */
         this.eventHub.on("app.create.input", (input: WorkflowStepInputModel) => {
-            this.command("app.create", Object.assign(input, {
+            this.command("app.create.step", Object.assign(input, {
                 out: [{
-                    connectionId: input.connectionId, isVisible: true
+                    id: input.id,
+                    connectionId: input.connectionId,
+                    isVisible: true
                 }]
             }))
         });
@@ -115,8 +172,9 @@ export class Workflow {
          * @name app.create.output
          */
         this.eventHub.on("app.create.output", (output: WorkflowStepOutputModel) => {
-            this.command("app.create", Object.assign(output, {
+            this.command("app.create.step", Object.assign(output, {
                 in: [{
+                    id: output.id,
                     connectionId: output.connectionId,
                     isVisible: true
                 }]
@@ -124,14 +182,15 @@ export class Workflow {
         });
 
         /**
-         * @name app.create
+         * @name app.create.step
          */
-        this.eventHub.on("app.create", (step: StepModel) => {
+        this.eventHub.on("app.create.step", (step: StepModel) => {
             const n = new AppNode({
                 x: step.customProps["sbg:x"] || Math.random() * 1000,
                 y: step.customProps["sbg:y"] || Math.random() * 1000
             }, step, this.paper);
-            this.group.add(n.draw());
+
+            this.workflow.innerHTML += n.makeTemplate();
         });
 
         /**
@@ -139,77 +198,7 @@ export class Workflow {
          */
         this.eventHub.on("connection.create", (connection: Edge) => {
 
-            if (!connection.isVisible || connection.source.type === "Step" || connection.destination.type === "Step") {
-                return;
-            }
-
-            let [sourceSide, sourceStepId, sourcePort] = connection.source.id.split("/");
-            let [destSide, destStepId, destPort] = connection.destination.id.split("/");
-
-            const sourceVertex: Snap.Element = Snap(`.${sourceStepId} .output-port .${sourcePort}`);
-            const destVertex: Snap.Element = Snap(`.${destStepId} .input-port .${destPort}`);
-
-            const sourceNode = Snap(`.node.${sourceStepId}`);
-            const destNode = Snap(`.node.${destStepId}`);
-
-            if (connection.source.type === connection.destination.type) {
-                console.error("Cant draw connection between nodes of the same type.", connection);
-                return;
-            }
-
-            if (!sourceVertex.node) {
-                console.error("Source vertex not found for edge " + connection.source.id, connection);
-                return;
-            }
-
-            if (!destVertex.node) {
-                console.error("Destination vertex not found for edge " + connection.destination.id, connection);
-                return;
-            }
-
-            let sourceRect = sourceVertex.node.getBoundingClientRect();
-            let destRect = destVertex.node.getBoundingClientRect();
-            let paperRect = this.paper.node.getBoundingClientRect();
-            let portRadiusOffset = sourceRect.width / 2;
-
-            const pathStr = IOPort.makeConnectionPath(
-                sourceRect.left + portRadiusOffset - paperRect.left,
-                sourceRect.top + portRadiusOffset - paperRect.top,
-                destRect.left + portRadiusOffset - paperRect.left,
-                destRect.top + portRadiusOffset - paperRect.top
-            );
-
-            const outerPath = this.paper.path(pathStr).addClass(`outer sub-edge`);
-            const innerPath = this.paper.path(pathStr).addClass("inner sub-edge");
-            const pathGroup = this.paper.group(
-                outerPath,
-                innerPath
-            ).addClass(`edge ${sourceSide}-${sourceStepId} ${destSide}-${destStepId}`);
-
-            this.group.add(pathGroup);
-
-            const hoverClass = "edge-hover";
-
-            let connectionLabel;
-            pathGroup.hover((ev, x, y) => {
-                sourceNode.addClass(hoverClass);
-                destNode.addClass(hoverClass);
-
-                const sourceLabel = sourceStepId === sourcePort ? sourcePort : `${sourceStepId}/${sourcePort}`;
-                const destLabel = destStepId === destPort ? destPort : `${destStepId}/${destPort}`;
-                connectionLabel = this.paper
-                    .text(x, y - 16, `${sourceLabel} ↔ ${destLabel}`)
-                    .addClass("label label-edge");
-                pathGroup.add(connectionLabel);
-                pathGroup.toFront();
-            }, () => {
-                sourceNode.removeClass(hoverClass);
-                destNode.removeClass(hoverClass);
-                connectionLabel.remove();
-                pathGroup.toBack();
-            });
-
-
+            this.workflow.innerHTML += GraphEdge.makeTemplate(connection, this.paper);
         });
 
         /**
@@ -307,10 +296,6 @@ export class Workflow {
             let clientBounds = this.paper.node.getBoundingClientRect();
             let wfBounds = this.group.node.getBoundingClientRect();
 
-            // if (clientBounds.width > wfBounds.width && clientBounds.height > wfBounds.height) {
-            //     return;
-            // }
-
             const padding = 200;
 
             const verticalScale = (wfBounds.height + padding) / paperHeight;
@@ -327,6 +312,316 @@ export class Workflow {
             const moveX = scaleFactor * -wfBounds.left + scaleFactor * clientBounds.left + scaleFactor * Math.abs(paperBounds.width - wfBounds.width) / 2;
 
             this.group.transform(this.group.transform().localMatrix.clone().translate(moveX, moveY));
+        });
+    }
+
+    private addEventListeners(root: HTMLElement): void {
+
+        /**
+         * Whenever a click happens on a blank space, remove selections
+         */
+        this.domEvents.on("click", "*", (ev, el, root) => {
+            this.deselectEverything();
+        });
+
+        /**
+         * Whenever a click happens on a node, select that node and
+         * highlight all connecting edges and adjacent vertices
+         * while shadowing others.
+         */
+        this.domEvents.on("click", ".node", (ev, el, root) => {
+            this.deselectEverything();
+
+            this.workflow.classList.add("has-selection");
+
+            const nodeID = el.getAttribute("data-id");
+            Array.from(root.querySelectorAll(`.edge.${nodeID}`)).forEach((edge: HTMLElement) => {
+                edge.classList.add("highlighted");
+                const sourceNodeID = edge.getAttribute("data-source-node");
+                const destinationNodeID = edge.getAttribute("data-destination-node");
+
+                Array.from(root.querySelectorAll(`.node.${sourceNodeID}, .node.${destinationNodeID}`)).forEach(el => {
+                    el.classList.add("highlighted");
+                });
+
+            });
+
+            el.classList.add("selected");
+        });
+
+
+        /**
+         * Move nodes and edges on drag
+         */
+        {
+            let startX: number;
+            let startY: number;
+            let inputEdges: Map<SVGElement, number[]>;
+            let outputEdges: Map<SVGElement, number[]>;
+
+            this.domEvents.drag(".node .drag-handle", (dx, dy, ev, handle: SVGElement) => {
+                const el = handle.parentNode;
+                const sdx = this.adaptToScale(dx);
+                const sdy = this.adaptToScale(dy);
+                el.transform.baseVal.getItem(0).setTranslate(
+                    startX + sdx,
+                    startY + sdy
+                );
+
+                inputEdges.forEach((p: number[], el: SVGElement) => {
+                    el.setAttribute("d", IOPort.makeConnectionPath(p[0], p[1], p[6] + sdx, p[7] + sdy));
+                });
+
+                outputEdges.forEach((p, el) => {
+                    el.setAttribute("d", IOPort.makeConnectionPath(p[0] + sdx, p[1] + sdy, p[6], p[7]));
+                });
+
+            }, (ev, handle, root) => {
+
+                const el = handle.parentNode;
+                const matrix = el.transform.baseVal.getItem(0).matrix;
+                startX = matrix.e;
+                startY = matrix.f;
+                inputEdges = new Map();
+                outputEdges = new Map();
+
+                Array.from(root.querySelectorAll(`.edge[data-destination-node='${el.getAttribute("data-id")}'] .sub-edge`))
+                    .forEach((el: SVGElement) => {
+                        inputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
+                    });
+
+                Array.from(root.querySelectorAll(`.edge[data-source-node='${el.getAttribute("data-id")}'] .sub-edge`))
+                    .forEach((el: SVGElement) => {
+                        outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
+                    });
+            }, () => {
+                inputEdges = undefined;
+                outputEdges = undefined;
+            });
+        }
+
+        /**
+         * Attach canvas panning
+         */
+        {
+            let pane: SVGElement;
+            let x;
+            let y;
+            let matrix: SVGMatrix;
+            this.domEvents.drag(".pan-handle", (dx, dy, ev, el, root) => {
+                matrix.e = x + dx;
+                matrix.f = y + dy;
+                pane.transform.baseVal.getItem(0).setMatrix(matrix);
+
+            }, (ev, el, root) => {
+                pane = root.querySelector(".workflow") as SVGElement;
+                matrix = pane.transform.baseVal.getItem(0).matrix.scale(1);
+                x = matrix.e;
+                y = matrix.f;
+            }, () => {
+                pane = undefined;
+                matrix = undefined;
+            });
+        }
+
+        /**
+         * Edge Selection
+         */
+        this.domEvents.on("click", ".edge", (ev, target, root) => {
+            this.highlightEdge(target);
+            target.classList.add("selected");
+        });
+
+        /**
+         * Manually wire up hovering on edges because mouseenters don't propagate
+         */
+        {
+            Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
+                this.attachEdgeHoverBehavior(el);
+            });
+        }
+
+        /**
+         * On mouse over node, bring it to the front
+         */
+        this.domEvents.on("mouseover", ".node", (ev, target, root) => {
+            if (this.workflow.querySelector(".edge.dragged")) {
+                return;
+            }
+            target.parentElement.append(target);
+        });
+
+        /**
+         * Drag a path from the port
+         */
+        {
+            let edge;
+            let subEdges;
+            let connectionPorts;
+            let highlightedNode;
+
+
+            this.domEvents.drag(".port", (dx, dy, ev, target) => {
+                const ctm = target.getScreenCTM();
+                const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
+                const origin = this.translateMouseCoords(ctm.e, ctm.f);
+
+                subEdges.forEach(el => {
+
+                    el.setAttribute("d",
+                        IOPort.makeConnectionPath(
+                            origin.x,
+                            origin.y,
+                            coords.x,
+                            coords.y
+                        )
+                    );
+                });
+
+                const sorted = connectionPorts.map(el => {
+                    const ctm = el.wfCTM;
+                    el.distance = Geometry.distance(coords.x, coords.y, ctm.e, ctm.f);
+                    return el;
+                }).sort((el1, el2) => {
+                    return el1.distance - el2.distance
+                });
+
+                if (highlightedNode) {
+                    highlightedNode.classList.remove("highlighted");
+                }
+                if (sorted.length && sorted[0].distance < 150) {
+                    highlightedNode = sorted[0];
+                    highlightedNode.classList.add("highlighted");
+                }
+
+            }, (ev, target, root) => {
+                edge = GraphEdge.spawn();
+                edge.classList.add("eventless", "dragged");
+                this.workflow.appendChild(edge);
+                subEdges = Array.from(edge.querySelectorAll(".sub-edge"));
+
+                const targetConnectionId = target.getAttribute("data-connection-id");
+                connectionPorts = (this.model.gatherValidConnectionPoints(targetConnectionId) || [])
+                    .filter(point => point.isVisible)
+                    .map(p => {
+                        const el = this.workflow.querySelector(`[data-connection-id="${p.connectionId}"]`);
+                        el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
+                        el.classList.add("connection-candidate");
+                        return el;
+                    });
+
+                connectionPorts.forEach(el => {
+                    let parentNode;
+                    while ((parentNode = el.parentNode) && !parentNode.classList.contains("node"));
+                    parentNode.classList.add("highlighted", "connection-candidate");
+                });
+                this.workflow.classList.add("has-selection");
+
+            }, (ev, target) => {
+                edge.remove();
+                edge = undefined;
+
+                if (highlightedNode) {
+                    const newEdge = GraphEdge.spawnBetweenConnectionIDs(
+                        this.workflow,
+                        target.getAttribute("data-connection-id"),
+                        highlightedNode.getAttribute("data-connection-id")
+                    );
+                    this.attachEdgeHoverBehavior(newEdge);
+
+                    highlightedNode.classList.remove("highlighted");
+                    highlightedNode = undefined;
+                }
+
+                Array.from(this.workflow.querySelectorAll(".connection-candidate")).forEach(el => {
+                    el.classList.remove("connection-candidate", "highlighted");
+                });
+                this.workflow.classList.remove("has-selection");
+
+                subEdges = undefined;
+                connectionPorts = undefined;
+            });
+
+        }
+
+    }
+
+    private highlightEdge(el) {
+        const sourceNode = el.getAttribute("data-source-node");
+        const destNode = el.getAttribute("data-destination-node");
+        const sourcePort = el.getAttribute("data-source-port");
+        const destPort = el.getAttribute("data-destination-port");
+
+        Array.from(this.workflow.querySelectorAll(
+            `.node.${sourceNode} .output-port.${sourcePort}, `
+            + `.node.${destNode} .input-port.${destPort}`)).forEach(el => {
+            el.classList.add("highlighted");
+        });
+    }
+
+    private adaptToScale(x) {
+        return x * (1 / this.scale);
+    }
+
+    public deselectEverything() {
+        Array.from(this.workflow.querySelectorAll(".highlighted")).forEach(el => {
+            el.classList.remove("highlighted");
+        });
+        this.workflow.classList.remove("has-selection");
+        const selected = this.workflow.querySelector(".selected");
+        if (selected) {
+            selected.classList.remove("selected");
+        }
+    }
+
+    public translateMouseCoords(x, y) {
+        const svg = this.paper.node;
+        const wf = svg.querySelector(".workflow");
+        const ctm = wf.getScreenCTM();
+        const point = svg.createSVGPoint();
+        point.x = x;
+        point.y = y;
+
+        const t = point.matrixTransform(ctm.inverse());
+        return {
+            x: t.x,
+            y: t.y
+        };
+    }
+
+    private attachEdgeHoverBehavior(el: SVGGElement) {
+        let tipEl;
+        this.domEvents.hover(el, (ev, target) => {
+            const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
+            tipEl.setAttribute("x", coords.x);
+            tipEl.setAttribute("y", coords.y - 16);
+
+        }, (ev, target) => {
+            const sourceNode = target.getAttribute("data-source-node");
+            const destNode = target.getAttribute("data-destination-node");
+            const sourcePort = target.getAttribute("data-source-port");
+            const destPort = target.getAttribute("data-destination-port");
+
+            const sourceLabel = sourceNode === sourcePort ? sourceNode : `${sourceNode} (${sourcePort})`;
+            const destLabel = destNode === destPort ? destNode : `${destNode} (${destPort})`;
+
+            const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
+
+            const ns = "http://www.w3.org/2000/svg";
+            tipEl = document.createElementNS(ns, "text");
+            tipEl.classList.add("label");
+            tipEl.classList.add("label-edge");
+            tipEl.setAttribute("x", coords.x);
+            tipEl.setAttribute("y", coords.x - 16);
+            tipEl.innerHTML = sourceLabel + " → " + destLabel;
+
+            this.workflow.appendChild(tipEl);
+
+        }, () => {
+            if (tipEl) {
+                tipEl.remove();
+                tipEl = undefined;
+            }
         });
     }
 }

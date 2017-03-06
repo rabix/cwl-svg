@@ -18,6 +18,7 @@ export class AppNode extends GraphNode {
     }
 
 
+
     public draw(): Snap.Element {
         const drawing = super.draw();
 

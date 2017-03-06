@@ -1,4 +1,3 @@
-export abstract class Shape {
+export class Shape {
 
-    public abstract draw(): Snap.Element;
 }
