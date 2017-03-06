@@ -459,21 +459,20 @@ export class Workflow {
             let subEdges;
             let connectionPorts;
             let highlightedNode;
-
+            let edgeDirection;
 
             this.domEvents.drag(".port", (dx, dy, ev, target) => {
                 const ctm = target.getScreenCTM();
                 const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
                 const origin = this.translateMouseCoords(ctm.e, ctm.f);
-
                 subEdges.forEach(el => {
-
                     el.setAttribute("d",
                         IOPort.makeConnectionPath(
                             origin.x,
                             origin.y,
                             coords.x,
-                            coords.y
+                            coords.y,
+                            edgeDirection
                         )
                     );
                 });
@@ -495,6 +494,7 @@ export class Workflow {
                 }
 
             }, (ev, target, root) => {
+                edgeDirection = target.classList.contains("input-port") ? "left" : "right";
                 edge = GraphEdge.spawn();
                 edge.classList.add("eventless", "dragged");
                 this.workflow.appendChild(edge);
@@ -515,9 +515,10 @@ export class Workflow {
                     while ((parentNode = el.parentNode) && !parentNode.classList.contains("node"));
                     parentNode.classList.add("highlighted", "connection-candidate");
                 });
-                this.workflow.classList.add("has-selection");
+                this.workflow.classList.add("has-selection", "edge-dragging");
 
             }, (ev, target) => {
+                edgeDirection = undefined;
                 edge.remove();
                 edge = undefined;
 
@@ -536,7 +537,7 @@ export class Workflow {
                 Array.from(this.workflow.querySelectorAll(".connection-candidate")).forEach(el => {
                     el.classList.remove("connection-candidate", "highlighted");
                 });
-                this.workflow.classList.remove("has-selection");
+                this.workflow.classList.remove("has-selection", "edge-dragging");
 
                 subEdges = undefined;
                 connectionPorts = undefined;

@@ -49,6 +49,10 @@ svg.cwl-workflow {
   .workflow {
     @extend .noselect;
 
+    &.edge-dragging {
+      cursor: pointer;
+    }
+
     &.has-selection {
       .node:not(.highlighted) {
         &.step {
@@ -176,8 +180,6 @@ svg.cwl-workflow {
           opacity: 1;
         }
       }
-
-
 
       &.output-port .label {
         text-anchor: start;
