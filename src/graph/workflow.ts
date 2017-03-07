@@ -1,7 +1,6 @@
 import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
 import "snapsvg-cjs";
 import {EventHub} from "../utils/event-hub";
-import {AppNode} from "./app-node";
 import {GraphNode} from "./graph-node";
 import {Edge as GraphEdge} from "./edge";
 import {DomEvents} from "../utils/dom-events";
@@ -167,12 +166,12 @@ export class Workflow {
          * @name app.create.step
          */
         this.eventHub.on("app.create.step", (step: StepModel) => {
-            const n = new AppNode({
-                x: step.customProps["sbg:x"] || Math.random() * 1000,
-                y: step.customProps["sbg:y"] || Math.random() * 1000
-            }, step, this.paper);
 
-            this.workflow.innerHTML += n.makeTemplate();
+            const x = step.customProps["sbg:x"] || Math.random() * 1000;
+            const y = step.customProps["sbg:y"] || Math.random() * 1000;
+            const tpl = GraphNode.makeTemplate(x, y, step);
+            const el = TemplateParser.parse(tpl);
+            this.workflow.appendChild(el);
         });
 
         /**
@@ -180,7 +179,7 @@ export class Workflow {
          */
         this.eventHub.on("connection.create", (connection: Edge) => {
 
-            this.workflow.innerHTML += GraphEdge.makeTemplate(connection, this.paper);
+            // this.workflow.innerHTML += GraphEdge.makeTemplate(connection, this.paper);
         });
 
         /**
@@ -707,7 +706,7 @@ export class Workflow {
 
     private findParent(el, parentClass) {
         let parentNode = el;
-        if(el.classList.contains(parentClass)){
+        if (el.classList.contains(parentClass)) {
             debugger;
         }
         while (parentNode) {
