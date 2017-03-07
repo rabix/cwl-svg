@@ -503,12 +503,21 @@ export class Workflow {
 
     private attachEdgeHoverBehavior(el: SVGGElement) {
         let tipEl;
+
         this.domEvents.hover(el, (ev, target) => {
+
+            if(!tipEl){
+                return;
+            }
             const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
             tipEl.setAttribute("x", coords.x);
             tipEl.setAttribute("y", coords.y - 16);
 
-        }, (ev, target) => {
+        }, (ev, target, root) => {
+            if(root.querySelector(".dragged")){
+                return;
+            }
+
             const sourceNode = target.getAttribute("data-source-node");
             const destNode = target.getAttribute("data-destination-node");
             const sourcePort = target.getAttribute("data-source-port");
@@ -575,11 +584,8 @@ export class Workflow {
             if (highlightedPort) {
                 const parentNode = this.findParent(highlightedPort, "node");
                 highlightedPort.classList.remove("highlighted", "preferred-port");
-                // if (!parentNode.classList.contains("connection-suggestion")) {
-                    parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
-                // }
+                parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
             }
-
 
 
             // If there is a port in close proximity, assume that we want to connect to it, so highlight it
