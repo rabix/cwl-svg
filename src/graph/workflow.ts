@@ -541,7 +541,7 @@ export class Workflow {
         let edge;
         let preferredConnectionPorts;
         let allConnectionPorts;
-        let highlightedNode;
+        let highlightedPort;
         let edgeDirection;
         let ioNode;
 
@@ -572,20 +572,24 @@ export class Workflow {
                 return el1.distance - el2.distance
             });
 
-            if (highlightedNode) {
-                const parentNode = this.findParent(highlightedNode, "node");
-                highlightedNode.classList.remove("highlighted");
-                if (!parentNode.classList.contains("connection-suggestion")) {
-                    parentNode.classList.remove("highlighted");
-                }
+            if (highlightedPort) {
+                const parentNode = this.findParent(highlightedPort, "node");
+                highlightedPort.classList.remove("highlighted", "preferred-port");
+                // if (!parentNode.classList.contains("connection-suggestion")) {
+                    parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
+                // }
             }
+
+
 
             // If there is a port in close proximity, assume that we want to connect to it, so highlight it
             if (sorted.length && sorted[0].distance < 100) {
-                highlightedNode = sorted[0];
-                highlightedNode.classList.add("highlighted");
-                const parentNode = this.findParent(highlightedNode, "node");
-                parentNode.classList.add("highlighted");
+                console.log("Adding edge direction", edgeDirection);
+                highlightedPort = sorted[0];
+                highlightedPort.classList.add("highlighted", "preferred-port");
+                const parentNode = this.findParent(highlightedPort, "node");
+                this.workflow.appendChild(parentNode);
+                parentNode.classList.add("highlighted", "preferred-node", edgeDirection);
             } else {
                 // Otherwise, we might create an input or an output node
 
@@ -642,12 +646,12 @@ export class Workflow {
 
 
             // Then mark the workflow itself, so it knows to fade out other stuff
-            this.workflow.classList.add("has-selection", "edge-dragging");
+            this.workflow.classList.add("has-suggestion", "edge-dragging");
 
         }, (ev, target) => {
-            if (highlightedNode) {
+            if (highlightedPort) {
                 const sourceID = target.getAttribute("data-connection-id");
-                const destID = highlightedNode.getAttribute("data-connection-id");
+                const destID = highlightedPort.getAttribute("data-connection-id");
 
                 /**
                  * If an edge with these connection IDs doesn't already exist, create it,
@@ -658,14 +662,14 @@ export class Workflow {
                     this.attachEdgeHoverBehavior(newEdge);
                 }
 
-                highlightedNode.classList.remove("highlighted");
-                highlightedNode = undefined;
+                highlightedPort.classList.remove("highlighted");
+                highlightedPort = undefined;
             }
 
-            Array.from(this.workflow.querySelectorAll(".connection-suggestion")).forEach(el => {
-                el.classList.remove("connection-suggestion", "highlighted");
+            Array.from(this.workflow.querySelectorAll(".connection-suggestion, .preferred-node")).forEach(el => {
+                el.classList.remove("connection-suggestion", "highlighted", "preferred-node", edgeDirection);
             });
-            this.workflow.classList.remove("has-selection", "edge-dragging");
+            this.workflow.classList.remove("has-suggestion", "edge-dragging");
 
             edgeDirection = undefined;
             edge.remove();

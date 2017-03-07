@@ -5,7 +5,7 @@ $color-primary-alt: #2e556f;
 $color-secondary: #886653;
 $color-tertiary: #538881;
 
-$color-success: #7fff24;
+$color-success: #76ed21;
 $color-highlight: #e64d23;
 $color-neutral: rgb(121, 121, 121);
 $color-warning: rgb(246, 147, 54);
@@ -19,6 +19,8 @@ $port-highlight-color: $color-highlight;
 $port-label-color: white;
 
 $port-candidate-color: white;
+
+$label-highlight-color: lighten($color-highlight, 30%);
 
 $edge-inner-color: white;
 $edge-inner-width: 2px;
@@ -52,6 +54,26 @@ svg.cwl-workflow {
 
     &.edge-dragging {
       cursor: pointer;
+    }
+
+    &.has-suggestion {
+      .node:not(.highlighted) {
+        &.step {
+          .outer {
+            stroke: darken($edge-inner-color, 30%);
+          }
+        }
+
+        .label {
+          fill: darken($font-color, 15%);
+        }
+      }
+
+      .edge:not(.highlighted):not(.dragged) {
+        .inner {
+          stroke: darken($edge-inner-color, 50%);
+        }
+      }
     }
 
     &.has-selection {
@@ -97,7 +119,6 @@ svg.cwl-workflow {
       .outer {
         stroke: $color-highlight !important;
       }
-
     }
 
     .icon {
@@ -157,7 +178,6 @@ svg.cwl-workflow {
     .inner {
       stroke: 0;
       fill: $node-background-color;
-
     }
 
     .port {
@@ -167,8 +187,15 @@ svg.cwl-workflow {
       position: relative;
 
       &.connection-suggestion {
-        stroke: $color-success;
-        stroke-width: 2px;
+        fill: $color-success
+      }
+
+      &.preferred-port {
+        .label {
+          transition: all .2s;
+          //fill: $label-highlight-color;
+          transform: translate(-30px, 0);
+        }
       }
 
       &:hover, &.highlighted {
@@ -202,6 +229,21 @@ svg.cwl-workflow {
         pointer-events: none;
         opacity: 0;
       }
+    }
+
+    &.preferred-node {
+      &.right .input-port,
+      &.left .output-port {
+        .label {
+          opacity: .7;
+        }
+
+        &.preferred-port .label {
+          opacity: 1 !important;
+        }
+
+      }
+
     }
   }
 
@@ -245,19 +287,18 @@ svg.cwl-workflow {
   .node-output-hover-zone {
     fill: transparent;
   }
+
   .node-output-hover-zone,
   .node-input-hover-zone {
     pointer-events: none;
   }
+
 }
 
 .noselect {
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Safari */
-  -khtml-user-select: none; /* Konqueror HTML */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
-  /* Non-prefixed version, currently
-                                   supported by Chrome and Opera */
 }
