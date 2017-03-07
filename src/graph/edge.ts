@@ -84,14 +84,14 @@ export class Edge {
 
     static spawnBetweenConnectionIDs(root: SVGElement, source, destination) {
 
+        if(source.startsWith("in")){
+            const tmp = source;
+            source = destination;
+            destination = tmp;
+        }
+
         let sourceNode = root.querySelector(`[data-connection-id="${source}"]`);
         let destinationNode = root.querySelector(`[data-connection-id="${destination}"]`);
-
-        if (source.startsWith("in")) {
-            const tmp = sourceNode;
-            sourceNode = destinationNode;
-            destinationNode = tmp;
-        }
 
         const sourceCTM = Geometry.getTransformToElement(sourceNode, root);
         const destCTM = Geometry.getTransformToElement(destinationNode, root);
