@@ -49,7 +49,6 @@ export class Workflow {
             <rect x="0" y="0" width="100%" height="100%" class="pan-handle" transform="matrix(1,0,0,1,0,0)"></rect>
             <g class="workflow" transform="matrix(1,0,0,1,0,0)"></g>
         `;
-
         this.workflow = this.paper.node.querySelector(".workflow") as any;
 
         this.group = Snap(this.workflow);
@@ -127,7 +126,7 @@ export class Workflow {
         console.timeEnd("Graph Rendering");
         console.time("Ordering");
 
-        document.querySelectorAll(".node").forEach(e => {
+        this.workflow.querySelectorAll(".node").forEach(e => {
             this.workflow.appendChild(e);
         });
         console.timeEnd("Ordering");
@@ -706,9 +705,6 @@ export class Workflow {
 
     private findParent(el, parentClass) {
         let parentNode = el;
-        if (el.classList.contains(parentClass)) {
-            debugger;
-        }
         while (parentNode) {
             if (parentNode.classList.contains(parentClass)) {
                 return parentNode;
