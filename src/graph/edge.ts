@@ -102,9 +102,8 @@ export class Edge {
             destination
         });
 
-        const allEdges = root.querySelectorAll(".edge");
-        const lastEdge = allEdges.item(allEdges.length - 1);
-        root.insertBefore(edge, lastEdge.nextSibling);
+        const firstNode = root.querySelector(".node");
+        root.insertBefore(edge, firstNode);
         return edge;
     };
 
