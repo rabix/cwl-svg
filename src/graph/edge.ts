@@ -4,7 +4,7 @@ import {Geometry} from "../utils/geometry";
 export class Edge {
     static makeTemplate(edge: ModelEdge, paper: Snap.Paper): string {
         if (!edge.isVisible || edge.source.type === "Step" || edge.destination.type === "Step") {
-            return;
+            return "";
         }
 
         let [sourceSide, sourceStepId, sourcePort] = edge.source.id.split("/");

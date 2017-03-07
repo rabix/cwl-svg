@@ -72,11 +72,6 @@ export class IOPort extends Shape {
         });
     }
 
-    private attachDrop() {
-        this.group.mouseup((ev) => {
-        });
-    }
-
     public static makeConnectionPath(x1, y1, x2, y2, forceDirection: "right" | "left" = "right"): string {
 
         if (!forceDirection) {

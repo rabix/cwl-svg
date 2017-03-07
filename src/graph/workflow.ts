@@ -121,7 +121,7 @@ export class Workflow {
         console.time("Graph Rendering");
 
         const nodes = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
-        const graphNodes = nodes.map(n => {
+        const nodesTpl = nodes.map(n => {
             const patch = [{connectionId: n.connectionId, isVisible: true, id: n.id}];
 
             if (n instanceof WorkflowInputParameterModel) {
@@ -135,20 +135,22 @@ export class Workflow {
             }
 
             return n;
-        }).map((node) => new GraphNode({
-                x: node.customProps["sbg:x"] || Math.random() * 500,
-                y: node.customProps["sbg:y"] || Math.random() * 500
-            }, node, this.paper)
-        );
+        }).reduce((tpl, nodeModel) => {
+            const x = nodeModel.customProps["sbg:x"] || Math.random() * 500;
+            const y = nodeModel.customProps["sbg:y"] || Math.random() * 500;
+            return tpl + GraphNode.makeTemplate(x, y, nodeModel);
+        }, "");
 
-        const nodesTpl = graphNodes.reduce((tpl, node) => tpl + node.makeTemplate(), "");
         this.workflow.innerHTML += nodesTpl;
 
         const edgesTpl = model.connections.map(c => GraphEdge.makeTemplate(c, this.paper)).reduce((acc, tpl) => acc + tpl, "");
         this.workflow.innerHTML += edgesTpl;
         console.timeEnd("Graph Rendering");
         console.time("Ordering");
-        document.querySelectorAll(".node").forEach(e => Snap(e).toFront());
+
+        document.querySelectorAll(".node").forEach(e => {
+            this.workflow.appendChild(e);
+        });
         console.timeEnd("Ordering");
     }
 
@@ -541,7 +543,7 @@ export class Workflow {
         let allConnectionPorts;
         let highlightedNode;
         let edgeDirection;
-
+        let ioNode;
 
         this.domEvents.drag(".port", (dx, dy, ev, target) => {
             // Gather the necessary positions that we need in order to draw a path
@@ -577,11 +579,17 @@ export class Workflow {
                     parentNode.classList.remove("highlighted");
                 }
             }
+
+            // If there is a port in close proximity, assume that we want to connect to it, so highlight it
             if (sorted.length && sorted[0].distance < 100) {
                 highlightedNode = sorted[0];
                 highlightedNode.classList.add("highlighted");
                 const parentNode = this.findParent(highlightedNode, "node");
                 parentNode.classList.add("highlighted");
+            } else {
+                // Otherwise, we might create an input or an output node
+
+                console.log("IO Node potential");
 
             }
 

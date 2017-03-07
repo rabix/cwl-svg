@@ -5,6 +5,7 @@ import {StepModel, WorkflowInputParameterModel, WorkflowOutputParameterModel} fr
 import Matrix = Snap.Matrix;
 
 export type NodePosition = { x: number, y: number };
+export type NodeDataModel = WorkflowInputParameterModel | WorkflowOutputParameterModel | StepModel;
 
 export class GraphNode extends Shape {
 
@@ -15,11 +16,11 @@ export class GraphNode extends Shape {
 
     protected group;
 
-    protected radius = 40;
+    protected static radius = 40;
 
 
     constructor(position: Partial<NodePosition>,
-                private dataModel: WorkflowInputParameterModel | WorkflowOutputParameterModel | StepModel,
+                private dataModel: NodeDataModel,
                 paper: Snap.Paper) {
 
         super();
@@ -58,54 +59,49 @@ export class GraphNode extends Shape {
         return "";
     }
 
-
-    public makeTemplate(): string {
+    static makeTemplate(x: number, y: number, dataModel: NodeDataModel): string {
 
         let nodeTypeClass = "step";
-        if (this.dataModel instanceof WorkflowInputParameterModel) {
+        if (dataModel instanceof WorkflowInputParameterModel) {
             nodeTypeClass = "input";
-        } else if (this.dataModel instanceof WorkflowOutputParameterModel) {
+        } else if (dataModel instanceof WorkflowOutputParameterModel) {
             nodeTypeClass = "output";
         }
-        const iconTemplate = this.makeIconFragment(this.dataModel);
 
-        const inputPortTemplates = (this.dataModel.in || [])
+        const inputPortTemplates = (dataModel.in || [])
             .filter(p => p.isVisible)
             .sort((a, b) => -a.id.localeCompare(b.id))
             .map((p, i, arr) => GraphNode.makePortTemplate(
                 p,
                 "input",
-                GraphNode.createPortMatrix(arr.length, i, this.radius, "input").toString()
+                GraphNode.createPortMatrix(arr.length, i, GraphNode.radius, "input").toString()
             ))
             .reduce((acc, tpl) => acc + tpl, "");
 
-        const outputPortTemplates = (this.dataModel.out || [])
+        const outputPortTemplates = (dataModel.out || [])
             .filter(p => p.isVisible)
             .sort((a, b) => -a.id.localeCompare(b.id))
             .map((p, i, arr) => GraphNode.makePortTemplate(
                 p,
                 "output",
-                GraphNode.createPortMatrix(arr.length, i, this.radius, "output").toString()
+                GraphNode.createPortMatrix(arr.length, i, GraphNode.radius, "output").toString()
             ))
             .reduce((acc, tpl) => acc + tpl, "");
 
-        const template = `
-            <g class="node ${this.dataModel.id} ${nodeTypeClass}"
-               transform="matrix(1, 0, 0, 1, ${this.position.x}, ${this.position.y})"
-               data-id="${this.dataModel.id}">
+        return `
+            <g class="node ${dataModel.id} ${nodeTypeClass}"
+               transform="matrix(1, 0, 0, 1, ${x}, ${y})"
+               data-id="${dataModel.id}">
         
                 <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
-                    <circle cx="0" cy="0" r="${this.radius}" class="outer"></circle>
-                    <circle cx="0" cy="0" r="${this.radius * .8}" class="inner"></circle>
-                    ${iconTemplate}
+                    <circle cx="0" cy="0" r="${GraphNode.radius}" class="outer"></circle>
+                    <circle cx="0" cy="0" r="${GraphNode.radius * .8}" class="inner"></circle>
                 </g>
-                <text x="0" y="${this.radius + 30}" class="label">${this.dataModel.label || this.dataModel.id}</text>
+                <text x="0" y="${GraphNode.radius + 30}" class="label">${dataModel.label || dataModel.id}</text>
                 ${inputPortTemplates}
                 ${outputPortTemplates}
             </g>
         `;
-
-        return template;
     }
 
     public draw(): Snap.Element {
@@ -140,11 +136,11 @@ export class GraphNode extends Shape {
 
         this.group.add(Snap.parse(`
             <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
-                <circle cx="0" cy="0" r="${this.radius}" class="outer"></circle>
-                <circle cx="0" cy="0" r="${this.radius * .8}" class="inner"></circle>
+                <circle cx="0" cy="0" r="${GraphNode.radius}" class="outer"></circle>
+                <circle cx="0" cy="0" r="${GraphNode.radius * .8}" class="inner"></circle>
                 ${iconFragment}
             </g>
-            <text x="0" y="${this.radius + 30}" class="label">${this.dataModel.label || this.dataModel.id}</text>
+            <text x="0" y="${GraphNode.radius + 30}" class="label">${this.dataModel.label || this.dataModel.id}</text>
         `));
 
         // this.attachEventListeners(this.circleGroup);
@@ -152,7 +148,11 @@ export class GraphNode extends Shape {
         return this.group;
     }
 
-    private static makePortTemplate(port: OutputPort | InputPort, type: "input" | "output",
+    private static makePortTemplate(port: {
+                                        label?: string,
+                                        id: string,
+                                        connectionId: string
+                                    }, type: "input" | "output",
                                     transform = "matrix(1, 0, 0, 1, 0, 0)"): string {
 
         const portClass = type === "input" ? "input-port" : "output-port";
@@ -236,7 +236,7 @@ export class GraphNode extends Shape {
                     * availableAngle / (outputs.length + 1)
                 );
 
-            GraphNode.movePortToOuterEdge(outputs[i], rotationAngle, this.radius);
+            GraphNode.movePortToOuterEdge(outputs[i], rotationAngle, GraphNode.radius);
         }
 
         // Distribute input ports
@@ -249,7 +249,7 @@ export class GraphNode extends Shape {
                 // Determines the angular offset
                 * availableAngle / (inputs.length + 1);
 
-            GraphNode.movePortToOuterEdge(inputs[i], rotationAngle, this.radius);
+            GraphNode.movePortToOuterEdge(inputs[i], rotationAngle, GraphNode.radius);
         }
     }
 
@@ -284,4 +284,9 @@ export class GraphNode extends Shape {
             .translate(radius, 0)
             .rotate(-rotationAngle, 0, 0);
     }
+
+    public static createIOTemplate(root, data: {}, type: "input" | "output") {
+
+    }
+
 }
