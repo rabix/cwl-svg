@@ -45,6 +45,11 @@ svg.cwl-workflow {
   -o-transform: translateZ(0);
   transform: translateZ(0);
 
+  .hidden {
+    display: none;
+  }
+
+
   .eventless {
     pointer-events: none;
   }
@@ -92,7 +97,7 @@ svg.cwl-workflow {
         }
       }
 
-      .edge:not(.highlighted) {
+      .edge:not(.highlighted):not(.dragged) {
         .inner {
           stroke: darken($edge-inner-color, 50%);
         }
@@ -119,6 +124,14 @@ svg.cwl-workflow {
       .outer {
         stroke: $color-highlight !important;
       }
+    }
+
+    &.ghost {
+      stroke: $color-neutral;
+      stroke-width: 2px;
+
+      stroke-dasharray: 5 3;
+      fill: $color-background;
     }
 
     .icon {

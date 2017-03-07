@@ -90,6 +90,7 @@ export class GraphNode extends Shape {
 
         return `
             <g class="node ${dataModel.id} ${nodeTypeClass}"
+               data-connection-id="${dataModel.connectionId}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">
         
@@ -106,6 +107,7 @@ export class GraphNode extends Shape {
 
     public draw(): Snap.Element {
 
+        console.log("Drawing snap el");
         this.group.transform(new Snap.Matrix().translate(this.position.x, this.position.y));
 
         let iconFragment = ``;
@@ -285,8 +287,31 @@ export class GraphNode extends Shape {
             .rotate(-rotationAngle, 0, 0);
     }
 
-    public static createIOTemplate(root, data: {}, type: "input" | "output") {
+    public static createGhostIO() {
 
+        const ns = "http://www.w3.org/2000/svg";
+        const node = document.createElementNS(ns, "g");
+        node.setAttribute("transform", "matrix(1,0,0,1,0,0)");
+        node.classList.add("ghost", "node");
+        node.innerHTML = `
+            <circle class="ghost-circle" cx="0" cy="0" r="${GraphNode.radius / 1.5}"></circle
+        `;
+        return node;
+    }
+
+    static patchModelPorts<T>(model: T): T {
+        const patch = [{connectionId: model.connectionId, isVisible: true, id: model.id}];
+        if (model instanceof WorkflowInputParameterModel) {
+            const copy = Object.create(model);
+            return Object.assign(copy, {out: patch});
+
+
+        } else if (model instanceof WorkflowOutputParameterModel) {
+            const copy = Object.create(model);
+            return Object.assign(copy, {in: patch});
+        }
+
+        return model;
     }
 
 }

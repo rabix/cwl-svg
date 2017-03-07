@@ -51,18 +51,17 @@ export class DomEvents {
         let lastMove: MouseEvent;
         let draggedEl: HTMLElement;
         let moveEventCount = 0;
+        let mouseDownEv;
+        let threshold = 3;
 
         this.on("mousedown", selector, (ev, el, root) => {
             dragging = true;
             lastMove = ev;
             draggedEl = el;
+            mouseDownEv = ev;
 
-            if (typeof start === "function") {
-                start(ev, el, root);
-            }
-
-            document.addEventListener("mouseup", upHandler);
             document.addEventListener("mousemove", moveHandler);
+            document.addEventListener("mouseup", upHandler);
 
             return false;
         });
@@ -75,13 +74,18 @@ export class DomEvents {
             const dx = event.screenX - lastMove.screenX;
             const dy = event.screenY - lastMove.screenY;
             moveEventCount++;
+            if(moveEventCount === threshold && typeof start === "function"){
+                start(mouseDownEv, draggedEl, this.root);
 
-            if (typeof move === "function") {
+            }
+
+            if (moveEventCount >= threshold && typeof move === "function") {
                 move(dx, dy, ev, draggedEl, this.root);
+
             }
         };
         const upHandler = (ev) => {
-            if (moveEventCount > 2) {
+            if (moveEventCount >= threshold) {
                 if (dragging) {
                     if (typeof end === "function") {
                         end(ev, draggedEl, this.root)

@@ -1,12 +1,4 @@
-import {
-    Edge,
-    StepModel,
-    WorkflowInputParameterModel,
-    WorkflowModel,
-    WorkflowOutputParameterModel,
-    WorkflowStepInputModel,
-    WorkflowStepOutputModel
-} from "cwlts/models";
+import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
 import "snapsvg-cjs";
 import {EventHub} from "../utils/event-hub";
 import {AppNode} from "./app-node";
@@ -15,6 +7,7 @@ import {Edge as GraphEdge} from "./edge";
 import {DomEvents} from "../utils/dom-events";
 import {IOPort} from "./io-port";
 import {Geometry} from "../utils/geometry";
+import {TemplateParser} from "./template-parser";
 
 Snap.plugin(function (Snap, Element) {
     const proto = Element.prototype;
@@ -121,25 +114,12 @@ export class Workflow {
         console.time("Graph Rendering");
 
         const nodes = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
-        const nodesTpl = nodes.map(n => {
-            const patch = [{connectionId: n.connectionId, isVisible: true, id: n.id}];
-
-            if (n instanceof WorkflowInputParameterModel) {
-                const copy = Object.create(n);
-                return Object.assign(copy, {out: patch});
-
-
-            } else if (n instanceof WorkflowOutputParameterModel) {
-                const copy = Object.create(n);
-                return Object.assign(copy, {in: patch});
-            }
-
-            return n;
-        }).reduce((tpl, nodeModel) => {
-            const x = nodeModel.customProps["sbg:x"] || Math.random() * 500;
-            const y = nodeModel.customProps["sbg:y"] || Math.random() * 500;
-            return tpl + GraphNode.makeTemplate(x, y, nodeModel);
-        }, "");
+        const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
+            .reduce((tpl, nodeModel) => {
+                const x = nodeModel.customProps["sbg:x"] || Math.random() * 500;
+                const y = nodeModel.customProps["sbg:y"] || Math.random() * 500;
+                return tpl + GraphNode.makeTemplate(x, y, nodeModel);
+            }, "");
 
         this.workflow.innerHTML += nodesTpl;
 
@@ -342,10 +322,8 @@ export class Workflow {
                 const sourceNodeID = edge.getAttribute("data-source-node");
                 const destinationNodeID = edge.getAttribute("data-destination-node");
 
-                Array.from(root.querySelectorAll(`.node.${sourceNodeID}, .node.${destinationNodeID}`)).forEach(el => {
-                    el.classList.add("highlighted");
-                });
-
+                Array.from(root.querySelectorAll(`.node.${sourceNodeID}, .node.${destinationNodeID}`))
+                    .forEach((el: SVGGElement) => el.classList.add("highlighted"));
             });
 
             el.classList.add("selected");
@@ -360,15 +338,17 @@ export class Workflow {
             let startY: number;
             let inputEdges: Map<SVGElement, number[]>;
             let outputEdges: Map<SVGElement, number[]>;
+            let newX;
+            let newY;
 
-            this.domEvents.drag(".node .drag-handle", (dx, dy, ev, handle: SVGElement) => {
+            this.domEvents.drag(".node .drag-handle", (dx, dy, ev, handle: SVGGElement) => {
                 const el = handle.parentNode;
                 const sdx = this.adaptToScale(dx);
                 const sdy = this.adaptToScale(dy);
-                el.transform.baseVal.getItem(0).setTranslate(
-                    startX + sdx,
-                    startY + sdy
-                );
+
+                newX = startX + sdx;
+                newY = startY + sdy;
+                el.transform.baseVal.getItem(0).setTranslate(newX, newY);
 
                 inputEdges.forEach((p: number[], el: SVGElement) => {
                     el.setAttribute("d", IOPort.makeConnectionPath(p[0], p[1], p[6] + sdx, p[7] + sdy));
@@ -379,7 +359,6 @@ export class Workflow {
                 });
 
             }, (ev, handle, root) => {
-
                 const el = handle.parentNode;
                 const matrix = el.transform.baseVal.getItem(0).matrix;
                 startX = matrix.e;
@@ -396,7 +375,12 @@ export class Workflow {
                     .forEach((el: SVGElement) => {
                         outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
                     });
-            }, () => {
+            }, (ev, target) => {
+                const parentNode = this.findParent(target, "node");
+
+                const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
+                Workflow.setModelPosition(model, newX, newY);
+
                 inputEdges = undefined;
                 outputEdges = undefined;
             });
@@ -506,7 +490,7 @@ export class Workflow {
 
         this.domEvents.hover(el, (ev, target) => {
 
-            if(!tipEl){
+            if (!tipEl) {
                 return;
             }
             const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
@@ -514,7 +498,7 @@ export class Workflow {
             tipEl.setAttribute("y", coords.y - 16);
 
         }, (ev, target, root) => {
-            if(root.querySelector(".dragged")){
+            if (root.querySelector(".dragged")) {
                 return;
             }
 
@@ -550,15 +534,18 @@ export class Workflow {
         let edge;
         let preferredConnectionPorts;
         let allConnectionPorts;
-        let highlightedPort;
-        let edgeDirection;
-        let ioNode;
+        let highlightedPort: SVGGElement;
+        let edgeDirection: "left" | "right";
+        let ioNode: SVGGElement;
+        let originNodeCoords;
 
         this.domEvents.drag(".port", (dx, dy, ev, target) => {
             // Gather the necessary positions that we need in order to draw a path
             const ctm = target.getScreenCTM();
             const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
             const origin = this.translateMouseCoords(ctm.e, ctm.f);
+            const nodeToMouseDistance = Geometry.distance(originNodeCoords.x, originNodeCoords.y, coords.x, coords.y);
+
 
             // Draw a path from the origin port to the cursor
             Array.from(edge.children).forEach((el: SVGPathElement) => {
@@ -587,25 +574,36 @@ export class Workflow {
                 parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
             }
 
-
+            ioNode.classList.add("hidden");
             // If there is a port in close proximity, assume that we want to connect to it, so highlight it
             if (sorted.length && sorted[0].distance < 100) {
-                console.log("Adding edge direction", edgeDirection);
                 highlightedPort = sorted[0];
                 highlightedPort.classList.add("highlighted", "preferred-port");
                 const parentNode = this.findParent(highlightedPort, "node");
                 this.workflow.appendChild(parentNode);
                 parentNode.classList.add("highlighted", "preferred-node", edgeDirection);
             } else {
-                // Otherwise, we might create an input or an output node
 
-                console.log("IO Node potential");
+                highlightedPort = undefined;
 
+                if (nodeToMouseDistance > 120) {
+                    ioNode.classList.remove("hidden");
+                    // Otherwise, we might create an input or an output node
+                    ioNode.transform.baseVal.getItem(0).setTranslate(coords.x, coords.y);
+                } else {
+                }
             }
 
         }, (ev, origin, root) => {
             const originNode = this.findParent(origin, "node");
+            const originNodeCTM = originNode.getScreenCTM();
+
+            originNodeCoords = this.translateMouseCoords(originNodeCTM.e, originNodeCTM.f);
+
             const isInputPort = origin.classList.contains("input-port");
+            ioNode = GraphNode.createGhostIO();
+            this.workflow.appendChild(ioNode);
+
 
             // Based on the type of our origin port, determine the direction of the path to draw
             edgeDirection = isInputPort ? "left" : "right";
@@ -625,6 +623,7 @@ export class Workflow {
                 // Except the same node that we are dragging from
                 return this.findParent(el, "node") !== originNode;
             }).map(el => {
+
                 // Find the position of the port relative to the canvas origin
                 el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
                 return el;
@@ -650,14 +649,18 @@ export class Workflow {
                 parentNode.classList.add("highlighted", "connection-suggestion");
             });
 
-
             // Then mark the workflow itself, so it knows to fade out other stuff
             this.workflow.classList.add("has-suggestion", "edge-dragging");
 
         }, (ev, target) => {
             if (highlightedPort) {
-                const sourceID = target.getAttribute("data-connection-id");
-                const destID = highlightedPort.getAttribute("data-connection-id");
+                let sourceID = target.getAttribute("data-connection-id");
+                let destID = highlightedPort.getAttribute("data-connection-id");
+                if (sourceID.startsWith("in")) {
+                    const tmp = sourceID;
+                    sourceID = destID;
+                    destID = tmp;
+                }
 
                 /**
                  * If an edge with these connection IDs doesn't already exist, create it,
@@ -665,21 +668,39 @@ export class Workflow {
                  */
                 if (!GraphEdge.findEdge(this.workflow, sourceID, destID)) {
                     const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destID);
+                    this.model.connect(sourceID, destID);
                     this.attachEdgeHoverBehavior(newEdge);
                 }
 
                 highlightedPort.classList.remove("highlighted");
                 highlightedPort = undefined;
+            } else if (!ioNode.classList.contains("hidden")) {
+                const portID = target.getAttribute("data-connection-id");
+                const newIO = GraphNode.patchModelPorts(portID.startsWith("in")
+                    ? this.model.createInputFromPort(portID)
+                    : this.model.createOutputFromPort(portID)
+                );
+
+                const mouseCoords = this.translateMouseCoords(ev.clientX, ev.clientY);
+                const tpl = GraphNode.makeTemplate(mouseCoords.x, mouseCoords.y, newIO);
+                const el = TemplateParser.parse(tpl);
+                this.workflow.appendChild(el);
+
+                Workflow.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
+                GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
             }
 
-            Array.from(this.workflow.querySelectorAll(".connection-suggestion, .preferred-node")).forEach(el => {
-                el.classList.remove("connection-suggestion", "highlighted", "preferred-node", edgeDirection);
-            });
             this.workflow.classList.remove("has-suggestion", "edge-dragging");
+            Array.from(this.workflow.querySelectorAll(".connection-suggestion, .preferred-node, .preferred-port")).forEach(el => {
+                el.classList.remove("connection-suggestion", "highlighted", "preferred-node", "preferred-port", edgeDirection);
+            });
 
-            edgeDirection = undefined;
             edge.remove();
+            ioNode.remove();
             edge = undefined;
+            ioNode = undefined;
+            originNodeCoords = undefined;
+            edgeDirection = undefined;
             preferredConnectionPorts = undefined;
         });
     }
@@ -690,4 +711,16 @@ export class Workflow {
         return parentNode;
     }
 
+    static setModelPosition(obj, x, y) {
+        const update = {
+            "sbg:x": x,
+            "sbg:y": y
+        };
+        if (!obj.customProps) {
+            obj.customProps = update;
+            return;
+        }
+
+        Object.assign(obj.customProps, update);
+    }
 }

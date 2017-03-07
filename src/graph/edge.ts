@@ -43,6 +43,8 @@ export class Edge {
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"
+               data-source-connection="${edge.source.id}"
+               data-destination-connection="${edge.destination.id}"
                data-destination-node="${destStepId}">
                 <path class="sub-edge outer" d="${pathStr}"></path>
                 <path class="sub-edge inner" d="${pathStr}"></path>
@@ -73,6 +75,8 @@ export class Edge {
         edge.setAttribute("data-destination-port", destPort);
         edge.setAttribute("data-source-port", sourcePort);
         edge.setAttribute("data-source-node", sourceStepId);
+        edge.setAttribute("data-source-connection", connectionIDs.source);
+        edge.setAttribute("data-destination-connection", connectionIDs.destination);
 
         edge.innerHTML = `
             <path class="sub-edge outer" d="${pathStr}"></path>
@@ -84,7 +88,7 @@ export class Edge {
 
     static spawnBetweenConnectionIDs(root: SVGElement, source, destination) {
 
-        if(source.startsWith("in")){
+        if (source.startsWith("in")) {
             const tmp = source;
             source = destination;
             destination = tmp;
@@ -108,10 +112,7 @@ export class Edge {
     };
 
     static findEdge(root, sourceConnectionID, destinationConnectionID) {
-        const source = Edge.parseConnectionID(sourceConnectionID);
-        const dest = Edge.parseConnectionID(destinationConnectionID);
-
-        return root.querySelector(`[data-destination-node="${dest.stepID}"][data-destination-port="${dest.portID}"][data-source-node="${source.stepID}"][data-source-port="${source.portID}"]`);
+        return root.querySelector(`[data-source-connection="${sourceConnectionID}"][data-destination-connection="${destinationConnectionID}"]`);
     }
 
     static parseConnectionID(cid) {
