@@ -94,8 +94,8 @@ export class Edge {
             destination = tmp;
         }
 
-        let sourceNode = root.querySelector(`[data-connection-id="${source}"]`);
-        let destinationNode = root.querySelector(`[data-connection-id="${destination}"]`);
+        let sourceNode = root.querySelector(`.port[data-connection-id="${source}"]`);
+        let destinationNode = root.querySelector(`.port[data-connection-id="${destination}"]`);
 
         const sourceCTM = Geometry.getTransformToElement(sourceNode, root);
         const destCTM = Geometry.getTransformToElement(destinationNode, root);

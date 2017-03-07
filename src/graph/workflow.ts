@@ -636,7 +636,7 @@ export class Workflow {
                 .filter(point => point.isVisible)
                 // Find them in the DOM and mark them as connection candidates
                 .map(p => {
-                    const el = this.workflow.querySelector(`[data-connection-id="${p.connectionId}"]`);
+                    const el = this.workflow.querySelector(`.port[data-connection-id="${p.connectionId}"]`);
                     el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
                     el.classList.add("connection-suggestion");
                     return el;
@@ -706,9 +706,17 @@ export class Workflow {
     }
 
     private findParent(el, parentClass) {
-        let parentNode;
-        while ((parentNode = el.parentNode) && !parentNode.classList.contains(parentClass));
-        return parentNode;
+        let parentNode = el;
+        if(el.classList.contains(parentClass)){
+            debugger;
+        }
+        while (parentNode) {
+            if (parentNode.classList.contains(parentClass)) {
+                return parentNode;
+            }
+            parentNode = parentNode.parentNode;
+        }
+
     }
 
     static setModelPosition(obj, x, y) {
