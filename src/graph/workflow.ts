@@ -689,8 +689,6 @@ export class Workflow {
             this.workflow.classList.add("has-suggestion", "edge-dragging");
 
         }, (ev, origin) => {
-            const parentNode = Workflow.findParentNode(origin);
-
             if (highlightedPort) {
                 let sourceID = origin.getAttribute("data-connection-id");
                 let destID = highlightedPort.getAttribute("data-connection-id");
@@ -736,8 +734,9 @@ export class Workflow {
                 el.classList.remove("connection-suggestion", "highlighted", "preferred-node", "preferred-port", edgeDirection);
             });
 
-            if (parentNode.classList.contains("selected")) {
-                this.activateSelection(parentNode);
+            const selection = this.workflow.querySelector(".selected") as SVGGElement;
+            if(selection){
+                this.activateSelection(selection);
             }
 
             edge.remove();
