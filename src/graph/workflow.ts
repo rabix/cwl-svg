@@ -325,22 +325,8 @@ export class Workflow {
          * highlight all connecting edges and adjacent vertices
          * while shadowing others.
          */
-        this.domEvents.on("click", ".node", (ev, el, root) => {
-            this.deselectEverything();
-
-            this.workflow.classList.add("has-selection");
-
-            const nodeID = el.getAttribute("data-id");
-            Array.from(root.querySelectorAll(`.edge.${nodeID}`)).forEach((edge: HTMLElement) => {
-                edge.classList.add("highlighted");
-                const sourceNodeID = edge.getAttribute("data-source-node");
-                const destinationNodeID = edge.getAttribute("data-destination-node");
-
-                Array.from(root.querySelectorAll(`.node.${sourceNodeID}, .node.${destinationNodeID}`))
-                    .forEach((el: SVGGElement) => el.classList.add("highlighted"));
-            });
-
-            el.classList.add("selected");
+        this.domEvents.on("click", ".node", (ev, el) => {
+            this.activateSelection(el);
         });
 
 
@@ -390,7 +376,7 @@ export class Workflow {
                         outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
                     });
             }, (ev, target) => {
-                const parentNode = this.findParent(target, "node");
+                const parentNode = Workflow.findParentNode(target);
 
                 const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
                 Workflow.setModelPosition(model, newX, newY);
@@ -565,8 +551,8 @@ export class Workflow {
                     const sourcePort = this.workflow.querySelector(`.port[data-connection-id="${sourcePortID}"]`);
                     const destinationPort = this.workflow.querySelector(`.port[data-connection-id="${destinationPortID}"]`);
 
-                    const sourceNode = this.findParent(sourcePort, "node");
-                    const destinationNode = this.findParent(destinationPort, "node");
+                    const sourceNode = Workflow.findParentNode(sourcePort);
+                    const destinationNode = Workflow.findParentNode(destinationPort);
 
                     this.model.disconnect(sourcePortID, destinationPortID);
                     this.renderModel(this.model);
@@ -578,8 +564,6 @@ export class Workflow {
                     this.renderModel(this.model);
                 }
             });
-
-            console.log("Delete something", selection);
         }, window);
     }
 
@@ -622,7 +606,7 @@ export class Workflow {
             });
 
             if (highlightedPort) {
-                const parentNode = this.findParent(highlightedPort, "node");
+                const parentNode = Workflow.findParentNode(highlightedPort);
                 highlightedPort.classList.remove("highlighted", "preferred-port");
                 parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
             }
@@ -632,7 +616,7 @@ export class Workflow {
             if (sorted.length && sorted[0].distance < 100) {
                 highlightedPort = sorted[0];
                 highlightedPort.classList.add("highlighted", "preferred-port");
-                const parentNode = this.findParent(highlightedPort, "node");
+                const parentNode = Workflow.findParentNode(highlightedPort);
                 this.workflow.appendChild(parentNode);
                 parentNode.classList.add("highlighted", "preferred-node", edgeDirection);
             } else {
@@ -641,14 +625,13 @@ export class Workflow {
 
                 if (nodeToMouseDistance > 120) {
                     ioNode.classList.remove("hidden");
-                    // Otherwise, we might create an input or an output node
+                    // Otherwise, we might create an input or an ooutput node
                     ioNode.transform.baseVal.getItem(0).setTranslate(coords.x, coords.y);
                 } else {
                 }
             }
-
         }, (ev, origin, root) => {
-            const originNode = this.findParent(origin, "node");
+            const originNode = Workflow.findParentNode(origin);
             const originNodeCTM = originNode.getScreenCTM();
 
             originNodeCoords = this.translateMouseCoords(originNodeCTM.e, originNodeCTM.f);
@@ -674,7 +657,7 @@ export class Workflow {
                 this.workflow.querySelectorAll(`.port.${isInputPort ? "output-port" : "input-port"}`)
             ).filter(el => {
                 // Except the same node that we are dragging from
-                return this.findParent(el, "node") !== originNode;
+                return Workflow.findParentNode(el) !== originNode;
             }).map(el => {
 
                 // Find the position of the port relative to the canvas origin
@@ -698,16 +681,18 @@ export class Workflow {
             // For all of the valid connection destinations, find their parent node element
             // and mark it as a highlighted and a connection candidate
             preferredConnectionPorts.forEach(el => {
-                const parentNode = this.findParent(el, "node");
+                const parentNode = Workflow.findParentNode(el);
                 parentNode.classList.add("highlighted", "connection-suggestion");
             });
 
             // Then mark the workflow itself, so it knows to fade out other stuff
             this.workflow.classList.add("has-suggestion", "edge-dragging");
 
-        }, (ev, target) => {
+        }, (ev, origin) => {
+            const parentNode = Workflow.findParentNode(origin);
+
             if (highlightedPort) {
-                let sourceID = target.getAttribute("data-connection-id");
+                let sourceID = origin.getAttribute("data-connection-id");
                 let destID = highlightedPort.getAttribute("data-connection-id");
                 if (sourceID.startsWith("in")) {
                     const tmp = sourceID;
@@ -729,7 +714,8 @@ export class Workflow {
                 highlightedPort.classList.remove("highlighted");
                 highlightedPort = undefined;
             } else if (!ioNode.classList.contains("hidden")) {
-                const portID = target.getAttribute("data-connection-id");
+
+                const portID = origin.getAttribute("data-connection-id");
                 const newIO = GraphNode.patchModelPorts(portID.startsWith("in")
                     ? this.model.createInputFromPort(portID)
                     : this.model.createOutputFromPort(portID)
@@ -750,6 +736,10 @@ export class Workflow {
                 el.classList.remove("connection-suggestion", "highlighted", "preferred-node", "preferred-port", edgeDirection);
             });
 
+            if (parentNode.classList.contains("selected")) {
+                this.activateSelection(parentNode);
+            }
+
             edge.remove();
             ioNode.remove();
             edge = undefined;
@@ -760,16 +750,16 @@ export class Workflow {
         });
     }
 
-    private findParent(el, parentClass) {
+    static findParentNode(el) {
         let parentNode = el;
         while (parentNode) {
-            if (parentNode.classList.contains(parentClass)) {
+            if (parentNode.classList.contains("node")) {
                 return parentNode;
             }
             parentNode = parentNode.parentNode;
         }
-
     }
+
 
     static setModelPosition(obj, x, y) {
         const update = {
@@ -802,5 +792,23 @@ export class Workflow {
         }
 
         return {...abs, ...pc};
+    }
+
+    private activateSelection(el: SVGGElement) {
+        this.deselectEverything();
+
+        this.workflow.classList.add("has-selection");
+
+        const nodeID = el.getAttribute("data-id");
+        Array.from(this.workflow.querySelectorAll(`.edge.${nodeID}`)).forEach((edge: HTMLElement) => {
+            edge.classList.add("highlighted");
+            const sourceNodeID = edge.getAttribute("data-source-node");
+            const destinationNodeID = edge.getAttribute("data-destination-node");
+
+            Array.from(this.workflow.querySelectorAll(`.node.${sourceNodeID}, .node.${destinationNodeID}`))
+                .forEach((el: SVGGElement) => el.classList.add("highlighted"));
+        });
+
+        el.classList.add("selected");
     }
 }
