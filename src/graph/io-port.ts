@@ -7,7 +7,7 @@ export class IOPort extends Shape {
 
     protected paper: Snap.Paper;
 
-    private radius = 5;
+    private radius = 7;
 
     private connection: Snap.Element;
     private connectionFormat = "M {x1} {y1}, C {bx1} {by1} {bx2} {by2} {x2} {y2}";

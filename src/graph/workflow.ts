@@ -28,9 +28,9 @@ export class Workflow {
 
     public readonly eventHub: EventHub;
 
-    private domEvents;
+    private domEvents: DomEvents;
 
-    private workflow: SVGElement;
+    private workflow: SVGGElement;
 
     private svgRoot: SVGSVGElement;
 
@@ -61,7 +61,7 @@ export class Workflow {
                 return;
             }
 
-            this.command("workflow.scale", newScale);
+            this.command("workflow.scale", newScale, ev);
             ev.stopPropagation();
         }, true);
 
@@ -110,6 +110,9 @@ export class Workflow {
 
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
+        const oldTransform = this.workflow.getAttribute("transform");
+        this.clearCanvas();
+        this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
 
         const nodes = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
@@ -129,6 +132,9 @@ export class Workflow {
         this.workflow.querySelectorAll(".node").forEach(e => {
             this.workflow.appendChild(e);
         });
+
+        this.workflow.setAttribute("transform", oldTransform);
+        this.command("workflow.scale", this.scale);
         console.timeEnd("Ordering");
     }
 
@@ -171,6 +177,10 @@ export class Workflow {
             const tpl = GraphNode.makeTemplate(x, y, step);
             const el = TemplateParser.parse(tpl);
             this.workflow.appendChild(el);
+
+            // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
+            // So let's trigger the scaling again
+            this.command("workflow.scale", this.scale);
         });
 
         /**
@@ -252,17 +262,23 @@ export class Workflow {
         /**
          * @name workflow.scale
          */
-        this.eventHub.on("workflow.scale", (c) => {
+        this.eventHub.on("workflow.scale", (c, ev?: { clientX: number, clientY: number }) => {
 
             this.scale = c;
-            const oldMatrix = this.group.transform().localMatrix.split();
+            const transform = this.workflow.transform.baseVal;
+            const matrix: SVGMatrix = transform.getItem(0).matrix;
 
-            this.group.transform(new Snap.Matrix().add(c, 0, 0, c, oldMatrix.dx, oldMatrix.dy));
+            matrix.a = c;
+            matrix.d = c;
+
             const labelScale = 1 + (1 - c) / (c * 2);
 
-            this.paper.node.querySelectorAll(".node .label").forEach(el => {
-                Snap(el).transform(`s${labelScale},${labelScale}`);
-            });
+            Array.from(this.workflow.querySelectorAll(".node .label"))
+                .map(el => el.transform.baseVal.getItem(0).matrix)
+                .forEach(m => {
+                    m.a = labelScale;
+                    m.d = labelScale;
+                })
         });
 
         /**
@@ -393,13 +409,13 @@ export class Workflow {
             let y;
             let matrix: SVGMatrix;
             this.domEvents.drag(".pan-handle", (dx, dy, ev, el, root) => {
+
                 matrix.e = x + dx;
                 matrix.f = y + dy;
-                pane.transform.baseVal.getItem(0).setMatrix(matrix);
 
             }, (ev, el, root) => {
                 pane = root.querySelector(".workflow") as SVGElement;
-                matrix = pane.transform.baseVal.getItem(0).matrix.scale(1);
+                matrix = pane.transform.baseVal.getItem(0).matrix;
                 x = matrix.e;
                 y = matrix.f;
             }, () => {
@@ -436,6 +452,8 @@ export class Workflow {
         });
 
         this.attachPortDragBehavior();
+
+        this.attachSelectionDeletionBehavior();
 
 
     }
@@ -526,6 +544,43 @@ export class Workflow {
                 tipEl = undefined;
             }
         });
+    }
+
+    private attachSelectionDeletionBehavior() {
+        this.domEvents.on("keyup", (ev: KeyboardEvent) => {
+            const selection = Array.from(this.workflow.querySelectorAll(".selected"));
+            if (ev.which !== 8 || selection.length === 0) {
+                return;
+            }
+
+            selection.forEach(el => {
+                if (el.classList.contains("step")) {
+                    this.model.removeStep(el.getAttribute("data-connection-id"));
+                    this.renderModel(this.model);
+                } else if (el.classList.contains("edge")) {
+
+                    const sourcePortID = el.getAttribute("data-source-connection");
+                    const destinationPortID = el.getAttribute("data-destination-connection");
+
+                    const sourcePort = this.workflow.querySelector(`.port[data-connection-id="${sourcePortID}"]`);
+                    const destinationPort = this.workflow.querySelector(`.port[data-connection-id="${destinationPortID}"]`);
+
+                    const sourceNode = this.findParent(sourcePort, "node");
+                    const destinationNode = this.findParent(destinationPort, "node");
+
+                    this.model.disconnect(sourcePortID, destinationPortID);
+                    this.renderModel(this.model);
+                } else if (el.classList.contains("input"){
+                    this.model.removeInput(el.getAttribute("data-connection-id"));
+                    this.renderModel(this.model);
+                } else if (el.classList.contains("output"){
+                    this.model.removeOutput(el.getAttribute("data-connection-id"));
+                    this.renderModel(this.model);
+                }
+            });
+
+            console.log("Delete something", selection);
+        }, window);
     }
 
     private attachPortDragBehavior() {
@@ -666,8 +721,9 @@ export class Workflow {
                  */
                 if (!GraphEdge.findEdge(this.workflow, sourceID, destID)) {
                     const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destID);
-                    this.model.connect(sourceID, destID);
                     this.attachEdgeHoverBehavior(newEdge);
+                    this.model.connect(sourceID, destID);
+
                 }
 
                 highlightedPort.classList.remove("highlighted");
@@ -685,7 +741,8 @@ export class Workflow {
                 this.workflow.appendChild(el);
 
                 Workflow.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
-                GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
+                const edge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
+                this.attachEdgeHoverBehavior(edge);
             }
 
             this.workflow.classList.remove("has-suggestion", "edge-dragging");
@@ -725,5 +782,25 @@ export class Workflow {
         }
 
         Object.assign(obj.customProps, update);
+    }
+
+    private clearCanvas() {
+        this.domEvents.detachAll();
+        this.workflow.innerHTML = "";
+        this.workflow.setAttribute("class", "workflow");
+    }
+
+    private getOffsetFromCanvasCenter(x, y) {
+
+        const abs = {
+            x: x - this.svgRoot.clientWidth / 2,
+            y: y - this.svgRoot.clientHeight / 2,
+        };
+        const pc = {
+            pcx: abs.x / this.svgRoot.clientWidth,
+            pcy: abs.y / this.svgRoot.clientHeight
+        }
+
+        return {...abs, ...pc};
     }
 }

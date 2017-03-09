@@ -643,9 +643,9 @@ currently-unhandled@^0.4.1:
   dependencies:
     array-find-index "^1.0.1"
 
-cwlts@1.11.32:
-  version "1.11.32"
-  resolved "https://registry.yarnpkg.com/cwlts/-/cwlts-1.11.32.tgz#23181e2b63fdb9d243f4c0324ec16b988fc71a0d"
+cwlts@1.11.34:
+  version "1.11.34"
+  resolved "https://registry.yarnpkg.com/cwlts/-/cwlts-1.11.34.tgz#fc9dc261db34d3600d21256a8276cccaf3fa8e0e"
 
 dashdash@^1.12.0:
   version "1.14.1"

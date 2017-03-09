@@ -1,32 +1,45 @@
 export class DomEvents {
 
-    private handlers = {};
+    private handlers = new Map<{ removeEventListener: Function }, { [key: string]: Function[] }>();
 
     constructor(private root: HTMLElement) {
 
     }
 
-    public on(event: string, selector: string, handler: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any) {
+    public on(event: string, selector: string, handler: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any, root?) {
+        if (typeof selector === "function") {
+            root = handler;
+            handler = selector;
+            selector = undefined;
+        }
 
-        if (!this.handlers[event]) {
-            this.handlers[event] = [];
+        const eventHolder = root || this.root;
+
+        if (!this.handlers.has(eventHolder)) {
+            this.handlers.set(eventHolder, {});
+        }
+        if (!this.handlers.get(eventHolder)[event]) {
+            this.handlers.get(eventHolder)[event] = [];
         }
 
         const evListener = (ev: UIEvent) => {
-            const selected = Array.from(this.root.querySelectorAll(selector));
-            let target = ev.target as HTMLElement;
-            while (target) {
-                if (selected.find(el => el === target)) {
-                    break;
+            let target;
+            if (selector) {
+                const selected = Array.from(this.root.querySelectorAll(selector));
+                target = ev.target as HTMLElement;
+                while (target) {
+                    if (selected.find(el => el === target)) {
+                        break;
+                    }
+                    target = target.parentNode;
                 }
-                target = target.parentNode;
+
+                if (!target) {
+                    return;
+                }
             }
 
-
-            if (!target) {
-                return;
-            }
-            const handlerOutput = handler(ev, target, this.root);
+            const handlerOutput = handler(ev, target || ev.target, this.root);
             if (handlerOutput === false) {
                 return false;
             }
@@ -34,12 +47,18 @@ export class DomEvents {
             return false;
         };
 
-        this.root.addEventListener(event, evListener);
-        this.handlers[event].push(evListener);
+        eventHolder.addEventListener(event, evListener);
+
+        this.handlers.get(eventHolder)[event].push(evListener);
 
         return function off() {
-            this.root.removeEventListener(event, evListener);
+            eventHolder.removeEventListener(event, evListener);
         }
+    }
+
+
+    public keyup() {
+
     }
 
     public drag(selector,
@@ -74,7 +93,7 @@ export class DomEvents {
             const dx = event.screenX - lastMove.screenX;
             const dy = event.screenY - lastMove.screenY;
             moveEventCount++;
-            if(moveEventCount === threshold && typeof start === "function"){
+            if (moveEventCount === threshold && typeof start === "function") {
                 start(mouseDownEv, draggedEl, this.root);
 
             }
@@ -141,12 +160,15 @@ export class DomEvents {
     }
 
     public detachAll() {
-        for (let k in this.handlers) {
-            this.handlers[k].forEach(handler => {
-                this.root.removeEventListener(k, handler);
-            })
-        }
+        this.handlers.forEach(root => {
+            for (let eventType in this.handlers[root]) {
+                root[eventType].forEach(handler => {
+                    (root as any).removeEventListener(eventType, handler);
+                })
+            }
 
-        this.handlers = {};
+        });
+
+        this.handlers.clear();
     }
 }

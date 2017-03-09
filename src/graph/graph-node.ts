@@ -96,9 +96,9 @@ export class GraphNode extends Shape {
         
                 <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
                     <circle cx="0" cy="0" r="${GraphNode.radius}" class="outer"></circle>
-                    <circle cx="0" cy="0" r="${GraphNode.radius * .8}" class="inner"></circle>
+                    <circle cx="0" cy="0" r="${GraphNode.radius * .75}" class="inner"></circle>
                 </g>
-                <text x="0" y="${GraphNode.radius + 30}" class="label">${dataModel.label || dataModel.id}</text>
+                <text transform="matrix(1,0,0,1,0,${GraphNode.radius + 30})" class="label">${dataModel.label || dataModel.id}</text>
                 ${inputPortTemplates}
                 ${outputPortTemplates}
             </g>
@@ -142,7 +142,7 @@ export class GraphNode extends Shape {
                 <circle cx="0" cy="0" r="${GraphNode.radius * .8}" class="inner"></circle>
                 ${iconFragment}
             </g>
-            <text x="0" y="${GraphNode.radius + 30}" class="label">${this.dataModel.label || this.dataModel.id}</text>
+            <text transform="matrix(1,0,0,1,0,${GraphNode.radius + 30})" class="label">${this.dataModel.label || this.dataModel.id}</text>
         `));
 
         // this.attachEventListeners(this.circleGroup);
@@ -165,9 +165,9 @@ export class GraphNode extends Shape {
                data-port-id="${port.id}"
             >
                 <g class="io-port ${port.id}">
-                    <circle cx="0" cy="0" r="5" class="port-handle"></circle>
+                    <circle cx="0" cy="0" r="7" class="port-handle"></circle>
                 </g>
-                <text x="0" y="0" class="label unselectable">${label}</text>
+                <text x="0" y="0" transform="matrix(1,0,0,1,0,0)" class="label unselectable">${label}</text>
             </g>
             
         `;

@@ -1,20 +1,23 @@
 // Color Scheme
 $color-background: rgb(48, 48, 48);
-$color-primary: #537388;
+$color-primary: #5c8db6;
 $color-primary-alt: #2e556f;
 $color-secondary: #886653;
 $color-tertiary: #538881;
 
 $color-success: #76ed21;
-$color-highlight: #e64d23;
-$color-neutral: rgb(121, 121, 121);
+$color-highlight: #5196ce;
+//$color-neutral: rgb(121, 121, 121);
+$color-neutral: #c3c3c3;
 $color-warning: rgb(246, 147, 54);
 $color-danger: rgb(214, 18, 33);
 
 // Color Application
 $background: $color-background;
+
 $node-background-color: $color-primary;
-$port-background-color: rgb(121, 121, 121);
+$node-outer-color: $color-neutral;
+$port-background-color: $color-neutral;
 $port-highlight-color: $color-highlight;
 $port-label-color: white;
 
@@ -22,10 +25,10 @@ $port-candidate-color: white;
 
 $label-highlight-color: lighten($color-highlight, 30%);
 
-$edge-inner-color: white;
+$edge-inner-color: $color-neutral;
 $edge-inner-width: 2px;
 $edge-outer-color: $color-background;
-$edge-outer-width: 5px;
+$edge-outer-width: 7px;
 
 $font-family: sans-serif;
 $font-color: white;
@@ -48,7 +51,6 @@ svg.cwl-workflow {
   .hidden {
     display: none;
   }
-
 
   .eventless {
     pointer-events: none;
@@ -83,19 +85,36 @@ svg.cwl-workflow {
 
     &.has-selection {
       .node:not(.highlighted) {
+        &.step,
+        &.input,
+        &.output {
+          .outer {
+            stroke: darken($edge-inner-color, 50%);
+          }
+        }
+
         &.step {
           .inner {
             fill: darken($color-primary, 15%);
           }
-          .outer {
-            stroke: darken($edge-inner-color, 50%);
+        }
+        &.input,
+        &.output {
+          .inner {
+            fill: darken($color-neutral, 25%);
           }
         }
 
         .label {
           fill: darken($font-color, 50%);
         }
+
+        .port {
+          fill: darken($color-neutral, 50%);
+        }
       }
+
+
 
       .edge:not(.highlighted):not(.dragged) {
         .inner {
@@ -147,19 +166,8 @@ svg.cwl-workflow {
 
     &.input, &.output {
       .inner {
-        fill: none;
+        fill: $color-neutral;
       }
-      .outer {
-        stroke-width: 4px;
-      }
-    }
-
-    &.input .outer {
-      stroke: $color-secondary;
-    }
-
-    &.output .outer {
-      stroke: $color-tertiary;
     }
 
     &.edge-hover {
@@ -183,7 +191,7 @@ svg.cwl-workflow {
     }
 
     .outer {
-      stroke: white;
+      stroke: $node-outer-color;
       stroke-width: 2px;
       fill: $background;
     }
@@ -271,7 +279,7 @@ svg.cwl-workflow {
     }
 
     .inner {
-      stroke-width: 3px;
+      stroke-width: $edge-inner-width;
       stroke: $edge-inner-color;
     }
     .outer {

@@ -70,7 +70,6 @@ export class Edge {
         if (destStepId) {
             edge.classList.add(destStepId);
         }
-
         edge.setAttribute("data-destination-node", destStepId);
         edge.setAttribute("data-destination-port", destPort);
         edge.setAttribute("data-source-port", sourcePort);
@@ -108,6 +107,7 @@ export class Edge {
 
         const firstNode = root.querySelector(".node");
         root.insertBefore(edge, firstNode);
+
         return edge;
     };
 
