@@ -84,7 +84,7 @@ svg.cwl-workflow {
     }
 
     &.has-selection {
-      .node:not(.highlighted) {
+      .node:not(.highlighted):not(.selected) {
         &.step,
         &.input,
         &.output {
@@ -113,8 +113,6 @@ svg.cwl-workflow {
           fill: darken($color-neutral, 50%);
         }
       }
-
-
 
       .edge:not(.highlighted):not(.dragged) {
         .inner {
