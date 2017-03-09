@@ -646,7 +646,7 @@ export class Workflow {
 
             // Draw the edge to the cursor and store the element's reference
             edge = GraphEdge.spawn();
-            edge.classList.add("eventless", "dragged");
+            edge.classList.add("dragged");
             this.workflow.appendChild(edge);
 
             // We need the origin connection ID so we can ask CWLTS for connection recommendations

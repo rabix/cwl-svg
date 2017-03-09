@@ -52,10 +52,6 @@ svg.cwl-workflow {
     display: none;
   }
 
-  .eventless {
-    pointer-events: none;
-  }
-
   .workflow {
     @extend .noselect;
 
