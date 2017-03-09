@@ -13,7 +13,7 @@
     "snapsvg-cjs": "0.0.4"
   },
   "peerDependencies": {
-    "cwlts": "1.11.34"
+    "cwlts": "^1.11.37"
   },
   "devDependencies": {
     "@types/core-js": "0.9.35",
