@@ -138,6 +138,10 @@ export class Workflow {
         console.timeEnd("Ordering");
     }
 
+    public redraw(){
+        this.renderModel(this.model);
+    }
+
 
     private attachEvents() {
 
