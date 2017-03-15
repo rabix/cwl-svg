@@ -48,6 +48,11 @@ svg.cwl-workflow {
   -o-transform: translateZ(0);
   transform: translateZ(0);
 
+  [tabindex]:active,
+  [tabindex]:focus {
+    outline: none;
+  }
+
   .hidden {
     display: none;
   }

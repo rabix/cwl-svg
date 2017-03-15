@@ -39,7 +39,7 @@ export class Edge {
         );
 
         return `
-            <g class="edge ${sourceStepId} ${destStepId}"
+            <g tabindex="-1" class="edge ${sourceStepId} ${destStepId}"
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"

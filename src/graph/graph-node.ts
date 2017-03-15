@@ -89,7 +89,7 @@ export class GraphNode extends Shape {
             .reduce((acc, tpl) => acc + tpl, "");
 
         return `
-            <g class="node ${dataModel.id} ${nodeTypeClass}"
+            <g tabindex="-1" class="node ${dataModel.id} ${nodeTypeClass}"
                data-connection-id="${dataModel.connectionId}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">
