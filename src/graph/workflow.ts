@@ -88,7 +88,7 @@ export class Workflow {
             this.renderModel(model);
         }
         console.time("Event Listeners");
-        this.addEventListeners(this.paper.node);
+
         console.timeEnd("Event Listeners");
     }
 
@@ -112,6 +112,7 @@ export class Workflow {
         console.time("Graph Rendering");
         const oldTransform = this.workflow.getAttribute("transform");
         this.clearCanvas();
+
         this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
 
         const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
@@ -129,9 +130,12 @@ export class Workflow {
         console.timeEnd("Graph Rendering");
         console.time("Ordering");
 
+
         this.workflow.querySelectorAll(".node").forEach(e => {
             this.workflow.appendChild(e);
         });
+
+        this.addEventListeners(this.paper.node);
 
         this.workflow.setAttribute("transform", oldTransform);
         this.command("workflow.scale", this.scale);
