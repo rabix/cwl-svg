@@ -98,7 +98,7 @@ export class GraphNode extends Shape {
                     <circle cx="0" cy="0" r="${GraphNode.radius}" class="outer"></circle>
                     <circle cx="0" cy="0" r="${GraphNode.radius * .75}" class="inner"></circle>
                 </g>
-                <text transform="matrix(1,0,0,1,0,${GraphNode.radius + 30})" class="label">${dataModel.label || dataModel.id}</text>
+                <text transform="matrix(1,0,0,1,0,${GraphNode.radius + 30})" class="title label">${dataModel.label || dataModel.id}</text>
                 ${inputPortTemplates}
                 ${outputPortTemplates}
             </g>

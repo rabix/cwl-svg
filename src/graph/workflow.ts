@@ -149,6 +149,13 @@ export class Workflow {
 
     private attachEvents() {
 
+        this.model.on("step.change", (change: StepModel) => {
+            const title = this.workflow.querySelector(`.node.step.${change.connectionId} .title`) as SVGTextElement;
+            if (title) {
+                title.textContent = change.label;
+            }
+        });
+
         /**
          * @name app.create.input
          */
