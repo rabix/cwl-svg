@@ -449,7 +449,7 @@ export class Workflow {
             if (this.workflow.querySelector(".edge.dragged")) {
                 return;
             }
-            target.parentElement.append(target);
+            target.parentElement.appendChild(target);
         });
 
         this.attachPortDragBehavior();
