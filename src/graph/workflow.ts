@@ -54,10 +54,11 @@ export class Workflow {
         this.group = Snap(this.workflow);
 
         this.paper.node.addEventListener("mousewheel", ev => {
-            const newScale = this.getScale() + ev.deltaY / 500;
+            const newScale = 1 + ev.deltaY / 50;
+            const currentMatrixScale = this.getScale();
 
             // Prevent scaling to unreasonable proportions.
-            if (newScale <= 0.15 || newScale > 3) {
+            if (currentMatrixScale * newScale <= 0.15 || currentMatrixScale * newScale > 3) {
                 return;
             }
 
@@ -266,16 +267,24 @@ export class Workflow {
         /**
          * @name workflow.scale
          */
+        const lastVal = { x: 0, y: 0 };
         this.eventHub.on("workflow.scale", (c, ev?: { clientX: number, clientY: number }) => {
 
-            this.scale = c;
             const transform = this.workflow.transform.baseVal;
             const matrix: SVGMatrix = transform.getItem(0).matrix;
+            let newMatrix: SVGMatrix = matrix;
 
-            matrix.a = c;
-            matrix.d = c;
+            const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
 
-            const labelScale = 1 + (1 - c) / (c * 2);
+            newMatrix = newMatrix.translate(coords.x, coords.y)
+                .scaleNonUniform(c, c)
+                .translate(-coords.x, -coords.y);
+
+            this.scale = matrix.a = matrix.d = newMatrix.a;
+            matrix.e = newMatrix.e;
+            matrix.f = newMatrix.f;
+
+            const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
 
             Array.from(this.workflow.querySelectorAll(".node .label"))
                 .map(el => el.transform.baseVal.getItem(0).matrix)
@@ -322,6 +331,8 @@ export class Workflow {
          */
         this.domEvents.on("click", "*", (ev, el, root) => {
             this.deselectEverything();
+            var coords = this.translateMouseCoords(ev.clientX, ev.clientY);
+            console.log("Translating mouse coords: (%d, %d)", coords.x, coords.y);
         });
 
         /**
@@ -560,10 +571,10 @@ export class Workflow {
 
                     this.model.disconnect(sourcePortID, destinationPortID);
                     this.renderModel(this.model);
-                } else if (el.classList.contains("input"){
+                } else if (el.classList.contains("input")){
                     this.model.removeInput(el.getAttribute("data-connection-id"));
                     this.renderModel(this.model);
-                } else if (el.classList.contains("output"){
+                } else if (el.classList.contains("output")){
                     this.model.removeOutput(el.getAttribute("data-connection-id"));
                     this.renderModel(this.model);
                 }
