@@ -18,7 +18,6 @@ export class GraphNode extends Shape {
 
     protected static radius = 40;
 
-
     constructor(position: Partial<NodePosition>,
                 private dataModel: NodeDataModel,
                 paper: Snap.Paper) {
@@ -32,31 +31,31 @@ export class GraphNode extends Shape {
         Object.assign(this.position, position);
     }
 
-    private makeIconFragment(model) {
-        if (model instanceof StepModel) {
+    private static makeIconFragment(model) {
+        const modelType = model instanceof StepModel ? "step" :
+            model instanceof WorkflowInputParameterModel ? "output" :
+            model instanceof WorkflowOutputParameterModel ? "input" : "";
+        let iconStr;
 
-            if (model.run.class == "CommandLineTool") {
+        if (modelType === "step") {
+            iconStr = model.run && model.run.class === "Workflow" ? "workflow" :
+                model.run && model.run.class === "CommandLineTool" ? "tool" : "";
 
-                return `
-                    <g class="icon icon-tool">
-                        <path d="M 0 10 h 15"></path>
-                        <path d="M -10 10 L 0 0 L -10 -10"></path>
-                    </g>
-                `;
-
-            } else if (model.run.class === "Workflow") {
-                return `
-                    <g class="icon icon-workflow">
-                        <circle cx="-8" cy="10" r="3"></circle>
-                        <circle cx="12" cy="0" r="3"></circle>
-                        <circle cx="-8" cy="-10" r="3"></circle>
-                        <line x1="-8" y1="10" x2="12" y2="0"></line>
-                        <line x1="-8" y1="-10" x2="12" y2="0"></line>
-                    </g>
-                `;
-            }
         }
-        return "";
+        else if (modelType === "output" || modelType === "input") {
+            iconStr = (model.type && model.type.type === "File" ||
+                model.type.type === "array" ? "file" : "type") + "_" + modelType;
+        }
+
+        if (!modelType.length || !iconStr.length) {
+            return "";
+        }
+
+        return `
+                    <g class="icon icon-${iconStr.replace('_', '-')}" transform="matrix(0.028, 0, 0, 0.028, -17, -15)">
+                        <use xlink:href="#${iconStr}"></use>
+                    </g>
+                `;
     }
 
     static makeTemplate(x: number, y: number, dataModel: NodeDataModel): string {
@@ -93,10 +92,10 @@ export class GraphNode extends Shape {
                data-connection-id="${dataModel.connectionId}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">
-        
                 <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
                     <circle cx="0" cy="0" r="${GraphNode.radius}" class="outer"></circle>
                     <circle cx="0" cy="0" r="${GraphNode.radius * .75}" class="inner"></circle>
+                    ${GraphNode.makeIconFragment(dataModel)}
                 </g>
                 <text transform="matrix(1,0,0,1,0,${GraphNode.radius + 30})" class="title label">${dataModel.label || dataModel.id}</text>
                 ${inputPortTemplates}
@@ -294,7 +293,7 @@ export class GraphNode extends Shape {
         node.setAttribute("transform", "matrix(1,0,0,1,0,0)");
         node.classList.add("ghost", "node");
         node.innerHTML = `
-            <circle class="ghost-circle" cx="0" cy="0" r="${GraphNode.radius / 1.5}"></circle
+            <circle class="ghost-circle" cx="0" cy="0" r="${GraphNode.radius / 1.5}"></circle>
         `;
         return node;
     }

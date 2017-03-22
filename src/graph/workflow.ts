@@ -46,6 +46,12 @@ export class Workflow {
         this.domEvents = new DomEvents(this.paper.node as HTMLElement);
 
         this.paper.node.innerHTML = `
+            <symbol id="file_input" viewBox="0 0 499 462.86"><title>file_input</title><g id="Layer_16" data-name="Layer 16"><polygon points="386.06 0 386.06 0 175 0 175 58.29 225 108.29 225 50 365.35 50 449 133.65 449 412.86 225 412.86 225 353.71 175 403.71 175 462.86 499 462.86 499 112.94 386.06 0"/></g><g id="Layer_7_copy" data-name="Layer 7 copy"><polyline points="498.78 138.76 362.93 138.38 362.81 138.38 362.81 1.06" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g><g id="Layer_11_copy" data-name="Layer 11 copy"><polyline points="159 327 255 231 160 136" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/><g id="Layer_9_copy_2" data-name="Layer 9 copy 2"><line y1="231" x2="255" y2="231" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g></g></symbol>
+            <symbol id="file_output" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 507.36 462.86"><title>file_output</title><g id="Layer_10" data-name="Layer 10"><g id="Layer_9_copy" data-name="Layer 9 copy"><polygon points="274 298.5 274 412.86 50 412.86 50 50 190.35 50 274 133.65 274 163.5 324 163.5 324 112.94 211.06 0 211.06 0 0 0 0 462.86 324 462.86 324 298.5 274 298.5"/></g></g><g id="Layer_7" data-name="Layer 7"><polyline points="323.78 138.76 187.93 138.38 187.81 138.38 187.81 1.06" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g><g id="Layer_11" data-name="Layer 11"><polyline points="376 327 472 231 377 136" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/><g id="Layer_9" data-name="Layer 9"><line x1="217" y1="231" x2="472" y2="231" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g></g></symbol>
+            <symbol id="tool" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.07 500.24"><title>tool_new</title><rect x="284.07" y="450.07" width="216" height="50"/><rect x="-34.14" y="117.56" width="353.4" height="50" transform="translate(142.62 -58.98) rotate(45)"/><rect x="-34.15" y="332.53" width="353.47" height="50" transform="translate(496.28 509.58) rotate(135)"/></symbol>
+            <symbol id="workflow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500"><title>workflow_new</title><circle cx="400.5" cy="249.5" r="99.5"/><circle cx="99.5" cy="99.5" r="99.5"/><circle cx="99.5" cy="400.5" r="99.5"/><g id="Layer_4" data-name="Layer 4"><line x1="99" y1="99" x2="400" y2="249" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:40px"/><line x1="99" y1="400" x2="400" y2="249" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:40px"/></g></symbol>
+            <symbol id="type_input" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 499 365"><title>type_input</title><g id="input"><path d="M316.5,68a181.72,181.72,0,0,0-114.12,40.09L238,143.72a132.5,132.5,0,1,1,1.16,214.39L203.48,393.8A182.5,182.5,0,1,0,316.5,68Z" transform="translate(0 -68)"/><g id="Layer_22" data-name="Layer 22"><g id="Layer_9_copy_4" data-name="Layer 9 copy 4"><polygon points="290.36 182 176.68 295.68 141.32 260.32 194.64 207 0 207 0 157 194.64 157 142.32 104.68 177.68 69.32 290.36 182"/></g></g></g></symbol>
+            <symbol id="type_output" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.36 365"><title>type_output</title><g id="output"><path d="M291.95,325.23a134,134,0,0,1-15.76,19,132.5,132.5,0,1,1,0-187.38,133.9,133.9,0,0,1,16.16,19.55l35.81-35.81A182.5,182.5,0,1,0,327.73,361Z" transform="translate(0 -68)"/><g id="circle_source_copy" data-name="circle source copy"><g id="Layer_22_copy" data-name="Layer 22 copy"><g id="Layer_9_copy_5" data-name="Layer 9 copy 5"><polygon points="500.36 182 386.68 295.68 351.32 260.32 404.64 207 210 207 210 157 404.64 157 352.32 104.68 387.68 69.32 500.36 182"/></g></g></g></g></symbol>
             <rect x="0" y="0" width="100%" height="100%" class="pan-handle" transform="matrix(1,0,0,1,0,0)"></rect>
             <g class="workflow" transform="matrix(1,0,0,1,0,0)"></g>
         `;
@@ -150,12 +156,12 @@ export class Workflow {
 
     private attachEvents() {
 
-        this.model.on("step.change", (change: StepModel) => {
-            const title = this.workflow.querySelector(`.node.step.${change.connectionId} .title`) as SVGTextElement;
-            if (title) {
-                title.textContent = change.label;
-            }
-        });
+        // this.eventHub.on("step.change", (change: StepModel) => {
+        //     const title = this.workflow.querySelector(`.node.step.${change.connectionId} .title`) as SVGTextElement;
+        //     if (title) {
+        //         title.textContent = change.label;
+        //     }
+        // });
 
         /**
          * @name app.create.input
@@ -278,7 +284,6 @@ export class Workflow {
         /**
          * @name workflow.scale
          */
-        const lastVal = { x: 0, y: 0 };
         this.eventHub.on("workflow.scale", (c, ev?: { clientX: number, clientY: number }) => {
 
             const transform = this.workflow.transform.baseVal;

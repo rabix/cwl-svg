@@ -155,7 +155,7 @@ svg.cwl-workflow {
     .icon {
       stroke: $background;
       stroke-width: 3px;
-      fill: none;
+      fill: $background;
       stroke-linecap: round;
 
       &.icon-workflow {
