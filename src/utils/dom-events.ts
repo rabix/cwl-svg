@@ -8,8 +8,8 @@ export class DomEvents {
 
     public on(event: string, selector: string, handler: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any, root?) {
         if (typeof selector === "function") {
-            root = handler;
-            handler = selector;
+            root     = handler;
+            handler  = selector;
             selector = undefined;
         }
 
@@ -26,7 +26,7 @@ export class DomEvents {
             let target;
             if (selector) {
                 const selected = Array.from(this.root.querySelectorAll(selector));
-                target = ev.target as HTMLElement;
+                target         = ev.target as HTMLElement;
                 while (target) {
                     if (selected.find(el => el === target)) {
                         break;
@@ -66,17 +66,17 @@ export class DomEvents {
                 start: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any,
                 end: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any) {
 
-        let dragging = false;
+        let dragging       = false;
         let lastMove: MouseEvent;
         let draggedEl: HTMLElement;
         let moveEventCount = 0;
         let mouseDownEv;
-        let threshold = 3;
+        let threshold      = 3;
 
         this.on("mousedown", selector, (ev, el, root) => {
-            dragging = true;
-            lastMove = ev;
-            draggedEl = el;
+            dragging    = true;
+            lastMove    = ev;
+            draggedEl   = el;
             mouseDownEv = ev;
 
             document.addEventListener("mousemove", moveHandler);
@@ -90,8 +90,8 @@ export class DomEvents {
                 return;
             }
 
-            const dx = event.screenX - lastMove.screenX;
-            const dy = event.screenY - lastMove.screenY;
+            const dx = ev.screenX - lastMove.screenX;
+            const dy = ev.screenY - lastMove.screenY;
             moveEventCount++;
             if (moveEventCount === threshold && typeof start === "function") {
                 start(mouseDownEv, draggedEl, this.root);
@@ -103,7 +103,7 @@ export class DomEvents {
 
             }
         };
-        const upHandler = (ev) => {
+        const upHandler   = (ev) => {
             if (moveEventCount >= threshold) {
                 if (dragging) {
                     if (typeof end === "function") {
@@ -111,7 +111,7 @@ export class DomEvents {
                     }
                 }
 
-                const parentNode = draggedEl.parentNode;
+                const parentNode        = draggedEl.parentNode;
                 const clickCancellation = (ev) => {
                     ev.stopPropagation();
                     parentNode.removeEventListener("click", clickCancellation, true);
@@ -120,9 +120,9 @@ export class DomEvents {
             }
 
 
-            dragging = false;
-            draggedEl = undefined;
-            lastMove = undefined;
+            dragging       = false;
+            draggedEl      = undefined;
+            lastMove       = undefined;
             moveEventCount = 0;
             document.removeEventListener("mouseup", upHandler);
             document.removeEventListener("mousemove", moveHandler);
@@ -160,13 +160,11 @@ export class DomEvents {
     }
 
     public detachAll() {
-        this.handlers.forEach(root => {
-            for (let eventType in this.handlers[root]) {
-                root[eventType].forEach(handler => {
-                    (root as any).removeEventListener(eventType, handler);
-                })
+        this.handlers.forEach((handlers: { [event: string]: EventListener[] }, listenerRoot: Element) => {
+            console.log("Detaching handlers", handlers, "from key");
+            for (let eventName in handlers) {
+                handlers[eventName].forEach(handler => listenerRoot.removeEventListener(eventName, handler));
             }
-
         });
 
         this.handlers.clear();

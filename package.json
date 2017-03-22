@@ -7,13 +7,14 @@
   "license": "Apache-2.0",
   "author": "Ivan Batic <ivan.batic@live.com> (http://github.com/ivanbatic)",
   "description": "A library for generating an interactive SVG visualization of CWL workflows",
-  "version": "0.0.23",
+  "version": "0.0.26",
   "dependencies": {
     "core-js": "^2.4.1",
+    "cwlts": "^1.12.3",
     "snapsvg-cjs": "0.0.4"
   },
   "peerDependencies": {
-    "cwlts": "^1.11.37"
+    "cwlts": "^1.12.3"
   },
   "devDependencies": {
     "@types/core-js": "0.9.35",
