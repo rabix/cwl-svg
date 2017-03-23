@@ -145,7 +145,6 @@ export class Workflow {
         this.addEventListeners(this.paper.node);
 
         this.workflow.setAttribute("transform", oldTransform);
-        this.command("workflow.scale", this.scale);
         console.timeEnd("Ordering");
     }
 
@@ -347,8 +346,6 @@ export class Workflow {
          */
         this.domEvents.on("click", "*", (ev, el, root) => {
             this.deselectEverything();
-            var coords = this.translateMouseCoords(ev.clientX, ev.clientY);
-            console.log("Translating mouse coords: (%d, %d)", coords.x, coords.y);
         });
 
         /**
