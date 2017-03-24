@@ -38,24 +38,34 @@ export class GraphNode extends Shape {
         let iconStr;
 
         if (modelType === "step") {
-            iconStr = model.run && model.run.class === "Workflow" ? "workflow" :
-                model.run && model.run.class === "CommandLineTool" ? "tool" : "";
+            iconStr = model.run && model.run.class === "Workflow" ? "data:image/svg+xml;base64,PHN2ZyBpZD0id29ya2Zsb3ciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDUwMCA1MDAiPjx0aXRsZT53b3JrZmxvd19uZXc8L3RpdGxlPjxjaXJjbGUgY3g9IjQwMC41IiBjeT0iMjQ5LjUiIHI9Ijk5LjUiLz48Y2lyY2xlIGN4PSI5OS41IiBjeT0iOTkuNSIgcj0iOTkuNSIvPjxjaXJjbGUgY3g9Ijk5LjUiIGN5PSI0MDAuNSIgcj0iOTkuNSIvPjxnIGlkPSJMYXllcl80IiBkYXRhLW5hbWU9IkxheWVyIDQiPjxsaW5lIHgxPSI5OSIgeTE9Ijk5IiB4Mj0iNDAwIiB5Mj0iMjQ5IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo0MHB4Ii8+PGxpbmUgeDE9Ijk5IiB5MT0iNDAwIiB4Mj0iNDAwIiB5Mj0iMjQ5IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo0MHB4Ii8+PC9nPjwvc3ZnPg==" :
+                model.run && model.run.class === "CommandLineTool" ? "data:image/svg+xml;base64,PHN2ZyBpZD0idG9vbCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTAwLjA3IDUwMC4yNCI+PHRpdGxlPnRvb2xfbmV3PC90aXRsZT48cmVjdCB4PSIyODQuMDciIHk9IjQ1MC4wNyIgd2lkdGg9IjIxNiIgaGVpZ2h0PSI1MCIvPjxyZWN0IHg9Ii0zNC4xNCIgeT0iMTE3LjU2IiB3aWR0aD0iMzUzLjQiIGhlaWdodD0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE0Mi42MiAtNTguOTgpIHJvdGF0ZSg0NSkiLz48cmVjdCB4PSItMzQuMTUiIHk9IjMzMi41MyIgd2lkdGg9IjM1My40NyIgaGVpZ2h0PSI1MCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDk2LjI4IDUwOS41OCkgcm90YXRlKDEzNSkiLz48L3N2Zz4=" : "";
 
         }
-        else if (modelType === "output" || modelType === "input") {
-            iconStr = (model.type && model.type.type === "File" ||
-                model.type.type === "array" ? "file" : "type") + "_" + modelType;
+        else if (modelType === "input") {
+            iconStr = model.type && model.type.type === "File" ||
+                model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgNDYyLjg2Ij48dGl0bGU+ZmlsZV9pbnB1dDwvdGl0bGU+PGcgaWQ9IkxheWVyXzE2IiBkYXRhLW5hbWU9IkxheWVyIDE2Ij48cG9seWdvbiBwb2ludHM9IjM4Ni4wNiAwIDM4Ni4wNiAwIDE3NSAwIDE3NSA1OC4yOSAyMjUgMTA4LjI5IDIyNSA1MCAzNjUuMzUgNTAgNDQ5IDEzMy42NSA0NDkgNDEyLjg2IDIyNSA0MTIuODYgMjI1IDM1My43MSAxNzUgNDAzLjcxIDE3NSA0NjIuODYgNDk5IDQ2Mi44NiA0OTkgMTEyLjk0IDM4Ni4wNiAwIi8+PC9nPjxnIGlkPSJMYXllcl83X2NvcHkiIGRhdGEtbmFtZT0iTGF5ZXIgNyBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSI0OTguNzggMTM4Ljc2IDM2Mi45MyAxMzguMzggMzYyLjgxIDEzOC4zOCAzNjIuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTFfY29weSIgZGF0YS1uYW1lPSJMYXllciAxMSBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSIxNTkgMzI3IDI1NSAyMzEgMTYwIDEzNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjxnIGlkPSJMYXllcl85X2NvcHlfMiIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgMiI+PGxpbmUgeTE9IjIzMSIgeDI9IjI1NSIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
+                    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgMzY1Ij48dGl0bGU+dHlwZV9pbnB1dDwvdGl0bGU+PGcgaWQ9ImlucHV0Ij48cGF0aCBkPSJNMzE2LjUsNjhhMTgxLjcyLDE4MS43MiwwLDAsMC0xMTQuMTIsNDAuMDlMMjM4LDE0My43MmExMzIuNSwxMzIuNSwwLDEsMSwxLjE2LDIxNC4zOUwyMDMuNDgsMzkzLjhBMTgyLjUsMTgyLjUsMCwxLDAsMzE2LjUsNjhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIC02OCkiLz48ZyBpZD0iTGF5ZXJfMjIiIGRhdGEtbmFtZT0iTGF5ZXIgMjIiPjxnIGlkPSJMYXllcl85X2NvcHlfNCIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgNCI+PHBvbHlnb24gcG9pbnRzPSIyOTAuMzYgMTgyIDE3Ni42OCAyOTUuNjggMTQxLjMyIDI2MC4zMiAxOTQuNjQgMjA3IDAgMjA3IDAgMTU3IDE5NC42NCAxNTcgMTQyLjMyIDEwNC42OCAxNzcuNjggNjkuMzIgMjkwLjM2IDE4MiIvPjwvZz48L2c+PC9nPjwvc3ZnPg==";
+        }
+        else if (modelType === "output") {
+            iconStr = model.type && model.type.type === "File" ||
+                model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDcuMzYgNDYyLjg2Ij48dGl0bGU+ZmlsZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJMYXllcl8xMCIgZGF0YS1uYW1lPSJMYXllciAxMCI+PGcgaWQ9IkxheWVyXzlfY29weSIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkiPjxwb2x5Z29uIHBvaW50cz0iMjc0IDI5OC41IDI3NCA0MTIuODYgNTAgNDEyLjg2IDUwIDUwIDE5MC4zNSA1MCAyNzQgMTMzLjY1IDI3NCAxNjMuNSAzMjQgMTYzLjUgMzI0IDExMi45NCAyMTEuMDYgMCAyMTEuMDYgMCAwIDAgMCA0NjIuODYgMzI0IDQ2Mi44NiAzMjQgMjk4LjUgMjc0IDI5OC41Ii8+PC9nPjwvZz48ZyBpZD0iTGF5ZXJfNyIgZGF0YS1uYW1lPSJMYXllciA3Ij48cG9seWxpbmUgcG9pbnRzPSIzMjMuNzggMTM4Ljc2IDE4Ny45MyAxMzguMzggMTg3LjgxIDEzOC4zOCAxODcuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTEiIGRhdGEtbmFtZT0iTGF5ZXIgMTEiPjxwb2x5bGluZSBwb2ludHM9IjM3NiAzMjcgNDcyIDIzMSAzNzcgMTM2IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo1MHB4Ii8+PGcgaWQ9IkxheWVyXzkiIGRhdGEtbmFtZT0iTGF5ZXIgOSI+PGxpbmUgeDE9IjIxNyIgeTE9IjIzMSIgeDI9IjQ3MiIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
+                    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAuMzYgMzY1Ij48dGl0bGU+dHlwZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJvdXRwdXQiPjxwYXRoIGQ9Ik0yOTEuOTUsMzI1LjIzYTEzNCwxMzQsMCwwLDEtMTUuNzYsMTksMTMyLjUsMTMyLjUsMCwxLDEsMC0xODcuMzgsMTMzLjksMTMzLjksMCwwLDEsMTYuMTYsMTkuNTVsMzUuODEtMzUuODFBMTgyLjUsMTgyLjUsMCwxLDAsMzI3LjczLDM2MVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgLTY4KSIvPjxnIGlkPSJjaXJjbGVfc291cmNlX2NvcHkiIGRhdGEtbmFtZT0iY2lyY2xlIHNvdXJjZSBjb3B5Ij48ZyBpZD0iTGF5ZXJfMjJfY29weSIgZGF0YS1uYW1lPSJMYXllciAyMiBjb3B5Ij48ZyBpZD0iTGF5ZXJfOV9jb3B5XzUiIGRhdGEtbmFtZT0iTGF5ZXIgOSBjb3B5IDUiPjxwb2x5Z29uIHBvaW50cz0iNTAwLjM2IDE4MiAzODYuNjggMjk1LjY4IDM1MS4zMiAyNjAuMzIgNDA0LjY0IDIwNyAyMTAgMjA3IDIxMCAxNTcgNDA0LjY0IDE1NyAzNTIuMzIgMTA0LjY4IDM4Ny42OCA2OS4zMiA1MDAuMzYgMTgyIi8+PC9nPjwvZz48L2c+PC9nPjwvc3ZnPg==";
         }
 
         if (!modelType.length || !iconStr.length) {
             return "";
         }
 
+        // return `
+        //              <g class="icon icon-${iconStr}">
+        //              </g>
+        //         `;
+
         return `
-                    <g class="icon icon-${iconStr.replace('_', '-')}" transform="matrix(0.028, 0, 0, 0.028, -17, -15)">
-                        <use xlink:href="#${iconStr}"></use>
-                    </g>
+                    <image x="-10" y="-10" width="20" height="20" xlink:href="${iconStr}"></image>
                 `;
+
     }
 
     static makeTemplate(x: number, y: number, dataModel: NodeDataModel): string {
