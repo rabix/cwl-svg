@@ -60,15 +60,14 @@ export class Workflow {
         this.group = Snap(this.workflow);
 
         this.paper.node.addEventListener("mousewheel", ev => {
-            const newScale = 1 + ev.deltaY / 50;
-            const currentMatrixScale = this.getScale();
+            const scale = this.scale + ev.deltaY / 500;
 
             // Prevent scaling to unreasonable proportions.
-            if (currentMatrixScale * newScale <= 0.15 || currentMatrixScale * newScale > 3) {
+            if (scale <= 0.15 || scale * scale > 3) {
                 return;
             }
 
-            this.command("workflow.scale", newScale, ev);
+            this.command("workflow.scale", scale, ev);
             ev.stopPropagation();
         }, true);
 
@@ -284,20 +283,18 @@ export class Workflow {
          * @name workflow.scale
          */
         this.eventHub.on("workflow.scale", (c, ev?: { clientX: number, clientY: number }) => {
-
+            c = c || 1;
+            this.scale = c;
             const transform = this.workflow.transform.baseVal;
             const matrix: SVGMatrix = transform.getItem(0).matrix;
-            let newMatrix: SVGMatrix = matrix;
 
             const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
 
-            newMatrix = newMatrix.translate(coords.x, coords.y)
-                .scaleNonUniform(c, c)
-                .translate(-coords.x, -coords.y);
-
-            this.scale = matrix.a = matrix.d = newMatrix.a;
-            matrix.e = newMatrix.e;
-            matrix.f = newMatrix.f;
+            matrix.e += matrix.a * coords.x;
+            matrix.f += matrix.a * coords.y;
+            matrix.a = matrix.d = c;
+            matrix.e -= c * coords.x;
+            matrix.f -= c * coords.y;
 
             const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
 
@@ -339,6 +336,46 @@ export class Workflow {
         });
     }
 
+    private edgePadding: number = 100;
+    private edgeInterval = null;
+    private ifDraggingMouseCloseToEdge(el, coords: {x: number, y: number},
+                                       dx: number, dy: number) : void {
+        const checkIfTranslateX = coords.x > window.innerWidth - this.edgePadding && dx > 0 ||
+                coords.x < this.edgePadding && dx < 0;
+        const checkIfTranslateY = coords.y > window.innerHeight - this.edgePadding && dy > 0 ||
+            coords.y < this.edgePadding && dy < 0;
+
+        if (checkIfTranslateX || checkIfTranslateY) {
+            const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
+            const newMatrix: SVGMatrix = workflowMatrix.translate(checkIfTranslateX ? -dx : 0,
+                checkIfTranslateY ? -dy: 0);
+
+            workflowMatrix.e = newMatrix.e;
+            workflowMatrix.f = newMatrix.f;
+
+            if (!this.edgeInterval) {
+                this.edgeInterval = setInterval(() => {
+                    const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
+                    const newMatrix: SVGMatrix = workflowMatrix.translate(checkIfTranslateX ? -dx : 0,
+                        checkIfTranslateY ? -dy: 0);
+
+                    workflowMatrix.e = newMatrix.e;
+                    workflowMatrix.f = newMatrix.f;
+
+                    const mx = el.transform.baseVal.getItem(0).matrix.translate(dx, dy);
+                    el.transform.baseVal.getItem(0).setTranslate(mx.e, mx.f);
+                }, 1000 / 60);
+            }
+            console.log("Dragging Close to Edge dx: %d", dx);
+        }
+        else {
+            if (this.edgeInterval) {
+                clearInterval(this.edgeInterval);
+                this.edgeInterval = null;
+            }
+        }
+    }
+
     private addEventListeners(root: HTMLElement): void {
 
         /**
@@ -357,7 +394,6 @@ export class Workflow {
             this.activateSelection(el);
         });
 
-
         /**
          * Move nodes and edges on drag
          */
@@ -370,13 +406,30 @@ export class Workflow {
             let newY;
 
             this.domEvents.drag(".node .drag-handle", (dx, dy, ev, handle: SVGGElement) => {
+                const outX: boolean = ev.clientX < 0 || ev.clientX > window.innerWidth;
+                const outY: boolean = ev.clientY < 0 || ev.clientY > window.innerHeight;
+
                 const el  = handle.parentNode;
                 const sdx = this.adaptToScale(dx);
                 const sdy = this.adaptToScale(dy);
 
+                const lastDragDx = (startX + sdx) - newX;
+                const lastDragDy = (startY + sdy) - newY;
+
                 newX = startX + sdx;
                 newY = startY + sdy;
+
+                // console.log("Mouse x: %d", ev.clientX);
+                // console.log("Mouse y: %d", ev.clientY);
+                // console.log("X out of bounds: %s", outX.toString());
+                // console.log("Y out of bounds: %s", outY.toString());
+
+                // this.ifDraggingMouseCloseToEdge(el, { x: ev.clientX, y: ev.clientY }, lastDragDx, lastDragDy);
+
                 el.transform.baseVal.getItem(0).setTranslate(newX, newY);
+                // console.log("Dom Events Drag dx: %d", dx);
+                // console.log("Dom Events Drag newX: %d", newX);
+                // console.log("Dom Events Drag matrix.e: %d", el.transform.baseVal.getItem(0).matrix.e);
 
                 inputEdges.forEach((p: number[], el: SVGElement) => {
                     el.setAttribute("d", IOPort.makeConnectionPath(p[0], p[1], p[6] + sdx, p[7] + sdy));
@@ -404,6 +457,11 @@ export class Workflow {
                         outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
                     });
             }, (ev, target) => {
+                if (this.edgeInterval) {
+                    clearInterval(this.edgeInterval);
+                    this.edgeInterval = null;
+                }
+
                 const parentNode = Workflow.findParentNode(target);
 
                 const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
