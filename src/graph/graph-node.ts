@@ -32,11 +32,16 @@ export class GraphNode extends Shape {
         Object.assign(this.position, position);
     }
 
+    /**
+     * @FIXME Making icons increases the rendering time by 50-100%. Try embedding the SVG directly.
+     */
     private static makeIconFragment(model) {
+
         const modelType = model instanceof StepModel ? "step" :
             model instanceof WorkflowInputParameterModel ? "output" :
                 model instanceof WorkflowOutputParameterModel ? "input" : "";
         let iconStr;
+
 
         if (modelType === "step") {
             iconStr = model.run && model.run.class === "Workflow" ? "data:image/svg+xml;base64,PHN2ZyBpZD0id29ya2Zsb3ciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDUwMCA1MDAiPjx0aXRsZT53b3JrZmxvd19uZXc8L3RpdGxlPjxjaXJjbGUgY3g9IjQwMC41IiBjeT0iMjQ5LjUiIHI9Ijk5LjUiLz48Y2lyY2xlIGN4PSI5OS41IiBjeT0iOTkuNSIgcj0iOTkuNSIvPjxjaXJjbGUgY3g9Ijk5LjUiIGN5PSI0MDAuNSIgcj0iOTkuNSIvPjxnIGlkPSJMYXllcl80IiBkYXRhLW5hbWU9IkxheWVyIDQiPjxsaW5lIHgxPSI5OSIgeTE9Ijk5IiB4Mj0iNDAwIiB5Mj0iMjQ5IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo0MHB4Ii8+PGxpbmUgeDE9Ijk5IiB5MT0iNDAwIiB4Mj0iNDAwIiB5Mj0iMjQ5IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo0MHB4Ii8+PC9nPjwvc3ZnPg==" :

@@ -70,6 +70,7 @@ export class Edge {
         if (destStepId) {
             edge.classList.add(destStepId);
         }
+        edge.setAttribute("tabindex", "-1");
         edge.setAttribute("data-destination-node", destStepId);
         edge.setAttribute("data-destination-port", destPort);
         edge.setAttribute("data-source-port", sourcePort);

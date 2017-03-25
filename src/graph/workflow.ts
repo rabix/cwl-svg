@@ -624,6 +624,7 @@ export class Workflow {
 
     private attachSelectionDeletionBehavior() {
         this.domEvents.on("keyup", (ev: KeyboardEvent) => {
+            
             if (!(ev.target instanceof SVGElement && ev.target.ownerSVGElement === this.svgRoot)) {
                 return;
             }
