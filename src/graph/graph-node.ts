@@ -3,6 +3,7 @@ import {OutputPort} from "./output-port";
 import {Shape} from "./shape";
 import {StepModel, WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
 import Matrix = Snap.Matrix;
+import {IOPort} from "./io-port";
 
 export type NodePosition = { x: number, y: number };
 export type NodeDataModel = WorkflowInputParameterModel | WorkflowOutputParameterModel | StepModel;
@@ -16,7 +17,7 @@ export class GraphNode extends Shape {
 
     protected group;
 
-    protected static radius = 40;
+    protected static radius = 30;
 
     constructor(position: Partial<NodePosition>,
                 private dataModel: NodeDataModel,
@@ -34,7 +35,7 @@ export class GraphNode extends Shape {
     private static makeIconFragment(model) {
         const modelType = model instanceof StepModel ? "step" :
             model instanceof WorkflowInputParameterModel ? "output" :
-            model instanceof WorkflowOutputParameterModel ? "input" : "";
+                model instanceof WorkflowOutputParameterModel ? "input" : "";
         let iconStr;
 
         if (modelType === "step") {
@@ -44,13 +45,13 @@ export class GraphNode extends Shape {
         }
         else if (modelType === "input") {
             iconStr = model.type && model.type.type === "File" ||
-                model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgNDYyLjg2Ij48dGl0bGU+ZmlsZV9pbnB1dDwvdGl0bGU+PGcgaWQ9IkxheWVyXzE2IiBkYXRhLW5hbWU9IkxheWVyIDE2Ij48cG9seWdvbiBwb2ludHM9IjM4Ni4wNiAwIDM4Ni4wNiAwIDE3NSAwIDE3NSA1OC4yOSAyMjUgMTA4LjI5IDIyNSA1MCAzNjUuMzUgNTAgNDQ5IDEzMy42NSA0NDkgNDEyLjg2IDIyNSA0MTIuODYgMjI1IDM1My43MSAxNzUgNDAzLjcxIDE3NSA0NjIuODYgNDk5IDQ2Mi44NiA0OTkgMTEyLjk0IDM4Ni4wNiAwIi8+PC9nPjxnIGlkPSJMYXllcl83X2NvcHkiIGRhdGEtbmFtZT0iTGF5ZXIgNyBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSI0OTguNzggMTM4Ljc2IDM2Mi45MyAxMzguMzggMzYyLjgxIDEzOC4zOCAzNjIuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTFfY29weSIgZGF0YS1uYW1lPSJMYXllciAxMSBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSIxNTkgMzI3IDI1NSAyMzEgMTYwIDEzNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjxnIGlkPSJMYXllcl85X2NvcHlfMiIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgMiI+PGxpbmUgeTE9IjIzMSIgeDI9IjI1NSIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
-                    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgMzY1Ij48dGl0bGU+dHlwZV9pbnB1dDwvdGl0bGU+PGcgaWQ9ImlucHV0Ij48cGF0aCBkPSJNMzE2LjUsNjhhMTgxLjcyLDE4MS43MiwwLDAsMC0xMTQuMTIsNDAuMDlMMjM4LDE0My43MmExMzIuNSwxMzIuNSwwLDEsMSwxLjE2LDIxNC4zOUwyMDMuNDgsMzkzLjhBMTgyLjUsMTgyLjUsMCwxLDAsMzE2LjUsNjhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIC02OCkiLz48ZyBpZD0iTGF5ZXJfMjIiIGRhdGEtbmFtZT0iTGF5ZXIgMjIiPjxnIGlkPSJMYXllcl85X2NvcHlfNCIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgNCI+PHBvbHlnb24gcG9pbnRzPSIyOTAuMzYgMTgyIDE3Ni42OCAyOTUuNjggMTQxLjMyIDI2MC4zMiAxOTQuNjQgMjA3IDAgMjA3IDAgMTU3IDE5NC42NCAxNTcgMTQyLjMyIDEwNC42OCAxNzcuNjggNjkuMzIgMjkwLjM2IDE4MiIvPjwvZz48L2c+PC9nPjwvc3ZnPg==";
+            model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgNDYyLjg2Ij48dGl0bGU+ZmlsZV9pbnB1dDwvdGl0bGU+PGcgaWQ9IkxheWVyXzE2IiBkYXRhLW5hbWU9IkxheWVyIDE2Ij48cG9seWdvbiBwb2ludHM9IjM4Ni4wNiAwIDM4Ni4wNiAwIDE3NSAwIDE3NSA1OC4yOSAyMjUgMTA4LjI5IDIyNSA1MCAzNjUuMzUgNTAgNDQ5IDEzMy42NSA0NDkgNDEyLjg2IDIyNSA0MTIuODYgMjI1IDM1My43MSAxNzUgNDAzLjcxIDE3NSA0NjIuODYgNDk5IDQ2Mi44NiA0OTkgMTEyLjk0IDM4Ni4wNiAwIi8+PC9nPjxnIGlkPSJMYXllcl83X2NvcHkiIGRhdGEtbmFtZT0iTGF5ZXIgNyBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSI0OTguNzggMTM4Ljc2IDM2Mi45MyAxMzguMzggMzYyLjgxIDEzOC4zOCAzNjIuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTFfY29weSIgZGF0YS1uYW1lPSJMYXllciAxMSBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSIxNTkgMzI3IDI1NSAyMzEgMTYwIDEzNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjxnIGlkPSJMYXllcl85X2NvcHlfMiIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgMiI+PGxpbmUgeTE9IjIzMSIgeDI9IjI1NSIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
+                "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgMzY1Ij48dGl0bGU+dHlwZV9pbnB1dDwvdGl0bGU+PGcgaWQ9ImlucHV0Ij48cGF0aCBkPSJNMzE2LjUsNjhhMTgxLjcyLDE4MS43MiwwLDAsMC0xMTQuMTIsNDAuMDlMMjM4LDE0My43MmExMzIuNSwxMzIuNSwwLDEsMSwxLjE2LDIxNC4zOUwyMDMuNDgsMzkzLjhBMTgyLjUsMTgyLjUsMCwxLDAsMzE2LjUsNjhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIC02OCkiLz48ZyBpZD0iTGF5ZXJfMjIiIGRhdGEtbmFtZT0iTGF5ZXIgMjIiPjxnIGlkPSJMYXllcl85X2NvcHlfNCIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgNCI+PHBvbHlnb24gcG9pbnRzPSIyOTAuMzYgMTgyIDE3Ni42OCAyOTUuNjggMTQxLjMyIDI2MC4zMiAxOTQuNjQgMjA3IDAgMjA3IDAgMTU3IDE5NC42NCAxNTcgMTQyLjMyIDEwNC42OCAxNzcuNjggNjkuMzIgMjkwLjM2IDE4MiIvPjwvZz48L2c+PC9nPjwvc3ZnPg==";
         }
         else if (modelType === "output") {
             iconStr = model.type && model.type.type === "File" ||
-                model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDcuMzYgNDYyLjg2Ij48dGl0bGU+ZmlsZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJMYXllcl8xMCIgZGF0YS1uYW1lPSJMYXllciAxMCI+PGcgaWQ9IkxheWVyXzlfY29weSIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkiPjxwb2x5Z29uIHBvaW50cz0iMjc0IDI5OC41IDI3NCA0MTIuODYgNTAgNDEyLjg2IDUwIDUwIDE5MC4zNSA1MCAyNzQgMTMzLjY1IDI3NCAxNjMuNSAzMjQgMTYzLjUgMzI0IDExMi45NCAyMTEuMDYgMCAyMTEuMDYgMCAwIDAgMCA0NjIuODYgMzI0IDQ2Mi44NiAzMjQgMjk4LjUgMjc0IDI5OC41Ii8+PC9nPjwvZz48ZyBpZD0iTGF5ZXJfNyIgZGF0YS1uYW1lPSJMYXllciA3Ij48cG9seWxpbmUgcG9pbnRzPSIzMjMuNzggMTM4Ljc2IDE4Ny45MyAxMzguMzggMTg3LjgxIDEzOC4zOCAxODcuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTEiIGRhdGEtbmFtZT0iTGF5ZXIgMTEiPjxwb2x5bGluZSBwb2ludHM9IjM3NiAzMjcgNDcyIDIzMSAzNzcgMTM2IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo1MHB4Ii8+PGcgaWQ9IkxheWVyXzkiIGRhdGEtbmFtZT0iTGF5ZXIgOSI+PGxpbmUgeDE9IjIxNyIgeTE9IjIzMSIgeDI9IjQ3MiIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
-                    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAuMzYgMzY1Ij48dGl0bGU+dHlwZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJvdXRwdXQiPjxwYXRoIGQ9Ik0yOTEuOTUsMzI1LjIzYTEzNCwxMzQsMCwwLDEtMTUuNzYsMTksMTMyLjUsMTMyLjUsMCwxLDEsMC0xODcuMzgsMTMzLjksMTMzLjksMCwwLDEsMTYuMTYsMTkuNTVsMzUuODEtMzUuODFBMTgyLjUsMTgyLjUsMCwxLDAsMzI3LjczLDM2MVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgLTY4KSIvPjxnIGlkPSJjaXJjbGVfc291cmNlX2NvcHkiIGRhdGEtbmFtZT0iY2lyY2xlIHNvdXJjZSBjb3B5Ij48ZyBpZD0iTGF5ZXJfMjJfY29weSIgZGF0YS1uYW1lPSJMYXllciAyMiBjb3B5Ij48ZyBpZD0iTGF5ZXJfOV9jb3B5XzUiIGRhdGEtbmFtZT0iTGF5ZXIgOSBjb3B5IDUiPjxwb2x5Z29uIHBvaW50cz0iNTAwLjM2IDE4MiAzODYuNjggMjk1LjY4IDM1MS4zMiAyNjAuMzIgNDA0LjY0IDIwNyAyMTAgMjA3IDIxMCAxNTcgNDA0LjY0IDE1NyAzNTIuMzIgMTA0LjY4IDM4Ny42OCA2OS4zMiA1MDAuMzYgMTgyIi8+PC9nPjwvZz48L2c+PC9nPjwvc3ZnPg==";
+            model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDcuMzYgNDYyLjg2Ij48dGl0bGU+ZmlsZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJMYXllcl8xMCIgZGF0YS1uYW1lPSJMYXllciAxMCI+PGcgaWQ9IkxheWVyXzlfY29weSIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkiPjxwb2x5Z29uIHBvaW50cz0iMjc0IDI5OC41IDI3NCA0MTIuODYgNTAgNDEyLjg2IDUwIDUwIDE5MC4zNSA1MCAyNzQgMTMzLjY1IDI3NCAxNjMuNSAzMjQgMTYzLjUgMzI0IDExMi45NCAyMTEuMDYgMCAyMTEuMDYgMCAwIDAgMCA0NjIuODYgMzI0IDQ2Mi44NiAzMjQgMjk4LjUgMjc0IDI5OC41Ii8+PC9nPjwvZz48ZyBpZD0iTGF5ZXJfNyIgZGF0YS1uYW1lPSJMYXllciA3Ij48cG9seWxpbmUgcG9pbnRzPSIzMjMuNzggMTM4Ljc2IDE4Ny45MyAxMzguMzggMTg3LjgxIDEzOC4zOCAxODcuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTEiIGRhdGEtbmFtZT0iTGF5ZXIgMTEiPjxwb2x5bGluZSBwb2ludHM9IjM3NiAzMjcgNDcyIDIzMSAzNzcgMTM2IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo1MHB4Ii8+PGcgaWQ9IkxheWVyXzkiIGRhdGEtbmFtZT0iTGF5ZXIgOSI+PGxpbmUgeDE9IjIxNyIgeTE9IjIzMSIgeDI9IjQ3MiIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
+                "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAuMzYgMzY1Ij48dGl0bGU+dHlwZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJvdXRwdXQiPjxwYXRoIGQ9Ik0yOTEuOTUsMzI1LjIzYTEzNCwxMzQsMCwwLDEtMTUuNzYsMTksMTMyLjUsMTMyLjUsMCwxLDEsMC0xODcuMzgsMTMzLjksMTMzLjksMCwwLDEsMTYuMTYsMTkuNTVsMzUuODEtMzUuODFBMTgyLjUsMTgyLjUsMCwxLDAsMzI3LjczLDM2MVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgLTY4KSIvPjxnIGlkPSJjaXJjbGVfc291cmNlX2NvcHkiIGRhdGEtbmFtZT0iY2lyY2xlIHNvdXJjZSBjb3B5Ij48ZyBpZD0iTGF5ZXJfMjJfY29weSIgZGF0YS1uYW1lPSJMYXllciAyMiBjb3B5Ij48ZyBpZD0iTGF5ZXJfOV9jb3B5XzUiIGRhdGEtbmFtZT0iTGF5ZXIgOSBjb3B5IDUiPjxwb2x5Z29uIHBvaW50cz0iNTAwLjM2IDE4MiAzODYuNjggMjk1LjY4IDM1MS4zMiAyNjAuMzIgNDA0LjY0IDIwNyAyMTAgMjA3IDIxMCAxNTcgNDA0LjY0IDE1NyAzNTIuMzIgMTA0LjY4IDM4Ny42OCA2OS4zMiA1MDAuMzYgMTgyIi8+PC9nPjwvZz48L2c+PC9nPjwvc3ZnPg==";
         }
 
         if (!modelType.length || !iconStr.length) {
@@ -68,7 +69,7 @@ export class GraphNode extends Shape {
 
     }
 
-    static makeTemplate(x: number, y: number, dataModel: NodeDataModel): string {
+    static makeTemplate(x: number, y: number, dataModel: NodeDataModel & { in: any[], out: any[] }): string {
 
         let nodeTypeClass = "step";
         if (dataModel instanceof WorkflowInputParameterModel) {
@@ -77,25 +78,30 @@ export class GraphNode extends Shape {
             nodeTypeClass = "output";
         }
 
-        const inputPortTemplates = (dataModel.in || [])
-            .filter(p => p.isVisible)
+        const inputs   = (dataModel.in || []).filter(p => p.isVisible);
+        const outputs  = (dataModel.out || []).filter(p => p.isVisible);
+        const maxPorts = Math.max(inputs.length, outputs.length);
+        const radius   = GraphNode.radius + maxPorts * IOPort.radius;
+
+
+        const inputPortTemplates = inputs
             .sort((a, b) => -a.id.localeCompare(b.id))
             .map((p, i, arr) => GraphNode.makePortTemplate(
                 p,
                 "input",
-                GraphNode.createPortMatrix(arr.length, i, GraphNode.radius, "input").toString()
+                GraphNode.createPortMatrix(arr.length, i, radius, "input").toString()
             ))
             .reduce((acc, tpl) => acc + tpl, "");
 
-        const outputPortTemplates = (dataModel.out || [])
-            .filter(p => p.isVisible)
+        const outputPortTemplates = outputs
             .sort((a, b) => -a.id.localeCompare(b.id))
             .map((p, i, arr) => GraphNode.makePortTemplate(
                 p,
                 "output",
-                GraphNode.createPortMatrix(arr.length, i, GraphNode.radius, "output").toString()
+                GraphNode.createPortMatrix(arr.length, i, radius, "output").toString()
             ))
             .reduce((acc, tpl) => acc + tpl, "");
+
 
         return `
             <g tabindex="-1" class="node ${dataModel.id} ${nodeTypeClass}"
@@ -103,11 +109,11 @@ export class GraphNode extends Shape {
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">
                 <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
-                    <circle cx="0" cy="0" r="${GraphNode.radius}" class="outer"></circle>
-                    <circle cx="0" cy="0" r="${GraphNode.radius * .75}" class="inner"></circle>
+                    <circle cx="0" cy="0" r="${radius}" class="outer"></circle>
+                    <circle cx="0" cy="0" r="${radius * .75}" class="inner"></circle>
                     ${GraphNode.makeIconFragment(dataModel)}
                 </g>
-                <text transform="matrix(1,0,0,1,0,${GraphNode.radius + 30})" class="title label">${dataModel.label || dataModel.id}</text>
+                <text transform="matrix(1,0,0,1,0,${radius + 30})" class="title label">${dataModel.label || dataModel.id}</text>
                 ${inputPortTemplates}
                 ${outputPortTemplates}
             </g>
@@ -167,8 +173,8 @@ export class GraphNode extends Shape {
                                     transform = "matrix(1, 0, 0, 1, 0, 0)"): string {
 
         const portClass = type === "input" ? "input-port" : "output-port";
-        const label = port.label || port.id;
-        const template = `
+        const label     = port.label || port.id;
+        const template  = `
             <g class="port ${portClass} ${port.id}" transform="${transform || 'matrix(1, 0, 0, 1, 0, 0)'}"
                data-connection-id="${port.connectionId}"
                data-port-id="${port.id}"
@@ -230,7 +236,7 @@ export class GraphNode extends Shape {
     public distributePorts() {
 
         const outputs = Array.from(this.group.node.querySelectorAll(".output-port")).map(p => Snap(p));
-        const inputs = Array.from(this.group.node.querySelectorAll(".input-port")).map(p => Snap(p));
+        const inputs  = Array.from(this.group.node.querySelectorAll(".input-port")).map(p => Snap(p));
 
         const availableAngle = 140;
         let rotationAngle;
@@ -271,14 +277,14 @@ export class GraphNode extends Shape {
         const availableAngle = 140;
 
         let rotationAngle =
-            // Starting rotation angle
-            (-availableAngle / 2) +
-            (
-                // Angular offset by element index
-                (portIndex + 1)
-                // Angle between elements
-                * availableAngle / (totalPortLength + 1)
-            );
+                // Starting rotation angle
+                (-availableAngle / 2) +
+                (
+                    // Angular offset by element index
+                    (portIndex + 1)
+                    // Angle between elements
+                    * availableAngle / (totalPortLength + 1)
+                );
 
         if (type === "input") {
             rotationAngle =
@@ -298,7 +304,7 @@ export class GraphNode extends Shape {
 
     public static createGhostIO() {
 
-        const ns = "http://www.w3.org/2000/svg";
+        const ns   = "http://www.w3.org/2000/svg";
         const node = document.createElementNS(ns, "g");
         node.setAttribute("transform", "matrix(1,0,0,1,0,0)");
         node.classList.add("ghost", "node");

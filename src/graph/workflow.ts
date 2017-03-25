@@ -53,9 +53,11 @@ export class Workflow {
             <symbol id="type_input" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 499 365"><title>type_input</title><g id="input"><path d="M316.5,68a181.72,181.72,0,0,0-114.12,40.09L238,143.72a132.5,132.5,0,1,1,1.16,214.39L203.48,393.8A182.5,182.5,0,1,0,316.5,68Z" transform="translate(0 -68)"/><g id="Layer_22" data-name="Layer 22"><g id="Layer_9_copy_4" data-name="Layer 9 copy 4"><polygon points="290.36 182 176.68 295.68 141.32 260.32 194.64 207 0 207 0 157 194.64 157 142.32 104.68 177.68 69.32 290.36 182"/></g></g></g></symbol>
             <symbol id="type_output" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.36 365"><title>type_output</title><g id="output"><path d="M291.95,325.23a134,134,0,0,1-15.76,19,132.5,132.5,0,1,1,0-187.38,133.9,133.9,0,0,1,16.16,19.55l35.81-35.81A182.5,182.5,0,1,0,327.73,361Z" transform="translate(0 -68)"/><g id="circle_source_copy" data-name="circle source copy"><g id="Layer_22_copy" data-name="Layer 22 copy"><g id="Layer_9_copy_5" data-name="Layer 9 copy 5"><polygon points="500.36 182 386.68 295.68 351.32 260.32 404.64 207 210 207 210 157 404.64 157 352.32 104.68 387.68 69.32 500.36 182"/></g></g></g></g></symbol>
             <rect x="0" y="0" width="100%" height="100%" class="pan-handle" transform="matrix(1,0,0,1,0,0)"></rect>
+            
             <g class="workflow" transform="matrix(1,0,0,1,0,0)"></g>
         `;
-        this.workflow             = this.paper.node.querySelector(".workflow") as any;
+
+        this.workflow = this.paper.node.querySelector(".workflow") as any;
 
         this.group = Snap(this.workflow);
 
@@ -145,6 +147,7 @@ export class Workflow {
 
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
+        this.command("workflow.scale", this.scale);
     }
 
     public redraw() {
@@ -154,12 +157,12 @@ export class Workflow {
 
     private attachEvents() {
 
-        // this.eventHub.on("step.change", (change: StepModel) => {
-        //     const title = this.workflow.querySelector(`.node.step.${change.connectionId} .title`) as SVGTextElement;
-        //     if (title) {
-        //         title.textContent = change.label;
-        //     }
-        // });
+        this.model.on("step.change", (change: StepModel) => {
+            const title = this.workflow.querySelector(`.node.step.${change.connectionId} .title`) as SVGTextElement;
+            if (title) {
+                title.textContent = change.label;
+            }
+        });
 
         /**
          * @name app.create.input
@@ -282,10 +285,10 @@ export class Workflow {
         /**
          * @name workflow.scale
          */
-        this.eventHub.on("workflow.scale", (c, ev?: { clientX: number, clientY: number }) => {
-            c = c || 1;
-            this.scale = c;
-            const transform = this.workflow.transform.baseVal;
+        this.eventHub.on("workflow.scale", (c = 1, ev?: { clientX: number, clientY: number }) => {
+
+            this.scale              = c;
+            const transform         = this.workflow.transform.baseVal;
             const matrix: SVGMatrix = transform.getItem(0).matrix;
 
             const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
@@ -337,18 +340,19 @@ export class Workflow {
     }
 
     private edgePadding: number = 100;
-    private edgeInterval = null;
-    private ifDraggingMouseCloseToEdge(el, coords: {x: number, y: number},
-                                       dx: number, dy: number) : void {
+    private edgeInterval        = null;
+
+    private ifDraggingMouseCloseToEdge(el, coords: { x: number, y: number },
+                                       dx: number, dy: number): void {
         const checkIfTranslateX = coords.x > window.innerWidth - this.edgePadding && dx > 0 ||
-                coords.x < this.edgePadding && dx < 0;
+            coords.x < this.edgePadding && dx < 0;
         const checkIfTranslateY = coords.y > window.innerHeight - this.edgePadding && dy > 0 ||
             coords.y < this.edgePadding && dy < 0;
 
         if (checkIfTranslateX || checkIfTranslateY) {
             const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
-            const newMatrix: SVGMatrix = workflowMatrix.translate(checkIfTranslateX ? -dx : 0,
-                checkIfTranslateY ? -dy: 0);
+            const newMatrix: SVGMatrix      = workflowMatrix.translate(checkIfTranslateX ? -dx : 0,
+                checkIfTranslateY ? -dy : 0);
 
             workflowMatrix.e = newMatrix.e;
             workflowMatrix.f = newMatrix.f;
@@ -356,8 +360,8 @@ export class Workflow {
             if (!this.edgeInterval) {
                 this.edgeInterval = setInterval(() => {
                     const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
-                    const newMatrix: SVGMatrix = workflowMatrix.translate(checkIfTranslateX ? -dx : 0,
-                        checkIfTranslateY ? -dy: 0);
+                    const newMatrix: SVGMatrix      = workflowMatrix.translate(checkIfTranslateX ? -dx : 0,
+                        checkIfTranslateY ? -dy : 0);
 
                     workflowMatrix.e = newMatrix.e;
                     workflowMatrix.f = newMatrix.f;
@@ -646,10 +650,10 @@ export class Workflow {
 
                     this.model.disconnect(sourcePortID, destinationPortID);
                     this.renderModel(this.model);
-                } else if (el.classList.contains("input")){
+                } else if (el.classList.contains("input")) {
                     this.model.removeInput(el.getAttribute("data-connection-id"));
                     this.renderModel(this.model);
-                } else if (el.classList.contains("output")){
+                } else if (el.classList.contains("output")) {
                     this.model.removeOutput(el.getAttribute("data-connection-id"));
                     this.renderModel(this.model);
                 }
@@ -663,7 +667,7 @@ export class Workflow {
         let allConnectionPorts;
         let highlightedPort: SVGGElement;
         let edgeDirection: "left" | "right";
-        let ioNode: SVGGElement;
+        let ghostIONode: SVGGElement;
         let originNodeCoords;
 
         this.domEvents.drag(".port", (dx, dy, ev, target) => {
@@ -701,7 +705,7 @@ export class Workflow {
                 parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
             }
 
-            ioNode.classList.add("hidden");
+            ghostIONode.classList.add("hidden");
             // If there is a port in close proximity, assume that we want to connect to it, so highlight it
             if (sorted.length && sorted[0].distance < 100) {
                 highlightedPort = sorted[0];
@@ -714,9 +718,9 @@ export class Workflow {
                 highlightedPort = undefined;
 
                 if (nodeToMouseDistance > 120) {
-                    ioNode.classList.remove("hidden");
+                    ghostIONode.classList.remove("hidden");
                     // Otherwise, we might create an input or an ooutput node
-                    ioNode.transform.baseVal.getItem(0).setTranslate(coords.x, coords.y);
+                    ghostIONode.transform.baseVal.getItem(0).setTranslate(coords.x, coords.y);
                 } else {
                 }
             }
@@ -727,8 +731,9 @@ export class Workflow {
             originNodeCoords = this.translateMouseCoords(originNodeCTM.e, originNodeCTM.f);
 
             const isInputPort = origin.classList.contains("input-port");
-            ioNode            = GraphNode.createGhostIO();
-            this.workflow.appendChild(ioNode);
+
+            ghostIONode = GraphNode.createGhostIO();
+            this.workflow.appendChild(ghostIONode);
 
 
             // Based on the type of our origin port, determine the direction of the path to draw
@@ -779,9 +784,20 @@ export class Workflow {
             this.workflow.classList.add("has-suggestion", "edge-dragging");
 
         }, (ev, origin) => {
+
+            /**
+             * If a port is highlighted, that means that we are supposed to snap the connection to that port
+             */
             if (highlightedPort) {
+                /**
+                 * Find the connection ids of origin port and the highlighted port
+                 */
                 let sourceID = origin.getAttribute("data-connection-id");
                 let destID   = highlightedPort.getAttribute("data-connection-id");
+
+                /**
+                 * Swap their places in case you dragged out from input to output
+                 */
                 if (sourceID.startsWith("in")) {
                     const tmp = sourceID;
                     sourceID  = destID;
@@ -789,7 +805,8 @@ export class Workflow {
                 }
 
                 /**
-                 * If an edge with these connection IDs doesn't already exist, create it,
+                 * Maybe you tried to connect ports that are already connected.
+                 * If an edge with these connection IDs doesn't already exist, create it.
                  * Otherwise, prevent creation.
                  */
                 if (!GraphEdge.findEdge(this.workflow, sourceID, destID)) {
@@ -799,24 +816,40 @@ export class Workflow {
 
                 }
 
+                // Deselect and cleanup
                 highlightedPort.classList.remove("highlighted");
                 highlightedPort = undefined;
-            } else if (!ioNode.classList.contains("hidden")) {
+            } else if (!ghostIONode.classList.contains("hidden")) {
+                // If the ghost io node is not hidden, then we should create an input or an output
 
+                // Take the port connection id, check if it's an input or an output and,
+                // based on that, determine if we should create an input or an output.
+                // Then create the i/o node.
                 const portID = origin.getAttribute("data-connection-id");
                 const newIO  = GraphNode.patchModelPorts(portID.startsWith("in")
                     ? this.model.createInputFromPort(portID)
                     : this.model.createOutputFromPort(portID)
                 );
 
+                // Translate mouse coordinates to the canvas coordinates,
+                // make a template for the graph node, create an element out of that,
+                // and add that element to the dom
                 const mouseCoords = this.translateMouseCoords(ev.clientX, ev.clientY);
                 const tpl         = GraphNode.makeTemplate(mouseCoords.x, mouseCoords.y, newIO);
                 const el          = TemplateParser.parse(tpl);
                 this.workflow.appendChild(el);
 
+                // Update the cwlts model with the new x and y coords for this node
                 Workflow.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
+
+                // Spawn an edge between origin and destination ports
                 const edge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
+
+                // This edge still gas no events bound to it, so fix that
                 this.attachEdgeHoverBehavior(edge);
+
+                // Re-scale the workflow so the label gets upscaled or downscaled properly
+                this.command("workflow.scale", this.scale);
             }
 
             this.workflow.classList.remove("has-suggestion", "edge-dragging");
@@ -830,9 +863,9 @@ export class Workflow {
             }
 
             edge.remove();
-            ioNode.remove();
+            ghostIONode.remove();
             edge                     = undefined;
-            ioNode                   = undefined;
+            ghostIONode              = undefined;
             originNodeCoords         = undefined;
             edgeDirection            = undefined;
             preferredConnectionPorts = undefined;

@@ -7,7 +7,7 @@ export class IOPort extends Shape {
 
     protected paper: Snap.Paper;
 
-    private radius = 7;
+    static radius = 7;
 
     private connection: Snap.Element;
     private connectionFormat = "M {x1} {y1}, C {bx1} {by1} {bx2} {by2} {x2} {y2}";
@@ -18,14 +18,14 @@ export class IOPort extends Shape {
 
     constructor(paper: Snap.Paper, portModel) {
         super();
-        this.paper = paper;
+        this.paper     = paper;
         this.portModel = portModel;
     }
 
     protected drawHandle(): Snap.Element {
 
         const [, , id] = this.portModel.connectionId.split("/");
-        const outer = this.paper.circle(0, 0, this.radius).addClass("port-handle");
+        const outer    = this.paper.circle(0, 0, IOPort.radius).addClass("port-handle");
 
         return this.paper.group(outer).addClass(`io-port ${id}`);
     }
@@ -78,12 +78,12 @@ export class IOPort extends Shape {
             return `M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
         } else if (forceDirection === "right") {
             const outDir = x1 + Math.abs(x1 - x2) / 2;
-            const inDir = x2 - Math.abs(x1 - x2) / 2;
+            const inDir  = x2 - Math.abs(x1 - x2) / 2;
 
             return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
         } else if (forceDirection === "left") {
             const outDir = x1 - Math.abs(x1 - x2) / 2;
-            const inDir = x2 + Math.abs(x1 - x2) / 2;
+            const inDir  = x2 + Math.abs(x1 - x2) / 2;
 
             return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
         }
@@ -113,7 +113,7 @@ export class IOPort extends Shape {
             this.connection.remove();
             this.connection = undefined;
         }
-        const thisRect = this.group.node.getBoundingClientRect();
+        const thisRect  = this.group.node.getBoundingClientRect();
         const otherRect = port.group.node.getBoundingClientRect();
 
         this.connection = this.paper.path(this.makePathStringBetween(
