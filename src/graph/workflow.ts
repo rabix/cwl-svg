@@ -88,6 +88,7 @@ export class Workflow {
             "workflow.scale",
             /** @link workflow.fit */
             "workflow.fit",
+            "beforeChange",
         ]);
 
         this.attachEvents();
@@ -150,7 +151,10 @@ export class Workflow {
         this.command("workflow.scale", this.scale);
     }
 
-    public redraw() {
+    public redraw(model?: WorkflowModel) {
+        if (model) {
+            this.model = model;
+        }
         this.renderModel(this.model);
     }
 
@@ -624,7 +628,7 @@ export class Workflow {
 
     private attachSelectionDeletionBehavior() {
         this.domEvents.on("keyup", (ev: KeyboardEvent) => {
-            
+
             if (!(ev.target instanceof SVGElement && ev.target.ownerSVGElement === this.svgRoot)) {
                 return;
             }
@@ -634,10 +638,17 @@ export class Workflow {
                 return;
             }
 
+            this.eventHub.emit("beforeChange", {
+                type: "deletion",
+                data: selection
+            });
+
             selection.forEach(el => {
                 if (el.classList.contains("step")) {
+
                     this.model.removeStep(el.getAttribute("data-connection-id"));
                     this.renderModel(this.model);
+                    (this.svgRoot as any).focus();
                 } else if (el.classList.contains("edge")) {
 
                     const sourcePortID      = el.getAttribute("data-source-connection");
@@ -649,16 +660,24 @@ export class Workflow {
                     const sourceNode      = Workflow.findParentNode(sourcePort);
                     const destinationNode = Workflow.findParentNode(destinationPort);
 
+
                     this.model.disconnect(sourcePortID, destinationPortID);
                     this.renderModel(this.model);
+                    (this.svgRoot as any).focus();
                 } else if (el.classList.contains("input")) {
+
                     this.model.removeInput(el.getAttribute("data-connection-id"));
-                    this.renderModel(this.model);
+                    (this.svgRoot as any).focus();
                 } else if (el.classList.contains("output")) {
+
                     this.model.removeOutput(el.getAttribute("data-connection-id"));
                     this.renderModel(this.model);
+                    (this.svgRoot as any).focus();
                 }
             });
+
+
+            // Only input elements can be focused, but we added tabindex to the svg so this works
         }, window);
     }
 
@@ -793,16 +812,16 @@ export class Workflow {
                 /**
                  * Find the connection ids of origin port and the highlighted port
                  */
-                let sourceID = origin.getAttribute("data-connection-id");
-                let destID   = highlightedPort.getAttribute("data-connection-id");
+                let sourceID      = origin.getAttribute("data-connection-id");
+                let destinationID = highlightedPort.getAttribute("data-connection-id");
 
                 /**
                  * Swap their places in case you dragged out from input to output
                  */
                 if (sourceID.startsWith("in")) {
-                    const tmp = sourceID;
-                    sourceID  = destID;
-                    destID    = tmp;
+                    const tmp     = sourceID;
+                    sourceID      = destinationID;
+                    destinationID = tmp;
                 }
 
                 /**
@@ -810,11 +829,16 @@ export class Workflow {
                  * If an edge with these connection IDs doesn't already exist, create it.
                  * Otherwise, prevent creation.
                  */
-                if (!GraphEdge.findEdge(this.workflow, sourceID, destID)) {
-                    const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destID);
-                    this.attachEdgeHoverBehavior(newEdge);
-                    this.model.connect(sourceID, destID);
 
+                if (!GraphEdge.findEdge(this.workflow, sourceID, destinationID)) {
+
+                    this.eventHub.emit("beforeChange", {
+                        type: "connect",
+                    });
+
+                    const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
+                    this.attachEdgeHoverBehavior(newEdge);
+                    this.model.connect(sourceID, destinationID);
                 }
 
                 // Deselect and cleanup
@@ -823,14 +847,20 @@ export class Workflow {
             } else if (!ghostIONode.classList.contains("hidden")) {
                 // If the ghost io node is not hidden, then we should create an input or an output
 
+
                 // Take the port connection id, check if it's an input or an output and,
                 // based on that, determine if we should create an input or an output.
                 // Then create the i/o node.
-                const portID = origin.getAttribute("data-connection-id");
-                const newIO  = GraphNode.patchModelPorts(portID.startsWith("in")
+                const portID    = origin.getAttribute("data-connection-id");
+                const ioIsInput = portID.startsWith("in");
+
+                this.eventHub.emit("beforeChange", {
+                    type: `${ioIsInput ? 'input' : 'output'}.create`,
+                });
+
+                const newIO = GraphNode.patchModelPorts(ioIsInput
                     ? this.model.createInputFromPort(portID)
-                    : this.model.createOutputFromPort(portID)
-                );
+                    : this.model.createOutputFromPort(portID));
 
                 // Translate mouse coordinates to the canvas coordinates,
                 // make a template for the graph node, create an element out of that,
@@ -889,6 +919,8 @@ export class Workflow {
             "sbg:x": x,
             "sbg:y": y
         };
+
+
         if (!obj.customProps) {
             obj.customProps = update;
             return;

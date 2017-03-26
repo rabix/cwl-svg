@@ -161,7 +161,6 @@ export class DomEvents {
 
     public detachAll() {
         this.handlers.forEach((handlers: { [event: string]: EventListener[] }, listenerRoot: Element) => {
-            console.log("Detaching handlers", handlers, "from key");
             for (let eventName in handlers) {
                 handlers[eventName].forEach(handler => listenerRoot.removeEventListener(eventName, handler));
             }
