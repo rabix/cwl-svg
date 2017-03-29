@@ -133,12 +133,11 @@ export class Workflow {
         const padding    = 200;
 
         if (clientBounds.width === 0 || clientBounds.height === 0) {
-            console.warn("Cannot fit workflow to the area that has no visible viewport.");
-            return;
+            throw new Error("Cannot fit workflow to the area that has no visible viewport.");
         }
 
-        const verticalScale   = (wfBounds.height + padding) / clientBounds.height;
-        const horizontalScale = (wfBounds.width + padding) / clientBounds.width;
+        const verticalScale   = (wfBounds.height) / (clientBounds.height - padding);
+        const horizontalScale = (wfBounds.width) / (clientBounds.width - padding);
 
         const scaleFactor = Math.max(verticalScale, horizontalScale);
 
@@ -148,14 +147,13 @@ export class Workflow {
 
         const scaledWFBounds = this.workflow.getBoundingClientRect();
 
-        const moveY = clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2;
-        const moveX = clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2;
+        const moveY = newScale * (clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2);
+        const moveX = newScale * (clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2);
 
 
         const matrix = this.workflow.transform.baseVal.getItem(0).matrix;
-
-        matrix.e = moveX;
-        matrix.f = moveY;
+        matrix.e     = moveX;
+        matrix.f     = moveY;
     }
 
     private renderModel(model: WorkflowModel) {
@@ -192,7 +190,13 @@ export class Workflow {
         this.scaleWorkflow(this.scale);
     }
 
-    public redraw(model?: WorkflowModel) {
+
+    static canDrawIn(element: SVGElement): boolean {
+        let clientBounds = element.getBoundingClientRect();
+        return clientBounds.width !== 0;
+    }
+
+    redraw(model?: WorkflowModel) {
         if (model) {
             this.model = model;
         }
@@ -335,7 +339,6 @@ export class Workflow {
 
         const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
 
-        console.log("Scaling");
         matrix.e += matrix.a * coords.x;
         matrix.f += matrix.a * coords.y;
         matrix.a = matrix.d = scaleCoefficient;
