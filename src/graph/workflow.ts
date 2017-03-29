@@ -69,7 +69,7 @@ export class Workflow {
                 return;
             }
 
-            this.command("workflow.scale", scale, ev);
+            this.scaleWorkflow(scale, ev);
             ev.stopPropagation();
         }, true);
 
@@ -117,6 +117,47 @@ export class Workflow {
         return this.scale;
     }
 
+    /**
+     * Scales the workflow to fit the available viewport
+     */
+    fitToViewport(): void {
+        this.scaleWorkflow(1);
+        Object.assign(this.workflow.transform.baseVal.getItem(0).matrix, {
+            e: 0,
+            f: 0
+        });
+
+
+        let clientBounds = this.svgRoot.getBoundingClientRect();
+        let wfBounds     = this.workflow.getBoundingClientRect();
+        const padding    = 200;
+
+        if (clientBounds.width === 0 || clientBounds.height === 0) {
+            console.warn("Cannot fit workflow to the area that has no visible viewport.");
+            return;
+        }
+
+        const verticalScale   = (wfBounds.height + padding) / clientBounds.height;
+        const horizontalScale = (wfBounds.width + padding) / clientBounds.width;
+
+        const scaleFactor = Math.max(verticalScale, horizontalScale);
+
+        // Cap the upscaling to 1, we don't want to zoom in workflows that would fit anyway
+        const newScale = Math.min(this.scale / scaleFactor, 1);
+        this.scaleWorkflow(newScale);
+
+        const scaledWFBounds = this.workflow.getBoundingClientRect();
+
+        const moveY = clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2;
+        const moveX = clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2;
+
+
+        const matrix = this.workflow.transform.baseVal.getItem(0).matrix;
+
+        matrix.e = moveX;
+        matrix.f = moveY;
+    }
+
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
         const oldTransform = this.workflow.getAttribute("transform");
@@ -126,7 +167,7 @@ export class Workflow {
 
         const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
-            .reduce((tpl, nodeModel) => {
+            .reduce((tpl, nodeModel: any) => {
                 const x = nodeModel.customProps["sbg:x"] || Math.random() * 500;
                 const y = nodeModel.customProps["sbg:y"] || Math.random() * 500;
                 return tpl + GraphNode.makeTemplate(x, y, nodeModel);
@@ -148,7 +189,7 @@ export class Workflow {
 
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
-        this.command("workflow.scale", this.scale);
+        this.scaleWorkflow(this.scale);
     }
 
     public redraw(model?: WorkflowModel) {
@@ -207,7 +248,7 @@ export class Workflow {
 
             // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
             // So let's trigger the scaling again
-            this.command("workflow.scale", this.scale);
+            this.scaleWorkflow(this.scale);
         });
 
         /**
@@ -285,62 +326,30 @@ export class Workflow {
                 });
             }
         });
+    }
 
-        /**
-         * @name workflow.scale
-         */
-        this.eventHub.on("workflow.scale", (c = 1, ev?: { clientX: number, clientY: number }) => {
+    scaleWorkflow(scaleCoefficient = 1, ev?: { clientX: number, clientY: number }) {
+        this.scale              = scaleCoefficient;
+        const transform         = this.workflow.transform.baseVal;
+        const matrix: SVGMatrix = transform.getItem(0).matrix;
 
-            this.scale              = c;
-            const transform         = this.workflow.transform.baseVal;
-            const matrix: SVGMatrix = transform.getItem(0).matrix;
+        const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
 
-            const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
+        console.log("Scaling");
+        matrix.e += matrix.a * coords.x;
+        matrix.f += matrix.a * coords.y;
+        matrix.a = matrix.d = scaleCoefficient;
+        matrix.e -= scaleCoefficient * coords.x;
+        matrix.f -= scaleCoefficient * coords.y;
 
-            matrix.e += matrix.a * coords.x;
-            matrix.f += matrix.a * coords.y;
-            matrix.a = matrix.d = c;
-            matrix.e -= c * coords.x;
-            matrix.f -= c * coords.y;
+        const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
 
-            const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
-
-            Array.from(this.workflow.querySelectorAll(".node .label"))
-                .map(el => el.transform.baseVal.getItem(0).matrix)
-                .forEach(m => {
-                    m.a = labelScale;
-                    m.d = labelScale;
-                })
-        });
-
-        /**
-         * @name workflow.fit
-         */
-        this.eventHub.on("workflow.fit", () => {
-
-            this.group.transform(new Snap.Matrix());
-
-            let {clientWidth: paperWidth, clientHeight: paperHeight} = this.paper.node;
-            let clientBounds                                         = this.paper.node.getBoundingClientRect();
-            let wfBounds                                             = this.group.node.getBoundingClientRect();
-
-            const padding = 200;
-
-            const verticalScale   = (wfBounds.height + padding) / paperHeight;
-            const horizontalScale = (wfBounds.width + padding) / paperWidth;
-
-            const scaleFactor = Math.max(verticalScale, horizontalScale);
-
-            this.command("workflow.scale", 1 / scaleFactor);
-
-            let paperBounds = this.paper.node.getBoundingClientRect();
-            wfBounds        = this.group.node.getBoundingClientRect();
-
-            const moveY = scaleFactor * -wfBounds.top + scaleFactor * clientBounds.top + scaleFactor * Math.abs(paperBounds.height - wfBounds.height) / 2;
-            const moveX = scaleFactor * -wfBounds.left + scaleFactor * clientBounds.left + scaleFactor * Math.abs(paperBounds.width - wfBounds.width) / 2;
-
-            this.group.transform(this.group.transform().localMatrix.clone().translate(moveX, moveY));
-        });
+        Array.from(this.workflow.querySelectorAll(".node .label"))
+            .map((el: SVGGElement) => el.transform.baseVal.getItem(0).matrix)
+            .forEach(m => {
+                m.a = labelScale;
+                m.d = labelScale;
+            });
     }
 
     private edgePadding: number = 100;
@@ -880,7 +889,8 @@ export class Workflow {
                 this.attachEdgeHoverBehavior(edge);
 
                 // Re-scale the workflow so the label gets upscaled or downscaled properly
-                this.command("workflow.scale", this.scale);
+
+                this.scaleWorkflow(this.scale);
             }
 
             this.workflow.classList.remove("has-suggestion", "edge-dragging");
