@@ -687,7 +687,6 @@ export class Workflow {
                     const sourceNode      = Workflow.findParentNode(sourcePort);
                     const destinationNode = Workflow.findParentNode(destinationPort);
 
-
                     this.model.disconnect(sourcePortID, destinationPortID);
                     this.renderModel(this.model);
                     (this.svgRoot as any).focus();
