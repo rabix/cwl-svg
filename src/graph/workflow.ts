@@ -694,6 +694,7 @@ export class Workflow {
                 } else if (el.classList.contains("input")) {
 
                     this.model.removeInput(el.getAttribute("data-connection-id"));
+                    this.renderModel(this.model);
                     (this.svgRoot as any).focus();
                 } else if (el.classList.contains("output")) {
 
