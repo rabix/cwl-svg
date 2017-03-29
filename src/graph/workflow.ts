@@ -159,6 +159,13 @@ export class Workflow {
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
         const oldTransform = this.workflow.getAttribute("transform");
+        let selectedStuff  = this.workflow.querySelectorAll(".selected");
+        if (selectedStuff.length) {
+            selectedStuff = selectedStuff.item(0).getAttribute("data-connection-id");
+        } else {
+            selectedStuff = undefined;
+        }
+
         this.clearCanvas();
 
         this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
@@ -188,11 +195,19 @@ export class Workflow {
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
         this.scaleWorkflow(this.scale);
+
+        const newSelection = this.workflow.querySelector(`[data-connection-id='${selectedStuff}']`);
+        if (newSelection) {
+            this.activateSelection(newSelection as SVGGElement);
+        }
+
+
     }
 
 
     static canDrawIn(element: SVGElement): boolean {
         let clientBounds = element.getBoundingClientRect();
+        console.log("Checking if drawable", clientBounds, element.getClientRects());
         return clientBounds.width !== 0;
     }
 
@@ -982,5 +997,8 @@ export class Workflow {
         });
 
         el.classList.add("selected");
+        if (typeof el.focus === "function") {
+            (el as any).focus();
+        }
     }
 }
