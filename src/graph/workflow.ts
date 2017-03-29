@@ -485,7 +485,7 @@ export class Workflow {
                 const parentNode = Workflow.findParentNode(target);
 
                 const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
-                Workflow.setModelPosition(model, newX, newY);
+                this.setModelPosition(model, newX, newY);
 
                 inputEdges  = undefined;
                 outputEdges = undefined;
@@ -883,7 +883,7 @@ export class Workflow {
                 this.workflow.appendChild(el);
 
                 // Update the cwlts model with the new x and y coords for this node
-                Workflow.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
+                this.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
 
                 // Spawn an edge between origin and destination ports
                 const edge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
@@ -927,12 +927,16 @@ export class Workflow {
     }
 
 
-    static setModelPosition(obj, x, y) {
+    setModelPosition(obj, x, y) {
         const update = {
             "sbg:x": x,
             "sbg:y": y
         };
 
+
+        this.eventHub.emit("beforeChange", {
+            type: "move",
+        });
 
         if (!obj.customProps) {
             obj.customProps = update;
