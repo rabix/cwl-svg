@@ -1001,4 +1001,9 @@ export class Workflow {
             (el as any).focus();
         }
     }
+
+    destroy() {
+        this.domEvents.detachAll();
+        this.eventHub.empty();
+    }
 }
