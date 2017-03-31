@@ -1003,7 +1003,7 @@ export class Workflow {
     }
 
     destroy() {
-        this.domEvents.detachAll();
+        this.clearCanvas();
         this.eventHub.empty();
     }
 }

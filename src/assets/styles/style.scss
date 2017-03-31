@@ -34,6 +34,7 @@ $edge-inner-width: 2px;
 $edge-outer-color: $color-background;
 $edge-outer-width: 7px;
 $edge-highlight-color: $color-primary;
+$selected-node-outer-color: #9c27b0;
 
 $font-family: sans-serif;
 
@@ -108,7 +109,7 @@ svg.cwl-workflow {
 
         &.step {
           .inner {
-            fill: lighten($color-primary, 10%);
+            fill: lighten($color-primary, 20%);
           }
         }
         &.input,
@@ -152,7 +153,7 @@ svg.cwl-workflow {
 
     &.selected {
       .outer {
-        stroke: $color-highlight !important;
+        stroke: $selected-node-outer-color !important;
       }
     }
 
