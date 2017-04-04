@@ -360,8 +360,7 @@ export class Workflow {
                 .forEach(m => {
                     m.a = labelScale;
                     m.d = labelScale;
-                })
-        });
+                });
 
         /**
          * @name workflow.fit
@@ -426,12 +425,17 @@ export class Workflow {
                 const el  = handle.parentNode;
                 let sdx, sdy;
 
-                const transform = el.transform.baseVal.getItem(0);
+                const boundary = this.checkIfCursorOnBoundary(ev.clientX, ev.clientY);
 
-                const mouseOnEdge = this.ifDraggingMouseCloseToEdge(el, { x: ev.clientX, y: ev.clientY },
-                    { startX: startX, startY: startY, dx: dx, dy: dy, inputEdges: inputEdges, outputEdges: outputEdges });
+                // if a workflow boundary has been hit, then call function which calls the interval
+                if (boundary.x || boundary.y) {
+                    this.ifDraggingCursorHitBoundary(el, { x: boundary.x, y: boundary.y },
+                        { startX: startX, startY: startY, inputEdges: inputEdges, outputEdges: outputEdges });
+                }
 
-                const scaledDeltas = this.getScaledDeltaXY(mouseOnEdge, ev, startX, startY, dx, dy);
+                // returns the delta x and y - change in node position - based on mouse position and
+                // boundary offsets (if necessary)
+                const scaledDeltas = this.getScaledDeltaXY(boundary, ev, startX, startY, dx, dy);
                 sdx = scaledDeltas.x;
                 sdy = scaledDeltas.y;
                 newX = startX + sdx;
@@ -458,16 +462,19 @@ export class Workflow {
                         outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
                     });
             }, (ev, target) => {
-                if (this.edgeInterval.interval) {
-                    clearInterval(this.edgeInterval.interval);
-                    this.edgeInterval = {x: false, y: false, interval: null, intervalFinishOnce: false };
+                if (this.dragBoundaryInterval.interval) {
+                    clearInterval(this.dragBoundaryInterval.interval);
+                    this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
+                    this.dragBoundaryInterval.interval = null;
                 }
-                this.edgeXOffset = this.edgeYOffset = 0;
+                this.dragBoundaryInterval.xOffset = this.dragBoundaryInterval.yOffset = 0;
 
                 const parentNode = Workflow.findParentNode(target);
 
                 const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
-                this.setModelPosition(model, newX, newY);
+                if (model) {
+                    this.setModelPosition(model, newX, newY);
+                }
 
                 inputEdges  = undefined;
                 outputEdges = undefined;
@@ -533,95 +540,74 @@ export class Workflow {
     }
 
     private workflowBoundingClientRect;
-    private edgePadding: number = 50;
-    private edgeTranslateSpeed: number = 5;
-    private edgeInterval        = { x: false, y: false, interval: null, intervalFinishOnce: false };
-    private edgeXOffset: number = 0;
-    private edgeYOffset: number = 0;
-    private pathXOffset: number = 0;
-    private pathYOffset: number = 0;
+    private dragBoundary: number = 50;
+    private dragBoundaryTranslation: number = 5;
+    private dragBoundaryInterval = {
+        x: false,
+        y: false,
+        interval: null,
+        xOffset: 0,
+        yOffset: 0
+    };
     // TODO: change window.innerWidth and window.innerHeight to svg width and height
 
-    private ifDraggingMouseCloseToEdge(el: SVGElement,
-                                       coords: { x: number, y: number },
-                                       pathInfo?: { startX: number, startY: number,
-                                           dx: number, dy: number,
+    private ifDraggingCursorHitBoundary(el: SVGElement,
+                                        boundary: { x: 1 | 0 | -1, y: 1 | 0 | -1 },
+                                        pathInfo?: { startX: number, startY: number,
                                            inputEdges: Map<SVGElement, number[]>,
                                            outputEdges: Map<SVGElement, number[]> },
-                                       ghostIO?: { edge,
+                                        ghostIO?: { edge,
                                            originX: number, originY: number,
-                                           edgeDirection: string }): any {
+                                           edgeDirection: string }): void {
 
-        // If edge areas overlap or if edges take up half - or more - of the svg, resize edgePadding
-        while (this.workflowBoundingClientRect.right - this.edgePadding <= this.workflowBoundingClientRect.left + this.edgePadding ||
-            this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.edgePadding * 4)) { // CHANGE HERE
-            this.edgePadding = this.edgePadding / 2;
+        // If edge areas overlap or if edges take up half - or more - of the svg, resize dragBoundary
+        while (this.workflowBoundingClientRect.right - this.dragBoundary <= this.workflowBoundingClientRect.left + this.dragBoundary ||
+            this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) { // CHANGE HERE
+            this.dragBoundary = this.dragBoundary / 2;
         }
 
-        // Check all possible edges to see if cursor is on edge(s)
-        const checkIfLeftEdge = coords.x < this.workflowBoundingClientRect.left + this.edgePadding; // CHANGE HERE
-        const checkIfRightEdge = coords.x > this.workflowBoundingClientRect.right - this.edgePadding; // CHANGE HERE
-        const checkIfTopEdge = coords.y < this.workflowBoundingClientRect.top + this.edgePadding; // CHANGE HERE
-        const checkIfBottomEdge = coords.y > this.workflowBoundingClientRect.bottom - this.edgePadding; // CHANGE HERE
-        const checkIfXEdge = checkIfLeftEdge || checkIfRightEdge;
-        const checkIfYEdge = checkIfTopEdge || checkIfBottomEdge;
+        const checkIfLeftBoundary: boolean = boundary.x === -1;
+        const checkIfRightBoundary: boolean = boundary.x === 1;
+        const checkIfTopBoundary: boolean = boundary.y === -1;
+        const checkIfBottomBoundary: boolean = boundary.y === 1;
 
-        if (checkIfXEdge || checkIfYEdge) {
-            // Set pathOffsets
-            if (pathInfo) {
-                let wCoordsLT, wCoordsRB, mCoords;
-                if (checkIfLeftEdge || checkIfTopEdge) {
-                    wCoordsLT = this.translateMouseCoords(this.workflowBoundingClientRect.left + this.edgePadding,
-                        this.workflowBoundingClientRect.top + this.edgePadding); // CHANGE HERE
-                }
-                if (checkIfRightEdge || checkIfBottomEdge) {
-                    wCoordsRB = this.translateMouseCoords(this.workflowBoundingClientRect.right - this.edgePadding, // CHANGE HERE
-                        this.workflowBoundingClientRect.bottom - this.edgePadding); // CHANGE HERE
-                }
-                mCoords = this.translateMouseCoords(coords.x, coords.y);
+        if (boundary.x || boundary.y) {
+            // If mouse has hit a boundary but 'this.dragBoundaryInterval' has not registered it yet,
+            // or if both are registered - which happens in corner case - but mouse has been moved to
+            // hit only one boundary afterwards
+            if (!this.dragBoundaryInterval.x && boundary.x ||
+                !this.dragBoundaryInterval.y && boundary.y ||
+                (this.dragBoundaryInterval.x && this.dragBoundaryInterval.y && !(boundary.x && boundary.y))) {
+                this.dragBoundaryInterval.x = boundary.x !== 0;
+                this.dragBoundaryInterval.y = boundary.y !== 0;
 
-                this.pathXOffset = checkIfLeftEdge ? wCoordsLT.x - pathInfo.startX :
-                    checkIfRightEdge ? wCoordsRB.x - pathInfo.startX :
-                        this.adaptToScale(pathInfo.dx) + this.edgeXOffset;
-                this.pathYOffset = checkIfTopEdge ? wCoordsLT.y - pathInfo.startY:
-                    checkIfBottomEdge ? wCoordsRB.y - pathInfo.startY :
-                        this.adaptToScale(pathInfo.dy) + this.edgeYOffset;
-            }
-
-            if (!this.edgeInterval.x && checkIfXEdge ||
-                !this.edgeInterval.y && checkIfYEdge ||
-                (this.edgeInterval.x && this.edgeInterval.y && !(checkIfXEdge && checkIfYEdge))) {
-                this.edgeInterval.x = checkIfXEdge;
-                this.edgeInterval.y = checkIfYEdge;
+                const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
+                const mx = el.transform.baseVal.getItem(0).matrix;
 
                 // Create new interval every time mouse hits new edge
-                clearInterval(this.edgeInterval.interval);
-                this.edgeInterval.interval = setInterval(() => {
-                    const moveX = checkIfRightEdge ? this.edgeTranslateSpeed : checkIfLeftEdge ? -this.edgeTranslateSpeed : 0;
-                    const moveY = checkIfBottomEdge ? this.edgeTranslateSpeed : checkIfTopEdge ? -this.edgeTranslateSpeed : 0;
+                clearInterval(this.dragBoundaryInterval.interval);
+                this.dragBoundaryInterval.interval = setInterval(() => {
+                    const moveX = checkIfRightBoundary ? this.dragBoundaryTranslation : checkIfLeftBoundary ? -this.dragBoundaryTranslation : 0;
+                    const moveY = checkIfBottomBoundary ? this.dragBoundaryTranslation : checkIfTopBoundary ? -this.dragBoundaryTranslation : 0;
 
                     // Change matrix e and f values - these represent x and y translate, respectively -
-                    // by 'this.edgeTranslateSpeed' every time this function is called. This translates the matrix
+                    // by 'this.dragBoundaryTranslation' every time this function is called. This translates the matrix
                     // when the mouse down held on an edge.
-                    const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
-                    const newMatrix: SVGMatrix      = workflowMatrix.translate(-moveX, -moveY);
+                    workflowMatrix.e -= moveX;
+                    workflowMatrix.f -= moveY;
 
-                    workflowMatrix.e = newMatrix.e;
-                    workflowMatrix.f = newMatrix.f;
+                    this.dragBoundaryInterval.xOffset += moveX;
+                    this.dragBoundaryInterval.yOffset += moveY;
 
-                    this.edgeXOffset += moveX;
-                    this.edgeYOffset += moveY;
+                    // Translates the node by 'this.dragBoundaryTranslation' every time this interval function is called.
+                    mx.e += moveX;
+                    mx.f += moveY;
 
-                    // Translates the node by 'this.edgeTranslateSpeed' every time this interval function is called.
-                    const mx = el.transform.baseVal.getItem(0).matrix.translate(moveX, moveY);
-                    el.transform.baseVal.getItem(0).setTranslate(mx.e, mx.f);
-
+                    // If node has edges - i.e. if it is not a ghost node
                     if (pathInfo) {
-                        this.pathXOffset += (checkIfXEdge ? moveX : 0);
-                        this.pathYOffset += (checkIfYEdge ? moveY : 0);
-
                         // Sets the paths correctly for the input edges and the output edges where necessary
-                        this.setInputAndOutputEdges(pathInfo.inputEdges, pathInfo.outputEdges, this.pathXOffset, this.pathYOffset)
+                        this.setInputAndOutputEdges(pathInfo.inputEdges, pathInfo.outputEdges,
+                            mx.e - pathInfo.startX, mx.f - pathInfo.startY);
                     }
                     else if (ghostIO) {
                         Array.from(ghostIO.edge.children).forEach((el: SVGPathElement) => {
@@ -629,8 +615,6 @@ export class Workflow {
                                 IOPort.makeConnectionPath(
                                     ghostIO.originX,
                                     ghostIO.originY,
-                                    // coords.x,
-                                    // coords.y,
                                     mx.e,
                                     mx.f,
                                     ghostIO.edgeDirection
@@ -641,10 +625,22 @@ export class Workflow {
                 }, 1000 / 60);
             }
         }
-        else {
-            if (this.edgeInterval.interval) {
-                clearInterval(this.edgeInterval.interval);
-                this.edgeInterval = {x: false, y: false, interval: null, intervalFinishOnce: false };
+    }
+
+    // Check all possible workflow boundaries to see if cursor is on edge(s)
+    private checkIfCursorOnBoundary(x: number, y: number): { x: 1 | 0 | -1, y: 1 | 0 | -1 } {
+        const checkIfLeftEdge = x < this.workflowBoundingClientRect.left + this.dragBoundary;
+        const checkIfRightEdge = x > this.workflowBoundingClientRect.right - this.dragBoundary;
+        const checkIfTopEdge = y < this.workflowBoundingClientRect.top + this.dragBoundary;
+        const checkIfBottomEdge = y > this.workflowBoundingClientRect.bottom - this.dragBoundary;
+
+        // if cursor is not on a boundary, then clear interval
+        if (!checkIfLeftEdge && !checkIfRightEdge &&
+            !checkIfTopEdge && !checkIfBottomEdge) {
+            if (this.dragBoundaryInterval.interval) {
+                clearInterval(this.dragBoundaryInterval.interval);
+                this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
+                this.dragBoundaryInterval.interval = null;
             }
         }
 
@@ -658,31 +654,29 @@ export class Workflow {
         };
     }
 
-
-
-    private getScaledDeltaXY(mouseOnEdge: { x: number, y: number },
+    private getScaledDeltaXY(boundary: { x: 1 | 0 | -1, y: 1 | 0 | -1 },
                              ev: {clientX: number, clientY: number},
                              startX: number, startY: number,
-                             dx: number, dy: number) {
-        const edgeIntervalOn = this.edgeInterval.interval !== null;
+                             dx: number, dy: number): { x: number, y: number } {
+        const edgeIntervalOn = this.dragBoundaryInterval.interval !== null;
         let sdx, sdy;
 
-        if (mouseOnEdge.x !== 0 || mouseOnEdge.y !== 0) {
-            if (mouseOnEdge.x !== 0) {
-                const edgeX = this.translateMouseCoords(mouseOnEdge.x === 1 ?
-                    this.workflowBoundingClientRect.right - this.edgePadding :
-                    this.workflowBoundingClientRect.left + this.edgePadding, 0).x; // CHANGE HERE
+        if (boundary.x !== 0 || boundary.y !== 0) {
+            if (boundary.x !== 0) {
+                const edgeX = this.translateMouseCoords(boundary.x === 1 ?
+                    this.workflowBoundingClientRect.right - this.dragBoundary :
+                    this.workflowBoundingClientRect.left + this.dragBoundary, 0).x; // CHANGE HERE
                 sdx = edgeX - startX;
             } else {
-                sdx = this.adaptToScale(dx) + this.edgeXOffset;
+                sdx = this.adaptToScale(dx) + this.dragBoundaryInterval.xOffset;
             }
-            if (mouseOnEdge.y !== 0) {
-                const edgeY = this.translateMouseCoords(0, mouseOnEdge.y === 1 ?
-                    this.workflowBoundingClientRect.bottom - this.edgePadding :
-                    this.workflowBoundingClientRect.top + this.edgePadding).y; // CHANGE HERE
+            if (boundary.y !== 0) {
+                const edgeY = this.translateMouseCoords(0, boundary.y === 1 ?
+                    this.workflowBoundingClientRect.bottom - this.dragBoundary :
+                    this.workflowBoundingClientRect.top + this.dragBoundary).y; // CHANGE HERE
                 sdy = edgeY - startY;
             } else {
-                sdy = this.adaptToScale(dy) + this.edgeYOffset;
+                sdy = this.adaptToScale(dy) + this.dragBoundaryInterval.yOffset;
             }
 
         }
@@ -691,12 +685,12 @@ export class Workflow {
             const mouseCoords = this.translateMouseCoords(ev.clientX, ev.clientY);
             sdx = mouseCoords.x - startX;
             sdy = mouseCoords.y - startY;
-            this.edgeXOffset = sdx - this.adaptToScale(dx);
-            this.edgeYOffset = sdy - this.adaptToScale(dy);
+            this.dragBoundaryInterval.xOffset = sdx - this.adaptToScale(dx);
+            this.dragBoundaryInterval.yOffset = sdy - this.adaptToScale(dy);
 
         } else {
-            sdx = this.adaptToScale(dx) + this.edgeXOffset;
-            sdy = this.adaptToScale(dy) + this.edgeYOffset;
+            sdx = this.adaptToScale(dx) + this.dragBoundaryInterval.xOffset;
+            sdy = this.adaptToScale(dy) + this.dragBoundaryInterval.yOffset;
         }
         return {
             x: sdx,
@@ -705,10 +699,11 @@ export class Workflow {
     }
 
     private setInputAndOutputEdges(inputEdges: Map<SVGElement, number[]>,
-                                   outputEdges: Map<SVGElement, number[]> ,
+                                   outputEdges: Map<SVGElement, number[]>,
                                    dx: number,
                                    dy: number) {
         inputEdges.forEach((p: number[], el: SVGElement) => {
+            //console.log("p[6]: %d", p[6]);
             el.setAttribute("d", IOPort.makeConnectionPath(p[0], p[1], p[6] + dx, p[7] + dy));
         });
 
@@ -876,14 +871,14 @@ export class Workflow {
             const origin              = this.translateMouseCoords(ctm.e, ctm.f);
             const nodeToMouseDistance = Geometry.distance(originNodeCoords.x, originNodeCoords.y, coords.x, coords.y);
 
-            const mouseOnEdge = this.ifDraggingMouseCloseToEdge(ghostIONode, { x: ev.clientX, y: ev.clientY }, null,
-                { edge: edge, originX: origin.x, originY: origin.y, edgeDirection: edgeDirection } );// ,
-            // { startX: origin.x, startY: origin.y, dx: dx, dy: dy, inputEdges: inputEdges, outputEdges: outputEdges });
+            const boundary = this.checkIfCursorOnBoundary(ev.clientX, ev.clientY);
 
-            const scaledDeltas = this.getScaledDeltaXY(mouseOnEdge, ev, origin.x, origin.y, dx, dy);
-            console.log("origin.x: %d", origin.x);
-            console.log("mousecoords.x: %d", coords.x);
-            console.log("scaledDeltaX: %d", scaledDeltas.x);
+            if (boundary.x || boundary.y) {
+                this.ifDraggingCursorHitBoundary(ghostIONode, { x: boundary.x, y: boundary.y }, null,
+                    { edge: edge, originX: origin.x, originY: origin.y, edgeDirection: edgeDirection } );
+            }
+
+            const scaledDeltas = this.getScaledDeltaXY(boundary, ev, origin.x, origin.y, dx, dy);
 
             // Draw a path from the origin port to the cursor
             Array.from(edge.children).forEach((el: SVGPathElement) => {
@@ -994,11 +989,12 @@ export class Workflow {
             this.workflow.classList.add("has-suggestion", "edge-dragging");
 
         }, (ev, origin) => {
-            if (this.edgeInterval.interval) {
-                clearInterval(this.edgeInterval.interval);
-                this.edgeInterval = {x: false, y: false, interval: null, intervalFinishOnce: false };
+            if (this.dragBoundaryInterval.interval) {
+                clearInterval(this.dragBoundaryInterval.interval);
+                this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
+                this.dragBoundaryInterval.interval = null;
             }
-            this.edgeXOffset = this.edgeYOffset = 0;
+            this.dragBoundaryInterval.xOffset = this.dragBoundaryInterval.yOffset = 0;
 
             /**
              * If a port is highlighted, that means that we are supposed to snap the connection to that port
@@ -1058,24 +1054,19 @@ export class Workflow {
                     : this.model.createOutputFromPort(portID));
 
 
-                // Check all possible edges to see if cursor is on edge(s)
-                const checkIfLeftEdge = ev.clientX < this.workflowBoundingClientRect.left + this.edgePadding; // CHANGE HERE
-                const checkIfRightEdge = ev.clientX > this.workflowBoundingClientRect.right - this.edgePadding; // CHANGE HERE
-                const checkIfTopEdge = ev.clientY < this.workflowBoundingClientRect.top + this.edgePadding; // CHANGE HERE
-                const checkIfBottomEdge = ev.clientY > this.workflowBoundingClientRect.bottom - this.edgePadding; // CHANGE HERE
-                const checkIfXEdge = checkIfLeftEdge || checkIfRightEdge;
-                const checkIfYEdge = checkIfTopEdge || checkIfBottomEdge;
+                // Check to see if cursor is on boundary (or boundaries)
+                const boundary = this.checkIfCursorOnBoundary(ev.clientX, ev.clientY);
 
                 const mouseCoords = this.translateMouseCoords(ev.clientX, ev.clientY);
                 let newX = mouseCoords.x;
                 let newY = mouseCoords.y;
-                if (checkIfXEdge) {
-                    newX = this.translateMouseCoords(checkIfLeftEdge ? this.workflowBoundingClientRect.left + this.edgePadding :
-                        this.workflowBoundingClientRect.right - this.edgePadding, 0).x; // CHANGE HERE
+                if (boundary.x) {
+                    newX = this.translateMouseCoords(boundary.x === -1 ? this.workflowBoundingClientRect.left + this.dragBoundary :
+                        this.workflowBoundingClientRect.right - this.dragBoundary, 0).x;
                 }
-                if (checkIfYEdge) {
-                    newY = this.translateMouseCoords(0, checkIfTopEdge ? this.workflowBoundingClientRect.top + this.edgePadding :
-                        this.workflowBoundingClientRect.bottom - this.edgePadding).y;
+                if (boundary.y) {
+                    newY = this.translateMouseCoords(0, boundary.y === -1 ? this.workflowBoundingClientRect.top + this.dragBoundary :
+                        this.workflowBoundingClientRect.bottom - this.dragBoundary).y;
                 }
 
                 // Translate mouse coordinates to the canvas coordinates,
