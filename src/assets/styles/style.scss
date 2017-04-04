@@ -21,7 +21,7 @@ $text-stroke: #f3f3f3;
 $node-background-color: $color-primary;
 $node-outer-stroke-color: $color-neutral;
 $port-background-color: $color-neutral;
-$port-highlight-color: $color-neutral;
+$port-highlight-color: #FF9800;
 $port-label-color: $text-color;
 $node-io-background-color: #c4c4c4;
 
@@ -34,7 +34,7 @@ $edge-inner-width: 2px;
 $edge-outer-color: $color-background;
 $edge-outer-width: 7px;
 $edge-highlight-color: $color-primary;
-$selected-node-outer-color: #9c27b0;
+$selected-node-outer-color: #FF9800;
 
 $font-family: sans-serif;
 
@@ -120,7 +120,7 @@ svg.cwl-workflow {
         }
 
         .label {
-          fill: lighten($text-color, 20%);
+          fill: lighten($text-color, 50%);
         }
 
         .port {
