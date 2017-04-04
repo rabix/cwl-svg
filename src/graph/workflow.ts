@@ -62,7 +62,7 @@ export class Workflow {
                 return;
             }
 
-            this.command("workflow.scale", scale, ev);
+            this.scaleWorkflow(scale, ev);
             ev.stopPropagation();
         }, true);
 
@@ -110,16 +110,62 @@ export class Workflow {
         return this.scale;
     }
 
+    /**
+     * Scales the workflow to fit the available viewport
+     */
+    fitToViewport(): void {
+        this.scaleWorkflow(1);
+        Object.assign(this.workflow.transform.baseVal.getItem(0).matrix, {
+            e: 0,
+            f: 0
+        });
+
+
+        let clientBounds = this.svgRoot.getBoundingClientRect();
+        let wfBounds     = this.workflow.getBoundingClientRect();
+        const padding    = 200;
+
+        if (clientBounds.width === 0 || clientBounds.height === 0) {
+            throw new Error("Cannot fit workflow to the area that has no visible viewport.");
+        }
+
+        const verticalScale   = (wfBounds.height) / (clientBounds.height - padding);
+        const horizontalScale = (wfBounds.width) / (clientBounds.width - padding);
+
+        const scaleFactor = Math.max(verticalScale, horizontalScale);
+
+        // Cap the upscaling to 1, we don't want to zoom in workflows that would fit anyway
+        const newScale = Math.min(this.scale / scaleFactor, 1);
+        this.scaleWorkflow(newScale);
+
+        const scaledWFBounds = this.workflow.getBoundingClientRect();
+
+        const moveY = newScale * (clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2);
+        const moveX = newScale * (clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2);
+
+
+        const matrix = this.workflow.transform.baseVal.getItem(0).matrix;
+        matrix.e     = moveX;
+        matrix.f     = moveY;
+    }
+
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
         const oldTransform = this.workflow.getAttribute("transform");
+        let selectedStuff  = this.workflow.querySelectorAll(".selected");
+        if (selectedStuff.length) {
+            selectedStuff = selectedStuff.item(0).getAttribute("data-connection-id");
+        } else {
+            selectedStuff = undefined;
+        }
+
         this.clearCanvas();
 
         this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
 
         const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
-            .reduce((tpl, nodeModel) => {
+            .reduce((tpl, nodeModel: any) => {
                 const x = nodeModel.customProps["sbg:x"] || Math.random() * 500;
                 const y = nodeModel.customProps["sbg:y"] || Math.random() * 500;
                 return tpl + GraphNode.makeTemplate(x, y, nodeModel);
@@ -141,10 +187,24 @@ export class Workflow {
 
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
-        this.command("workflow.scale", this.scale);
+        this.scaleWorkflow(this.scale);
+
+        const newSelection = this.workflow.querySelector(`[data-connection-id='${selectedStuff}']`);
+        if (newSelection) {
+            this.activateSelection(newSelection as SVGGElement);
+        }
+
+
     }
 
-    public redraw(model?: WorkflowModel) {
+
+    static canDrawIn(element: SVGElement): boolean {
+        let clientBounds = element.getBoundingClientRect();
+        console.log("Checking if drawable", clientBounds, element.getClientRects());
+        return clientBounds.width !== 0;
+    }
+
+    redraw(model?: WorkflowModel) {
         if (model) {
             this.model = model;
         }
@@ -200,7 +260,7 @@ export class Workflow {
 
             // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
             // So let's trigger the scaling again
-            this.command("workflow.scale", this.scale);
+            this.scaleWorkflow(this.scale);
         });
 
         /**
@@ -278,25 +338,22 @@ export class Workflow {
                 });
             }
         });
+    }
 
-        /**
-         * @name workflow.scale
-         */
-        this.eventHub.on("workflow.scale", (c = 1, ev?: { clientX: number, clientY: number }) => {
+    scaleWorkflow(scaleCoefficient = 1, ev?: { clientX: number, clientY: number }) {
+        this.scale              = scaleCoefficient;
+        const transform         = this.workflow.transform.baseVal;
+        const matrix: SVGMatrix = transform.getItem(0).matrix;
 
-            this.scale              = c;
-            const transform         = this.workflow.transform.baseVal;
-            const matrix: SVGMatrix = transform.getItem(0).matrix;
+        const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
 
-            const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
+        matrix.e += matrix.a * coords.x;
+        matrix.f += matrix.a * coords.y;
+        matrix.a = matrix.d = scaleCoefficient;
+        matrix.e -= scaleCoefficient * coords.x;
+        matrix.f -= scaleCoefficient * coords.y;
 
-            matrix.e += matrix.a * coords.x;
-            matrix.f += matrix.a * coords.y;
-            matrix.a = matrix.d = c;
-            matrix.e -= c * coords.x;
-            matrix.f -= c * coords.y;
-
-            const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
+        const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
 
             Array.from(this.workflow.querySelectorAll(".node .label"))
                 .map(el => el.transform.baseVal.getItem(0).matrix)
@@ -410,10 +467,7 @@ export class Workflow {
                 const parentNode = Workflow.findParentNode(target);
 
                 const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
-                // if model is deleted during drag event
-                if (model) {
-                    Workflow.setModelPosition(model, newX, newY);
-                }
+                this.setModelPosition(model, newX, newY);
 
                 inputEdges  = undefined;
                 outputEdges = undefined;
@@ -785,13 +839,13 @@ export class Workflow {
                     const sourceNode      = Workflow.findParentNode(sourcePort);
                     const destinationNode = Workflow.findParentNode(destinationPort);
 
-
                     this.model.disconnect(sourcePortID, destinationPortID);
                     this.renderModel(this.model);
                     (this.svgRoot as any).focus();
                 } else if (el.classList.contains("input")) {
 
                     this.model.removeInput(el.getAttribute("data-connection-id"));
+                    this.renderModel(this.model);
                     (this.svgRoot as any).focus();
                 } else if (el.classList.contains("output")) {
 
@@ -837,8 +891,6 @@ export class Workflow {
                     IOPort.makeConnectionPath(
                         origin.x,
                         origin.y,
-                        // coords.x,
-                        // coords.y,
                         origin.x + scaledDeltas.x,
                         origin.y + scaledDeltas.y,
                         edgeDirection
@@ -1034,7 +1086,7 @@ export class Workflow {
                 this.workflow.appendChild(el);
 
                 // Update the cwlts model with the new x and y coords for this node
-                Workflow.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
+                this.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
 
                 // Spawn an edge between origin and destination ports
                 const edge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
@@ -1043,7 +1095,8 @@ export class Workflow {
                 this.attachEdgeHoverBehavior(edge);
 
                 // Re-scale the workflow so the label gets upscaled or downscaled properly
-                this.command("workflow.scale", this.scale);
+
+                this.scaleWorkflow(this.scale);
             }
 
             this.workflow.classList.remove("has-suggestion", "edge-dragging");
@@ -1077,12 +1130,16 @@ export class Workflow {
     }
 
 
-    static setModelPosition(obj, x, y) {
+    setModelPosition(obj, x, y) {
         const update = {
             "sbg:x": x,
             "sbg:y": y
         };
 
+
+        this.eventHub.emit("beforeChange", {
+            type: "move",
+        });
 
         if (!obj.customProps) {
             obj.customProps = update;
@@ -1128,5 +1185,13 @@ export class Workflow {
         });
 
         el.classList.add("selected");
+        if (typeof el.focus === "function") {
+            (el as any).focus();
+        }
+    }
+
+    destroy() {
+        this.clearCanvas();
+        this.eventHub.empty();
     }
 }
