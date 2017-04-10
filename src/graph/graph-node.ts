@@ -35,43 +35,40 @@ export class GraphNode extends Shape {
     /**
      * @FIXME Making icons increases the rendering time by 50-100%. Try embedding the SVG directly.
      */
-    private static makeIconFragment(model) {
 
+    private static workflowIconSvg: string = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" x="-9" y="-9" width="20" height="20"><title>workflow_new</title><circle cx="400.5" cy="249.5" r="99.5"/><circle cx="99.5" cy="99.5" r="99.5"/><circle cx="99.5" cy="400.5" r="99.5"/><g id="Layer_4" data-name="Layer 4"><line x1="99" y1="99" x2="400" y2="249" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:40px"/><line x1="99" y1="400" x2="400" y2="249" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:40px"/></g></svg>';
+    private static toolIconSvg: string = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.07 500.24" x="-10" y="-10" width="20" height="20"><title>tool_new</title><rect x="284.07" y="450.07" width="216" height="50"/><rect x="-34.14" y="117.56" width="353.4" height="50" transform="translate(142.62 -58.98) rotate(45)"/><rect x="-34.15" y="332.53" width="353.47" height="50" transform="translate(496.28 509.58) rotate(135)"/></svg>';
+    private static fileInputIconSvg: string = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 499 462.86" y="-10" x="-11" width="20" height="20"><title>file_input</title><g id="Layer_16" data-name="Layer 16"><polygon points="386.06 0 386.06 0 175 0 175 58.29 225 108.29 225 50 365.35 50 449 133.65 449 412.86 225 412.86 225 353.71 175 403.71 175 462.86 499 462.86 499 112.94 386.06 0"/></g><g id="Layer_7_copy" data-name="Layer 7 copy"><polyline points="498.78 138.76 362.93 138.38 362.81 138.38 362.81 1.06" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g><g id="Layer_11_copy" data-name="Layer 11 copy"><polyline points="159 327 255 231 160 136" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/><g id="Layer_9_copy_2" data-name="Layer 9 copy 2"><line y1="231" x2="255" y2="231" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g></g></svg>';
+    private static fileOutputIconSvg: string = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 507.36 462.86" x="-9" y="-10" width="20" height="20"><title>file_output</title><g id="Layer_10" data-name="Layer 10"><g id="Layer_9_copy" data-name="Layer 9 copy"><polygon points="274 298.5 274 412.86 50 412.86 50 50 190.35 50 274 133.65 274 163.5 324 163.5 324 112.94 211.06 0 211.06 0 0 0 0 462.86 324 462.86 324 298.5 274 298.5"/></g></g><g id="Layer_7" data-name="Layer 7"><polyline points="323.78 138.76 187.93 138.38 187.81 138.38 187.81 1.06" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g><g id="Layer_11" data-name="Layer 11"><polyline points="376 327 472 231 377 136" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/><g id="Layer_9" data-name="Layer 9"><line x1="217" y1="231" x2="472" y2="231" style="fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:50px"/></g></g></svg>';
+    private static inputIconSvg: string = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 499 365" x="-11" y="-10" width="20" height="20"><title>type_input</title><g id="input"><path d="M316.5,68a181.72,181.72,0,0,0-114.12,40.09L238,143.72a132.5,132.5,0,1,1,1.16,214.39L203.48,393.8A182.5,182.5,0,1,0,316.5,68Z" transform="translate(0 -68)"/><g id="Layer_22" data-name="Layer 22"><g id="Layer_9_copy_4" data-name="Layer 9 copy 4"><polygon points="290.36 182 176.68 295.68 141.32 260.32 194.64 207 0 207 0 157 194.64 157 142.32 104.68 177.68 69.32 290.36 182"/></g></g></g></svg>';
+    private static outputIconSvg: string = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.36 365" x="-9" y="-10" width="20" height="20"><title>type_output</title><g id="output"><path d="M291.95,325.23a134,134,0,0,1-15.76,19,132.5,132.5,0,1,1,0-187.38,133.9,133.9,0,0,1,16.16,19.55l35.81-35.81A182.5,182.5,0,1,0,327.73,361Z" transform="translate(0 -68)"/><g id="circle_source_copy" data-name="circle source copy"><g id="Layer_22_copy" data-name="Layer 22 copy"><g id="Layer_9_copy_5" data-name="Layer 9 copy 5"><polygon points="500.36 182 386.68 295.68 351.32 260.32 404.64 207 210 207 210 157 404.64 157 352.32 104.68 387.68 69.32 500.36 182"/></g></g></g></g></svg>';
+    private static makeIconFragment(model) {
         const modelType = model instanceof StepModel ? "step" :
             model instanceof WorkflowInputParameterModel ? "output" :
                 model instanceof WorkflowOutputParameterModel ? "input" : "";
         let iconStr;
 
-
         if (modelType === "step") {
-            iconStr = model.run && model.run.class === "Workflow" ? "data:image/svg+xml;base64,PHN2ZyBpZD0id29ya2Zsb3ciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDUwMCA1MDAiPjx0aXRsZT53b3JrZmxvd19uZXc8L3RpdGxlPjxjaXJjbGUgY3g9IjQwMC41IiBjeT0iMjQ5LjUiIHI9Ijk5LjUiLz48Y2lyY2xlIGN4PSI5OS41IiBjeT0iOTkuNSIgcj0iOTkuNSIvPjxjaXJjbGUgY3g9Ijk5LjUiIGN5PSI0MDAuNSIgcj0iOTkuNSIvPjxnIGlkPSJMYXllcl80IiBkYXRhLW5hbWU9IkxheWVyIDQiPjxsaW5lIHgxPSI5OSIgeTE9Ijk5IiB4Mj0iNDAwIiB5Mj0iMjQ5IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo0MHB4Ii8+PGxpbmUgeDE9Ijk5IiB5MT0iNDAwIiB4Mj0iNDAwIiB5Mj0iMjQ5IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo0MHB4Ii8+PC9nPjwvc3ZnPg==" :
-                model.run && model.run.class === "CommandLineTool" ? "data:image/svg+xml;base64,PHN2ZyBpZD0idG9vbCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTAwLjA3IDUwMC4yNCI+PHRpdGxlPnRvb2xfbmV3PC90aXRsZT48cmVjdCB4PSIyODQuMDciIHk9IjQ1MC4wNyIgd2lkdGg9IjIxNiIgaGVpZ2h0PSI1MCIvPjxyZWN0IHg9Ii0zNC4xNCIgeT0iMTE3LjU2IiB3aWR0aD0iMzUzLjQiIGhlaWdodD0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE0Mi42MiAtNTguOTgpIHJvdGF0ZSg0NSkiLz48cmVjdCB4PSItMzQuMTUiIHk9IjMzMi41MyIgd2lkdGg9IjM1My40NyIgaGVpZ2h0PSI1MCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNDk2LjI4IDUwOS41OCkgcm90YXRlKDEzNSkiLz48L3N2Zz4=" : "";
+            iconStr = model.run && model.run.class === "Workflow" ? this.workflowIconSvg :
+                model.run && model.run.class === "CommandLineTool" ? this.toolIconSvg : "";
 
         }
         else if (modelType === "input") {
             iconStr = model.type && model.type.type === "File" ||
-            model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgNDYyLjg2Ij48dGl0bGU+ZmlsZV9pbnB1dDwvdGl0bGU+PGcgaWQ9IkxheWVyXzE2IiBkYXRhLW5hbWU9IkxheWVyIDE2Ij48cG9seWdvbiBwb2ludHM9IjM4Ni4wNiAwIDM4Ni4wNiAwIDE3NSAwIDE3NSA1OC4yOSAyMjUgMTA4LjI5IDIyNSA1MCAzNjUuMzUgNTAgNDQ5IDEzMy42NSA0NDkgNDEyLjg2IDIyNSA0MTIuODYgMjI1IDM1My43MSAxNzUgNDAzLjcxIDE3NSA0NjIuODYgNDk5IDQ2Mi44NiA0OTkgMTEyLjk0IDM4Ni4wNiAwIi8+PC9nPjxnIGlkPSJMYXllcl83X2NvcHkiIGRhdGEtbmFtZT0iTGF5ZXIgNyBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSI0OTguNzggMTM4Ljc2IDM2Mi45MyAxMzguMzggMzYyLjgxIDEzOC4zOCAzNjIuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTFfY29weSIgZGF0YS1uYW1lPSJMYXllciAxMSBjb3B5Ij48cG9seWxpbmUgcG9pbnRzPSIxNTkgMzI3IDI1NSAyMzEgMTYwIDEzNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjxnIGlkPSJMYXllcl85X2NvcHlfMiIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgMiI+PGxpbmUgeTE9IjIzMSIgeDI9IjI1NSIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
-                "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OTkgMzY1Ij48dGl0bGU+dHlwZV9pbnB1dDwvdGl0bGU+PGcgaWQ9ImlucHV0Ij48cGF0aCBkPSJNMzE2LjUsNjhhMTgxLjcyLDE4MS43MiwwLDAsMC0xMTQuMTIsNDAuMDlMMjM4LDE0My43MmExMzIuNSwxMzIuNSwwLDEsMSwxLjE2LDIxNC4zOUwyMDMuNDgsMzkzLjhBMTgyLjUsMTgyLjUsMCwxLDAsMzE2LjUsNjhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIC02OCkiLz48ZyBpZD0iTGF5ZXJfMjIiIGRhdGEtbmFtZT0iTGF5ZXIgMjIiPjxnIGlkPSJMYXllcl85X2NvcHlfNCIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkgNCI+PHBvbHlnb24gcG9pbnRzPSIyOTAuMzYgMTgyIDE3Ni42OCAyOTUuNjggMTQxLjMyIDI2MC4zMiAxOTQuNjQgMjA3IDAgMjA3IDAgMTU3IDE5NC42NCAxNTcgMTQyLjMyIDEwNC42OCAxNzcuNjggNjkuMzIgMjkwLjM2IDE4MiIvPjwvZz48L2c+PC9nPjwvc3ZnPg==";
+            model.type.type === "array" ? this.fileInputIconSvg :
+                this.inputIconSvg;
         }
         else if (modelType === "output") {
             iconStr = model.type && model.type.type === "File" ||
-            model.type.type === "array" ? "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDcuMzYgNDYyLjg2Ij48dGl0bGU+ZmlsZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJMYXllcl8xMCIgZGF0YS1uYW1lPSJMYXllciAxMCI+PGcgaWQ9IkxheWVyXzlfY29weSIgZGF0YS1uYW1lPSJMYXllciA5IGNvcHkiPjxwb2x5Z29uIHBvaW50cz0iMjc0IDI5OC41IDI3NCA0MTIuODYgNTAgNDEyLjg2IDUwIDUwIDE5MC4zNSA1MCAyNzQgMTMzLjY1IDI3NCAxNjMuNSAzMjQgMTYzLjUgMzI0IDExMi45NCAyMTEuMDYgMCAyMTEuMDYgMCAwIDAgMCA0NjIuODYgMzI0IDQ2Mi44NiAzMjQgMjk4LjUgMjc0IDI5OC41Ii8+PC9nPjwvZz48ZyBpZD0iTGF5ZXJfNyIgZGF0YS1uYW1lPSJMYXllciA3Ij48cG9seWxpbmUgcG9pbnRzPSIzMjMuNzggMTM4Ljc2IDE4Ny45MyAxMzguMzggMTg3LjgxIDEzOC4zOCAxODcuODEgMS4wNiIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48ZyBpZD0iTGF5ZXJfMTEiIGRhdGEtbmFtZT0iTGF5ZXIgMTEiPjxwb2x5bGluZSBwb2ludHM9IjM3NiAzMjcgNDcyIDIzMSAzNzcgMTM2IiBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojMDAwO3N0cm9rZS1taXRlcmxpbWl0OjEwO3N0cm9rZS13aWR0aDo1MHB4Ii8+PGcgaWQ9IkxheWVyXzkiIGRhdGEtbmFtZT0iTGF5ZXIgOSI+PGxpbmUgeDE9IjIxNyIgeTE9IjIzMSIgeDI9IjQ3MiIgeTI9IjIzMSIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDtzdHJva2UtbWl0ZXJsaW1pdDoxMDtzdHJva2Utd2lkdGg6NTBweCIvPjwvZz48L2c+PC9zdmc+" :
-                "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAuMzYgMzY1Ij48dGl0bGU+dHlwZV9vdXRwdXQ8L3RpdGxlPjxnIGlkPSJvdXRwdXQiPjxwYXRoIGQ9Ik0yOTEuOTUsMzI1LjIzYTEzNCwxMzQsMCwwLDEtMTUuNzYsMTksMTMyLjUsMTMyLjUsMCwxLDEsMC0xODcuMzgsMTMzLjksMTMzLjksMCwwLDEsMTYuMTYsMTkuNTVsMzUuODEtMzUuODFBMTgyLjUsMTgyLjUsMCwxLDAsMzI3LjczLDM2MVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgLTY4KSIvPjxnIGlkPSJjaXJjbGVfc291cmNlX2NvcHkiIGRhdGEtbmFtZT0iY2lyY2xlIHNvdXJjZSBjb3B5Ij48ZyBpZD0iTGF5ZXJfMjJfY29weSIgZGF0YS1uYW1lPSJMYXllciAyMiBjb3B5Ij48ZyBpZD0iTGF5ZXJfOV9jb3B5XzUiIGRhdGEtbmFtZT0iTGF5ZXIgOSBjb3B5IDUiPjxwb2x5Z29uIHBvaW50cz0iNTAwLjM2IDE4MiAzODYuNjggMjk1LjY4IDM1MS4zMiAyNjAuMzIgNDA0LjY0IDIwNyAyMTAgMjA3IDIxMCAxNTcgNDA0LjY0IDE1NyAzNTIuMzIgMTA0LjY4IDM4Ny42OCA2OS4zMiA1MDAuMzYgMTgyIi8+PC9nPjwvZz48L2c+PC9nPjwvc3ZnPg==";
+            model.type.type === "array" ? this.fileOutputIconSvg :
+                this.outputIconSvg;
         }
 
         if (!modelType.length || !iconStr.length) {
             return "";
         }
 
-        // return `
-        //              <g class="icon icon-${iconStr}">
-        //              </g>
-        //         `;
-
-        return `
-                    <image x="-10" y="-10" width="20" height="20" xlink:href="${iconStr}"></image>
-                `;
-
+        return iconStr;
     }
 
     static makeTemplate(x: number, y: number, dataModel: NodeDataModel & { in: any[], out: any[] }): string {
