@@ -579,7 +579,7 @@ export class Workflow {
                                            originX: number, originY: number,
                                            edgeDirection: string }): void {
 
-        // If edge areas overlap or if edges take up half - or more - of the svg, resize dragBoundary
+        // If boundary areas overlap or if boundary areas take up half - or more - of the svg, resize dragBoundary
         while (this.workflowBoundingClientRect.right - this.dragBoundary <= this.workflowBoundingClientRect.left + this.dragBoundary ||
             this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) { // CHANGE HERE
             this.dragBoundary = this.dragBoundary / 2;
@@ -615,12 +615,12 @@ export class Workflow {
                     workflowMatrix.e -= moveX;
                     workflowMatrix.f -= moveY;
 
-                    this.dragBoundaryInterval.xOffset += moveX;
-                    this.dragBoundaryInterval.yOffset += moveY;
+                    this.dragBoundaryInterval.xOffset += this.adaptToScale(moveX);
+                    this.dragBoundaryInterval.yOffset += this.adaptToScale(moveY);
 
                     // Translates the node by 'this.dragBoundaryTranslation' every time this interval function is called.
-                    mx.e += moveX;
-                    mx.f += moveY;
+                    mx.e += this.adaptToScale(moveX);
+                    mx.f += this.adaptToScale(moveY);
 
                     // If node has edges - i.e. if it is not a ghost node
                     if (pathInfo) {
