@@ -1,8 +1,7 @@
 module.exports = {
     entry: './src/demo.ts',
     output: {
-        filename: 'bundle.js',
-        path: './dist'
+        filename: 'dist/bundle.js',
     },
     module: {
         rules: [
