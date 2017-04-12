@@ -1,3 +1,4 @@
+const webpack = require("webpack");
 module.exports = {
     entry: './src/demo.ts',
     output: {
@@ -40,5 +41,13 @@ module.exports = {
     resolve: {
         extensions: [".tsx", ".ts", ".js", ".scss"]
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            "samples.rnaSeqAlignment": "./../cwl-samples/rna-seq-alignment.json",
+            "samples.bcBio": "./../cwl-samples/bcbio.json",
+            "samples.fastQC": "./../cwl-samples/fastqc.json",
+        })
+    ],
+
     devtool: 'inline-source-map',
 };
