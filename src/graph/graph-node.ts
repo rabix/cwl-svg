@@ -11,7 +11,7 @@ export class GraphNode extends Shape {
 
     public position: NodePosition = {x: 0, y: 0};
 
-    protected static radius = 30;
+    static radius = 30;
 
     constructor(position: Partial<NodePosition>,
                 private dataModel: NodeDataModel) {

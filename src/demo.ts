@@ -7,7 +7,8 @@ declare const samples: {
     rnaSeqAlignment: any
 };
 
-const wf = WorkflowFactory.from(samples.rnaSeqAlignment);
+const wf = WorkflowFactory.from(samples.bcBio);
 console.log("Model", wf);
-const svgRoot  = document.getElementById("svg") as any;
-const workflow = new Workflow(svgRoot, wf);
+const svgRoot      = document.getElementById("svg") as any;
+const workflow     = new Workflow(svgRoot, wf);
+window["workflow"] = workflow;

@@ -1,4 +1,4 @@
-import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
+import {Edge, Graph, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
 import {DomEvents} from "../utils/dom-events";
 import {EventHub} from "../utils/event-hub";
 import {Geometry} from "../utils/geometry";
@@ -6,6 +6,7 @@ import {Edge as GraphEdge} from "./edge";
 import {GraphNode} from "./graph-node";
 import {IOPort} from "./io-port";
 import {TemplateParser} from "./template-parser";
+import {SVGUtils} from "../utils/svg-utils";
 
 export class Workflow {
 
@@ -117,70 +118,175 @@ export class Workflow {
         return this.scale;
     }
 
-    arrange(connections: Edge[]) {
+    arrange() {
+        this.resetTransform();
 
-        // const tracker = {};
-        // const zones   = {};
-        // const width   = this.svgRoot.clientWidth;
-        // const height  = this.svgRoot.clientHeight;
-        //
-        // const workflowIns = new Map<any[], string>();
-        //
-        // connections.forEach(c => {
-        //
-        //     let [, sName, spName] = c.source.id.split("/");
-        //     let [, dName, dpName] = c.destination.id.split("/");
-        //
-        //     tracker[sName] || (tracker[sName] = []);
-        //     (tracker[dName] || (tracker[dName] = [])).push(tracker[sName]);
-        //     if (sName === spName) {
-        //         workflowIns.set(tracker[sName], sName);
-        //     }
-        // });
-        //
-        // const trace = (arr, visited: Set<any>) => {
-        //     visited.add(arr);
-        //     return 1 + ( arr.length ? Math.max(...arr.filter(e => !visited.has(e)).map((e) => trace(e, visited))) : 0);
-        // };
-        //
-        //
-        // const trackerKeys = Object.keys(tracker);
-        // const idToZoneMap = trackerKeys.reduce(
-        //     (acc, k) => Object.assign(acc, {[k]: trace(tracker[k], new Set()) - 1}), {}
-        // );
-        //
-        // trackerKeys.forEach(k => {
-        //     tracker[k].filter(p => workflowIns.has(p)).forEach(pre => {
-        //         idToZoneMap[workflowIns.get(pre)] = idToZoneMap[k] - 1;
-        //     });
-        // });
-        //
-        // trackerKeys.forEach(k => {
-        //
-        //     try {
-        //         // const snap = Snap(`.node.${k}`);
-        //         const zone = idToZoneMap[k];
-        //         if (!snap) {
-        //             throw new Error("Cant find node " + k);
-        //         }
-        //         (zones[zone] || (zones[zone] = [])).push(snap);
-        //     } catch (ex) {
-        //         console.error("ERROR", k, ex, tracker);
-        //     }
-        // });
-        //
-        // const columnCount = Object.keys(zones).length + 1;
-        // const columnWidth = (width / columnCount);
-        //
-        // for (let z in zones) {
-        //     const rowCount  = zones[z].length + 1;
-        //     const rowHeight = height / rowCount;
-        //
-        //     // zones[z].forEach((el: Snap.Element, i) => {
-        //     //     el.transform(new Snap.Matrix()
-        //     //         .translate(columnWidth * (~~z + 1), (i + 1) * rowHeight));
-        //     // });
-        // }
+        type NodeIO = {
+            inputs: string[],
+            outputs: string[],
+            connectionID: string,
+            el: SVGGElement,
+            rect: ClientRect,
+            type: "step" | "input" | "output" | string
+        };
+        type NodeSet = { [connectionID: string]: NodeIO };
+
+        // Edges are the main source of information from which we will distribute nodes
+        const edges: SVGGElement[] = Array.from(this.workflow.querySelectorAll(".edge")) as SVGGElement[];
+
+        // Make a graph representation where you can trace inputs and outputs from/to connection ids
+        const nodeSet: NodeSet = {};
+
+        const danglingNodes = Array.from(this.workflow.querySelectorAll(`.node`)).reduce((acc, el) => {
+            return {...acc, [el.getAttribute("data-connection-id")]: el};
+        }, {});
+
+        edges.forEach(edge => {
+            const sourceConnectionID      = edge.getAttribute("data-source-connection");
+            const destinationConnectionID = edge.getAttribute("data-destination-connection");
+
+            const [sourceSide, sourceNodeID, sourcePortID]                = sourceConnectionID.split("/");
+            const [destinationSide, destinationNodeID, destinationPortID] = destinationConnectionID.split("/");
+
+            let sourceType      = "step";
+            let destinationType = "step";
+            if (sourceNodeID === sourcePortID) {
+                sourceType = sourceSide === "in" ? "output" : "input";
+            }
+            if (destinationNodeID === destinationPortID) {
+                destinationType = destinationSide === "in" ? "output" : "input";
+            }
+
+            // Initialize keys on graph if they don't exist
+            const sourceNode      = this.workflow.querySelector(`.node[data-id="${sourceNodeID}"]`) as SVGGElement;
+            const destinationNode = this.workflow.querySelector(`.node[data-id="${destinationNodeID}"]`) as SVGGElement;
+
+            const sourceNodeConnectionID      = sourceNode.getAttribute("data-connection-id");
+            const destinationNodeConnectionID = destinationNode.getAttribute("data-connection-id");
+
+            delete danglingNodes[sourceNodeConnectionID];
+            delete danglingNodes[destinationNodeConnectionID];
+            //
+            (nodeSet[sourceNodeID] || (nodeSet[sourceNodeID] = {
+                inputs: [],
+                outputs: [],
+                type: sourceType,
+                connectionID: sourceNodeConnectionID,
+                el: sourceNode,
+                rect: sourceNode.getBoundingClientRect()
+            }));
+
+            (nodeSet[destinationNodeID] || (nodeSet[destinationNodeID] = {
+                inputs: [],
+                outputs: [],
+                type: destinationType,
+                connectionID: destinationNodeConnectionID,
+                el: destinationNode,
+                rect: destinationNode.getBoundingClientRect()
+            }));
+
+            nodeSet[sourceNodeID].outputs.push(destinationNodeID);
+            nodeSet[destinationNodeID].inputs.push(sourceNodeID);
+
+        });
+
+        const traceLongestPath = (node: NodeIO, visited: Set<NodeIO>) => {
+            visited.add(node);
+            const ins = node.inputs.map(nid => nodeSet[nid]);
+            return 1 + (ins.length ? Math.max(...ins.filter(e => !visited.has(e)).map(e => traceLongestPath(e, visited))) : 0);
+        }
+
+        const idToZoneMap = Object.keys(nodeSet).reduce((zoneMap, nid) => {
+
+            const item = nodeSet[nid];
+            let zone   = traceLongestPath(item, new Set()) - 1;
+            return {...zoneMap, [nid]: zone};
+        }, {});
+
+        for (const nid in nodeSet) {
+            const node = nodeSet[nid];
+            if (node.type === "input") {
+                const newZone    = Math.min(...node.outputs.map(out => idToZoneMap[out])) - 1;
+                idToZoneMap[nid] = newZone;
+            }
+        }
+
+
+        const columns: NodeIO[][] = Object.keys(idToZoneMap).reduce((acc, nid) => {
+            const zone = idToZoneMap[nid];
+            if (!acc[zone]) {
+                acc[zone] = [];
+            }
+            acc[zone].push(nodeSet[nid]);
+            return acc;
+        }, []);
+
+        let distributionAreaHeight = 0;
+        let distributionAreaWidth  = 0;
+
+        const columnDimensions = Object.keys(columns).map(col => ({height: 0, width: 0}));
+
+        columns.forEach((column, index) => {
+            let width  = 0;
+            let height = 0;
+            column.forEach(entry => {
+                height += entry.rect.height;
+                if (width < entry.rect.width) {
+                    width = entry.rect.width;
+                }
+            });
+
+            columnDimensions[index] = {height, width};
+
+            distributionAreaWidth += width;
+            if (height > distributionAreaHeight) {
+                distributionAreaHeight = height;
+            }
+        });
+
+        let baseline   = distributionAreaHeight / 2;
+        let xOffset    = 0;
+        let maxYOffset = 0;
+
+        columns.forEach((column, index) => {
+            const rowCount = column.length + 1;
+            const colSize  = columnDimensions[index];
+            let yOffset    = baseline - (colSize.height / 2);
+
+            column.forEach(node => {
+                const matrix = SVGUtils.createMatrix().translate(xOffset, yOffset);
+                yOffset += node.rect.height;
+                if (yOffset > maxYOffset) {
+                    maxYOffset = yOffset;
+                }
+
+                node.el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
+                const modelEntry = this.model.findById(node.connectionID);
+                this.setModelPosition(modelEntry, matrix.e, matrix.f);
+            });
+
+            xOffset += colSize.width;
+        });
+
+
+        const danglingNodeSideLength = GraphNode.radius * 5;
+        const danglingNodeCount      = Object.keys(danglingNodes).length;
+
+        let danglingRowBreakpoint = Math.floor(distributionAreaWidth / danglingNodeSideLength);
+        Object.keys(danglingNodes).forEach((connectionID, index) => {
+            const el = danglingNodes[connectionID] as SVGGElement;
+            let left = (index % danglingRowBreakpoint) * danglingNodeSideLength;
+            let top  = maxYOffset
+                + danglingNodeSideLength
+                + ((index % 3) * danglingNodeSideLength / 3)
+                + Math.floor(index / danglingRowBreakpoint);
+
+            const matrix = SVGUtils.createMatrix().translate(left, top);
+            el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
+        });
+
+        this.redrawEdges();
+        this.fitToViewport();
     }
 
     /**
@@ -222,8 +328,18 @@ export class Workflow {
         matrix.f     = moveY;
     }
 
+    private redrawEdges() {
+        Array.from(this.workflow.querySelectorAll(".edge")).forEach(el => {
+            el.remove();
+        });
+
+        const edgesTpl          = this.model.connections.map(c => GraphEdge.makeTemplate(c, this.workflow)).reduce((acc, tpl) => acc + tpl, "");
+        this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
+    }
+
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
+        this.model = model;
 
         // We will need to restore the transformations when we redraw the model, so save the current state
         const oldTransform = this.workflow.getAttribute("transform");
@@ -246,8 +362,7 @@ export class Workflow {
 
         this.workflow.innerHTML += nodesTpl;
 
-        const edgesTpl = model.connections.map(c => GraphEdge.makeTemplate(c, this.workflow)).reduce((acc, tpl) => acc + tpl, "");
-        this.workflow.innerHTML += edgesTpl;
+        this.redrawEdges();
         console.timeEnd("Graph Rendering");
         console.time("Ordering");
 
@@ -274,7 +389,6 @@ export class Workflow {
 
     static canDrawIn(element: SVGElement): boolean {
         let clientBounds = element.getBoundingClientRect();
-        console.log("Checking if drawable", clientBounds, element.getClientRects());
         return clientBounds.width !== 0;
     }
 
@@ -701,7 +815,6 @@ export class Workflow {
                                    dx: number,
                                    dy: number) {
         inputEdges.forEach((p: number[], el: SVGElement) => {
-            //console.log("p[6]: %d", p[6]);
             el.setAttribute("d", IOPort.makeConnectionPath(p[0], p[1], p[6] + dx, p[7] + dy));
         });
 
@@ -1184,5 +1297,9 @@ export class Workflow {
     destroy() {
         this.clearCanvas();
         this.eventHub.empty();
+    }
+
+    private resetTransform() {
+        this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
     }
 }
