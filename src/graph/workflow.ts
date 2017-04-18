@@ -576,7 +576,7 @@ export class Workflow {
      * @param pathInfo
      * @param ghostIO
      */
-    private setDragBoundaryIntervalIfNecessary(el: SVGElement,
+    private setDragBoundaryIntervalIfNecessary(el: SVGGElement,
                                                boundary: { x: 1 | 0 | -1, y: 1 | 0 | -1 },
                                                pathInfo?: { startX: number, startY: number,
                                            inputEdges: Map<SVGElement, number[]>,
@@ -660,8 +660,8 @@ export class Workflow {
                         const sorted = this.getSortedConnectionPorts(ghostIO.allConnectionPorts,
                             { x: mx.e, y: mx.f });
                         this.removeHighlightedPort(this.dragBoundaryInterval.highlightedPort, ghostIO.edgeDirection);
-                        this.dragBoundaryInterval.highlightedPort = this.highlightPortOrShowGhostNode(el,
-                            sorted, ghostIO.nodeToMouseDistance, ghostIO.edgeDirection, { x: mx.e, y: mx.f});
+                        this.dragBoundaryInterval.highlightedPort = this.setHighlightedPort(sorted, ghostIO.edgeDirection);
+                        this.translateGhostNodeAndShowIfNecessary(el, ghostIO.nodeToMouseDistance, { x: mx.e, y: mx.f });
                     }
                 }, 1000 / 60);
             }
@@ -955,7 +955,8 @@ export class Workflow {
             const sorted = this.getSortedConnectionPorts(allConnectionPorts, coords);
             highlightedPort = this.dragBoundaryInterval.highlightedPort || highlightedPort;
             this.removeHighlightedPort(highlightedPort, edgeDirection);
-            highlightedPort = this.highlightPortOrShowGhostNode(ghostIONode, sorted, nodeToMouseDistance, edgeDirection,
+            highlightedPort = this.setHighlightedPort(sorted, edgeDirection);
+            this.translateGhostNodeAndShowIfNecessary(ghostIONode, nodeToMouseDistance,
                 { x: origin.x + scaledDeltas.x, y: origin.y + scaledDeltas.y});
 
         }, (ev, origin, root) => {
@@ -1174,20 +1175,13 @@ export class Workflow {
 
     /**
      * Check if the closest connection port is within a certain distance.
-     * If it is, highlight it, and if not, show the ghost node
-     * @param ghostIONode
+     * If it is, highlight it and return the highlightedPort
      * @param sorted
-     * @param nodeToMouseDistance
      * @param edgeDirection
-     * @param newCoords
-     * @returns {SVGGElement}
+     * @returns {any}
      */
-    private highlightPortOrShowGhostNode(ghostIONode: SVGGElement, sorted: SVGGElement[],
-                                         nodeToMouseDistance: number,
-                                         edgeDirection: "left" | "right",
-                                         newCoords: { x: number, y: number }): SVGGElement {
+    private setHighlightedPort(sorted: SVGGElement[], edgeDirection: "left" | "right"): SVGGElement {
         let highlightedPort;
-        ghostIONode.classList.add("hidden");
         // If there is a port in close proximity, assume that we want to connect to it, so highlight it
         if (sorted.length && sorted[0].distance < 100) {
             highlightedPort = sorted[0];
@@ -1196,16 +1190,27 @@ export class Workflow {
             this.workflow.appendChild(parentNode);
             parentNode.classList.add("highlighted", "preferred-node", edgeDirection);
         } else {
-
             highlightedPort = undefined;
+        }
+        return highlightedPort;
+    }
 
-            if (nodeToMouseDistance > 120) {
-                ghostIONode.classList.remove("hidden");
-                // Otherwise, we might create an input or an ooutput node
-            }
+    /**
+     * Translate the ghost node and show it if the closest connection
+     * port is farther than 120px
+     * @param ghostIONode
+     * @param nodeToMouseDistance
+     * @param newCoords
+     */
+    private translateGhostNodeAndShowIfNecessary(ghostIONode: SVGGElement,
+                                                 nodeToMouseDistance: number,
+                                                 newCoords: { x: number, y: number }): void {
+        ghostIONode.classList.add("hidden");
+        if (!nodeToMouseDistance || nodeToMouseDistance > 120) {
+            ghostIONode.classList.remove("hidden");
+            // Otherwise, we might create an input or an ooutput node
         }
         ghostIONode.transform.baseVal.getItem(0).setTranslate(newCoords.x, newCoords.y);
-        return highlightedPort;
     }
 
     /**
