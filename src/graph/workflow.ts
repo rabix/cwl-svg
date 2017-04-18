@@ -281,8 +281,11 @@ export class Workflow {
                 + ((index % 3) * danglingNodeSideLength / 3)
                 + Math.floor(index / danglingRowBreakpoint);
 
-            const matrix = SVGUtils.createMatrix().translate(left, top);
+            const matrix     = SVGUtils.createMatrix().translate(left, top);
+            const modelEntry = this.model.findById(el.getAttribute("data-connection-id"));
             el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
+            this.setModelPosition(modelEntry, matrix.e, matrix.f);
+
         });
 
         this.redrawEdges();
