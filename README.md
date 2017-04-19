@@ -35,6 +35,10 @@ workflow.fitToViewport();
 workflow.arrange();
 ```
 
+## Todo
+- Create a CLI interface for generating images from CWL files directly
+- Compile a bundle usable without module loaders
+
 ## Preview
 
 ### Overview
