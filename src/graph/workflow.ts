@@ -661,7 +661,8 @@ export class Workflow {
                             { x: mx.e, y: mx.f });
                         this.removeHighlightedPort(this.dragBoundaryInterval.highlightedPort, ghostIO.edgeDirection);
                         this.dragBoundaryInterval.highlightedPort = this.setHighlightedPort(sorted, ghostIO.edgeDirection);
-                        this.translateGhostNodeAndShowIfNecessary(el, ghostIO.nodeToMouseDistance, { x: mx.e, y: mx.f });
+                        this.translateGhostNodeAndShowIfNecessary(el, ghostIO.nodeToMouseDistance,
+                            this.dragBoundaryInterval.highlightedPort !== undefined, { x: mx.e, y: mx.f });
                     }
                 }, 1000 / 60);
             }
@@ -957,7 +958,7 @@ export class Workflow {
             this.removeHighlightedPort(highlightedPort, edgeDirection);
             highlightedPort = this.setHighlightedPort(sorted, edgeDirection);
             this.translateGhostNodeAndShowIfNecessary(ghostIONode, nodeToMouseDistance,
-                { x: origin.x + scaledDeltas.x, y: origin.y + scaledDeltas.y});
+                highlightedPort !== undefined, { x: origin.x + scaledDeltas.x, y: origin.y + scaledDeltas.y});
 
         }, (ev, origin, root) => {
             this.isDragging = true;
@@ -1204,9 +1205,10 @@ export class Workflow {
      */
     private translateGhostNodeAndShowIfNecessary(ghostIONode: SVGGElement,
                                                  nodeToMouseDistance: number,
+                                                 isCloseToPort: boolean,
                                                  newCoords: { x: number, y: number }): void {
         ghostIONode.classList.add("hidden");
-        if (!nodeToMouseDistance || nodeToMouseDistance > 120) {
+        if (nodeToMouseDistance > 120 && !isCloseToPort) {
             ghostIONode.classList.remove("hidden");
             // Otherwise, we might create an input or an ooutput node
         }
