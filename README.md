@@ -1,6 +1,6 @@
-#CWL-SVG
+# CWL-SVG
 
-CWL-SVG is a library for visualization of Common Workflow Language workflows
+CWL-SVG is a Typescript library for visualization of Common Workflow Language workflows
  
 ## Usage
 
@@ -34,3 +34,6 @@ workflow.fitToViewport();
 // You can also auto-arrange graph nodes spatially in case there's no information about node positions inside the CWL document
 workflow.arrange();
 ```
+
+## Preview
+![Arranged and scaled BCBio workflow](./docs/images/bcbio.png)
