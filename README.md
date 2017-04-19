@@ -43,3 +43,9 @@ workflow.arrange();
 
 ### Selection
 ![Selection and Highlighting](./docs/images/bcbio-selection.gif)
+
+### Movement
+![Movement](./docs/images/bcbio-movement.gif)
+
+### Connection
+![Connecting Nodesd](./docs/images/bcbio-connection.gif)
