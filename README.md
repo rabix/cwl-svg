@@ -36,4 +36,10 @@ workflow.arrange();
 ```
 
 ## Preview
+
+### Overview
 ![Arranged and scaled BCBio workflow](./docs/images/bcbio.png)
+
+
+### Selection
+![Selection and Highlighting](./docs/images/bcbio-selection.gif)
