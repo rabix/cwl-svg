@@ -1,12 +1,11 @@
 import {StepModel, WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
 import {SVGUtils} from "../utils/svg-utils";
 import {IOPort} from "./io-port";
-import {Shape} from "./shape";
 
 export type NodePosition = { x: number, y: number };
 export type NodeDataModel = WorkflowInputParameterModel | WorkflowOutputParameterModel | StepModel;
 
-export class GraphNode extends Shape {
+export class GraphNode {
 
 
     public position: NodePosition = {x: 0, y: 0};
@@ -15,8 +14,6 @@ export class GraphNode extends Shape {
 
     constructor(position: Partial<NodePosition>,
                 private dataModel: NodeDataModel) {
-
-        super();
 
         this.dataModel = dataModel;
 

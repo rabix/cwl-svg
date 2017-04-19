@@ -1,7 +1,4 @@
-import {WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
-import {Shape} from "./shape";
-
-export class IOPort extends Shape {
+export class IOPort {
 
     static radius = 7;
     

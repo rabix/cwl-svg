@@ -1,5 +1,5 @@
-import {WorkflowFactory} from "cwlts/models";
 import "./assets/styles/style.scss";
+import {WorkflowFactory} from "cwlts/models";
 import {Workflow} from "./graph/workflow";
 declare const samples: {
     fastQC: any,

@@ -13,21 +13,25 @@
   },
   "dependencies": {
     "core-js": "^2.4.1",
-    "cwlts": "^1.12.18"
+    "cwlts": "^1.12.18",
+    "phantom": "^4.0.2"
   },
   "peerDependencies": {
     "cwlts": "^1.12.18"
   },
   "devDependencies": {
     "@types/core-js": "0.9.41",
+    "@types/node": "^6.0.69",
+    "@types/phantom": "^3.2.1",
     "css-loader": "^0.28.0",
+    "extract-text-webpack-plugin": "^2.1.0",
     "json-loader": "0.5.4",
     "node-sass": "^4.5.2",
-    "sass-loader": "^5.0.1",
+    "sass-loader": "^6.0.3",
     "source-map-loader": "^0.2.1",
     "style-loader": "^0.16.1",
     "ts-loader": "2.0.3",
     "typescript": "^2.1.6",
-    "webpack": "^2.2.1"
+    "webpack": "^2.4.1"
   }
 }
