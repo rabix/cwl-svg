@@ -93,6 +93,7 @@ export class Workflow {
             "app.create.output",
             /** @link workflow.fit */
             "beforeChange",
+            "selectionChange"
         ]);
 
         this.attachEvents();
@@ -462,6 +463,23 @@ export class Workflow {
         });
     }
 
+    /**
+     * Scale the workflow by the scaleCoefficient over the center of the workflo
+     * @param scaleCoefficient
+     */
+    scaleWorkflowCenter(scaleCoefficient = 1) {
+        this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
+        this.scaleWorkflow(scaleCoefficient, {
+            clientX: (this.workflowBoundingClientRect.right + this.workflowBoundingClientRect.left) / 2,
+            clientY: (this.workflowBoundingClientRect.top + this.workflowBoundingClientRect.bottom) / 2
+        });
+    }
+
+    /**
+     * Scale the workflow by the scaleCoefficient (not compounded) over given coordinates
+     * @param scaleCoefficient
+     * @param ev
+     */
     scaleWorkflow(scaleCoefficient = 1, ev?: { clientX: number, clientY: number }) {
         this.scale              = scaleCoefficient;
         const transform         = this.workflow.transform.baseVal;
@@ -852,6 +870,7 @@ export class Workflow {
         if (selected) {
             selected.classList.remove("selected");
         }
+        this.eventHub.emit("selectionChange", null);
     }
 
     public transformScreenCTMtoCanvas(x, y) {
@@ -1295,6 +1314,7 @@ export class Workflow {
         if (typeof (el as any).focus === "function") {
             (el as any).focus();
         }
+        this.eventHub.emit("selectionChange", el);
     }
 
     destroy() {
