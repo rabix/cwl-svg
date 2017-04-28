@@ -2,7 +2,7 @@ import {Edge as ModelEdge} from "cwlts/models";
 import {IOPort} from "./io-port";
 import {Geometry} from "../utils/geometry";
 export class Edge {
-    static makeTemplate(edge: ModelEdge, paper: Snap.Paper): string {
+    static makeTemplate(edge: ModelEdge, containerNode: SVGGElement): string {
         if (!edge.isVisible || edge.source.type === "Step" || edge.destination.type === "Step") {
             return "";
         }
@@ -10,8 +10,8 @@ export class Edge {
         let [sourceSide, sourceStepId, sourcePort] = edge.source.id.split("/");
         let [destSide, destStepId, destPort] = edge.destination.id.split("/");
 
-        const sourceVertex = paper.node.querySelector(`.${sourceStepId} .output-port .${sourcePort}`) as SVGGElement;
-        const destVertex = paper.node.querySelector(`.${destStepId} .input-port .${destPort}`) as SVGGElement;
+        const sourceVertex = containerNode.querySelector(`.${sourceStepId} .output-port .${sourcePort}`) as SVGGElement;
+        const destVertex = containerNode.querySelector(`.${destStepId} .input-port .${destPort}`) as SVGGElement;
 
         if (edge.source.type === edge.destination.type) {
             console.error("Cant draw edge between nodes of the same type.", edge);

@@ -7,27 +7,31 @@
   "license": "Apache-2.0",
   "author": "Ivan Batic <ivan.batic@live.com> (http://github.com/ivanbatic)",
   "description": "A library for generating an interactive SVG visualization of CWL workflows",
-  "version": "0.0.30",
+  "version": "0.0.31",
+  "scripts": {
+    "webpack:watch": "node_modules/.bin/webpack --watch"
+  },
   "dependencies": {
     "core-js": "^2.4.1",
-    "cwlts": "^1.12.3",
-    "snapsvg-cjs": "0.0.4"
+    "cwlts": "^1.12.18",
+    "phantom": "^4.0.2"
   },
   "peerDependencies": {
-    "cwlts": "^1.12.3"
+    "cwlts": "^1.12.18"
   },
   "devDependencies": {
-    "@types/core-js": "0.9.35",
-    "@types/snapsvg": "0.4.27",
-    "css-loader": "^0.26.1",
+    "@types/core-js": "0.9.41",
+    "@types/node": "^6.0.69",
+    "@types/phantom": "^3.2.1",
+    "css-loader": "^0.28.0",
+    "extract-text-webpack-plugin": "^2.1.0",
     "json-loader": "0.5.4",
-    "node-sass": "^4.5.0",
-    "sass-loader": "^5.0.1",
-    "source-map-loader": "^0.1.6",
-    "style-loader": "^0.13.1",
-    "systemjs": "^0.20.2",
-    "ts-loader": "2.0.0",
+    "node-sass": "^4.5.2",
+    "sass-loader": "^6.0.3",
+    "source-map-loader": "^0.2.1",
+    "style-loader": "^0.16.1",
+    "ts-loader": "2.0.3",
     "typescript": "^2.1.6",
-    "webpack": "^2.2.1"
+    "webpack": "^2.4.1"
   }
 }

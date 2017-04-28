@@ -1,5 +1,4 @@
-import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
-import "snapsvg-cjs";
+import {Edge, Graph, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
 import {DomEvents} from "../utils/dom-events";
 import {EventHub} from "../utils/event-hub";
 import {Geometry} from "../utils/geometry";
@@ -7,24 +6,12 @@ import {Edge as GraphEdge} from "./edge";
 import {GraphNode} from "./graph-node";
 import {IOPort} from "./io-port";
 import {TemplateParser} from "./template-parser";
-
-Snap.plugin(function (Snap, Element) {
-    const proto = Element.prototype;
-
-    proto.toFront = function () {
-        this.appendTo(this.node.parentNode);
-    };
-    proto.toBack  = function () {
-        this.prependTo(this.node.parentNode);
-    };
-});
+import {SVGUtils} from "../utils/svg-utils";
 
 export class Workflow {
-    private paper: Snap.Paper;
 
-    private group: Snap.Element;
-
-    private scale: number = 1;
+    /** Current scale of the document */
+    private scale = 1;
 
     public readonly eventHub: EventHub;
 
@@ -38,21 +25,21 @@ export class Workflow {
 
     private workflowBoundingClientRect;
 
-    private isDragging: boolean = false;
+    private isDragging = false;
 
     /**
      * The size of the workflow boundary / padding that stops nodes from being dragged
      * outside the workflow viewport; drag "scroll" is activated when cursor hits a boundary
      * @type {number}
      */
-    private dragBoundary: number = 50;
+    private dragBoundary = 50;
 
     /**
      * The amount which the workflow, node, and necessary paths will be translated
      * when mouse is dragged on boundary or outside workflow every time the interval runs
      * @type {number}
      */
-    private dragBoundaryTranslation: number = 5;
+    private dragBoundaryTranslation = 5;
 
     /**
      * The interval that is set when the cursor hits a boundary (or multiple boundaries)
@@ -68,30 +55,28 @@ export class Workflow {
         highlightedPort: undefined
     };
 
-    constructor(paper: Snap.Paper, model: WorkflowModel) {
-        this.paper = paper;
+    constructor(svgRoot: SVGSVGElement, model: WorkflowModel) {
 
-        this.svgRoot = paper.node;
+        this.svgRoot = svgRoot;
 
         this.model = model;
 
-        this.domEvents = new DomEvents(this.paper.node as HTMLElement);
+        this.domEvents = new DomEvents(this.svgRoot as any);
 
-        this.paper.node.innerHTML = `
+        this.svgRoot.innerHTML = `
             <rect x="0" y="0" width="100%" height="100%" class="pan-handle" transform="matrix(1,0,0,1,0,0)"></rect>
             <g class="workflow" transform="matrix(1,0,0,1,0,0)"></g>
         `;
 
-        this.workflow = this.paper.node.querySelector(".workflow") as any;
+        this.workflow = this.svgRoot.querySelector(".workflow") as any;
 
-        this.group = Snap(this.workflow);
-
-        this.paper.node.addEventListener("mousewheel", ev => {
-            // Cancel the mousewheel event if a drag event is currently being handled
+        /**
+         * Whenever user scrolls, take the scroll delta and scale the workflow.
+         */
+        this.svgRoot.addEventListener("mousewheel", (ev: MouseWheelEvent) => {
             if (this.isDragging) {
                 return;
             }
-
             const scale = this.scale + ev.deltaY / 500;
 
             // Prevent scaling to unreasonable proportions.
@@ -112,12 +97,7 @@ export class Workflow {
             "app.create.input",
             /** @link app.create.output */
             "app.create.output",
-            /** @link workflow.arrange */
-            "workflow.arrange",
-            /** @link workflow.scale */
-            "workflow.scale",
             /** @link workflow.fit */
-            "workflow.fit",
             "beforeChange",
         ]);
 
@@ -126,9 +106,6 @@ export class Workflow {
         if (model) {
             this.renderModel(model);
         }
-        console.time("Event Listeners");
-
-        console.timeEnd("Event Listeners");
     }
 
     command(event: string, ...data: any[]) {
@@ -147,10 +124,185 @@ export class Workflow {
         return this.scale;
     }
 
+    arrange() {
+        this.resetTransform();
+
+        type NodeIO = {
+            inputs: string[],
+            outputs: string[],
+            connectionID: string,
+            el: SVGGElement,
+            rect: ClientRect,
+            type: "step" | "input" | "output" | string
+        };
+        type NodeSet = { [connectionID: string]: NodeIO };
+
+        // Edges are the main source of information from which we will distribute nodes
+        const edges: SVGGElement[] = Array.from(this.workflow.querySelectorAll(".edge")) as SVGGElement[];
+
+        // Make a graph representation where you can trace inputs and outputs from/to connection ids
+        const nodeSet: NodeSet = {};
+
+        const danglingNodes = Array.from(this.workflow.querySelectorAll(`.node`)).reduce((acc, el) => {
+            return {...acc, [el.getAttribute("data-connection-id")]: el};
+        }, {});
+
+        edges.forEach(edge => {
+            const sourceConnectionID      = edge.getAttribute("data-source-connection");
+            const destinationConnectionID = edge.getAttribute("data-destination-connection");
+
+            const [sourceSide, sourceNodeID, sourcePortID]                = sourceConnectionID.split("/");
+            const [destinationSide, destinationNodeID, destinationPortID] = destinationConnectionID.split("/");
+
+            let sourceType      = "step";
+            let destinationType = "step";
+            if (sourceNodeID === sourcePortID) {
+                sourceType = sourceSide === "in" ? "output" : "input";
+            }
+            if (destinationNodeID === destinationPortID) {
+                destinationType = destinationSide === "in" ? "output" : "input";
+            }
+
+            // Initialize keys on graph if they don't exist
+            const sourceNode      = this.workflow.querySelector(`.node[data-id="${sourceNodeID}"]`) as SVGGElement;
+            const destinationNode = this.workflow.querySelector(`.node[data-id="${destinationNodeID}"]`) as SVGGElement;
+
+            const sourceNodeConnectionID      = sourceNode.getAttribute("data-connection-id");
+            const destinationNodeConnectionID = destinationNode.getAttribute("data-connection-id");
+
+            delete danglingNodes[sourceNodeConnectionID];
+            delete danglingNodes[destinationNodeConnectionID];
+            //
+            (nodeSet[sourceNodeID] || (nodeSet[sourceNodeID] = {
+                inputs: [],
+                outputs: [],
+                type: sourceType,
+                connectionID: sourceNodeConnectionID,
+                el: sourceNode,
+                rect: sourceNode.getBoundingClientRect()
+            }));
+
+            (nodeSet[destinationNodeID] || (nodeSet[destinationNodeID] = {
+                inputs: [],
+                outputs: [],
+                type: destinationType,
+                connectionID: destinationNodeConnectionID,
+                el: destinationNode,
+                rect: destinationNode.getBoundingClientRect()
+            }));
+
+            nodeSet[sourceNodeID].outputs.push(destinationNodeID);
+            nodeSet[destinationNodeID].inputs.push(sourceNodeID);
+
+        });
+
+        const traceLongestPath = (node: NodeIO, visited: Set<NodeIO>) => {
+            visited.add(node);
+            const ins = node.inputs.map(nid => nodeSet[nid]);
+            return 1 + (ins.length ? Math.max(...ins.filter(e => !visited.has(e)).map(e => traceLongestPath(e, visited))) : 0);
+        }
+
+        const idToZoneMap = Object.keys(nodeSet).reduce((zoneMap, nid) => {
+
+            const item = nodeSet[nid];
+            let zone   = traceLongestPath(item, new Set<NodeIO>()) - 1;
+            return {...zoneMap, [nid]: zone};
+        }, {});
+
+        for (const nid in nodeSet) {
+            const node = nodeSet[nid];
+            if (node.type === "input") {
+                const newZone    = Math.min(...node.outputs.map(out => idToZoneMap[out])) - 1;
+                idToZoneMap[nid] = newZone;
+            }
+        }
+
+
+        const columns: NodeIO[][] = Object.keys(idToZoneMap).reduce((acc, nid) => {
+            const zone = idToZoneMap[nid];
+            if (!acc[zone]) {
+                acc[zone] = [];
+            }
+            acc[zone].push(nodeSet[nid]);
+            return acc;
+        }, []);
+
+        let distributionAreaHeight = 0;
+        let distributionAreaWidth  = 0;
+
+        const columnDimensions = Object.keys(columns).map(col => ({height: 0, width: 0}));
+
+        columns.forEach((column, index) => {
+            let width  = 0;
+            let height = 0;
+            column.forEach(entry => {
+                height += entry.rect.height;
+                if (width < entry.rect.width) {
+                    width = entry.rect.width;
+                }
+            });
+
+            columnDimensions[index] = {height, width};
+
+            distributionAreaWidth += width;
+            if (height > distributionAreaHeight) {
+                distributionAreaHeight = height;
+            }
+        });
+
+        let baseline   = distributionAreaHeight / 2;
+        let xOffset    = 0;
+        let maxYOffset = 0;
+
+        columns.forEach((column, index) => {
+            const rowCount = column.length + 1;
+            const colSize  = columnDimensions[index];
+            let yOffset    = baseline - (colSize.height / 2);
+
+            column.forEach(node => {
+                const matrix = SVGUtils.createMatrix().translate(xOffset, yOffset);
+                yOffset += node.rect.height;
+                if (yOffset > maxYOffset) {
+                    maxYOffset = yOffset;
+                }
+
+                node.el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
+                const modelEntry = this.model.findById(node.connectionID);
+                this.setModelPosition(modelEntry, matrix.e, matrix.f);
+            });
+
+            xOffset += colSize.width;
+        });
+
+
+        const danglingNodeSideLength = GraphNode.radius * 5;
+        const danglingNodeCount      = Object.keys(danglingNodes).length;
+
+        let danglingRowBreakpoint = Math.floor(distributionAreaWidth / danglingNodeSideLength);
+        Object.keys(danglingNodes).forEach((connectionID, index) => {
+            const el = danglingNodes[connectionID] as SVGGElement;
+            let left = (index % danglingRowBreakpoint) * danglingNodeSideLength;
+            let top  = maxYOffset
+                + danglingNodeSideLength
+                + ((index % 3) * danglingNodeSideLength / 3)
+                + Math.floor(index / danglingRowBreakpoint);
+
+            const matrix     = SVGUtils.createMatrix().translate(left, top);
+            const modelEntry = this.model.findById(el.getAttribute("data-connection-id"));
+            el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
+            this.setModelPosition(modelEntry, matrix.e, matrix.f);
+
+        });
+
+        this.redrawEdges();
+        this.fitToViewport();
+    }
+
     /**
      * Scales the workflow to fit the available viewport
      */
     fitToViewport(): void {
+
         this.scaleWorkflow(1);
         Object.assign(this.workflow.transform.baseVal.getItem(0).matrix, {
             e: 0,
@@ -185,15 +337,25 @@ export class Workflow {
         matrix.f     = moveY;
     }
 
+    private redrawEdges() {
+        Array.from(this.workflow.querySelectorAll(".edge")).forEach(el => {
+            el.remove();
+        });
+
+        const edgesTpl          = this.model.connections.map(c => GraphEdge.makeTemplate(c, this.workflow)).reduce((acc, tpl) => acc + tpl, "");
+        this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
+    }
+
     private renderModel(model: WorkflowModel) {
         console.time("Graph Rendering");
+        this.model = model;
+
+        // We will need to restore the transformations when we redraw the model, so save the current state
         const oldTransform = this.workflow.getAttribute("transform");
-        let selectedStuff = this.workflow.querySelectorAll(".selected");
-        if (selectedStuff.length) {
-            selectedStuff = selectedStuff.item(0).getAttribute("data-connection-id");
-        } else {
-            selectedStuff = undefined;
-        }
+
+        // We might have an active selection that we want to preserve upon redrawing, save it
+        let selectedStuff            = this.workflow.querySelector(".selected");
+        let selectedItemConnectionID = selectedStuff ? selectedStuff.getAttribute("data-connection-id") : undefined;
 
         this.clearCanvas();
 
@@ -209,31 +371,33 @@ export class Workflow {
 
         this.workflow.innerHTML += nodesTpl;
 
-        const edgesTpl = model.connections.map(c => GraphEdge.makeTemplate(c, this.paper)).reduce((acc, tpl) => acc + tpl, "");
-        this.workflow.innerHTML += edgesTpl;
+        this.redrawEdges();
         console.timeEnd("Graph Rendering");
         console.time("Ordering");
 
 
-        this.workflow.querySelectorAll(".node").forEach(e => {
+        Array.from(this.workflow.querySelectorAll(".node")).forEach(e => {
             this.workflow.appendChild(e);
         });
 
-        this.addEventListeners(this.paper.node);
+        this.addEventListeners(this.svgRoot);
 
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
         this.scaleWorkflow(this.scale);
 
-        const newSelection = this.workflow.querySelector(`[data-connection-id='${selectedStuff}']`);
-        if (newSelection) {
-            this.activateSelection(newSelection as SVGGElement);
+        // If we had a selection before, restore it
+        if (selectedItemConnectionID) {
+            const newSelection = this.workflow.querySelector(`[data-connection-id='${selectedItemConnectionID}']`);
+            // We need to check if the previously selected item still exist, since it might be deleted in the meantime
+            if (newSelection) {
+                this.activateSelection(newSelection as SVGGElement);
+            }
         }
     }
 
     static canDrawIn(element: SVGElement): boolean {
         let clientBounds = element.getBoundingClientRect();
-        console.log("Checking if drawable", clientBounds, element.getClientRects());
         return clientBounds.width !== 0;
     }
 
@@ -302,82 +466,14 @@ export class Workflow {
 
             // this.workflow.innerHTML += GraphEdge.makeTemplate(connection, this.paper);
         });
-
-        /**
-         * @name workflow.arrange
-         */
-        this.eventHub.on("workflow.arrange", (connections: Edge[]) => {
-            const tracker = {};
-            const zones   = {};
-            const width   = this.paper.node.clientWidth;
-            const height  = this.paper.node.clientHeight;
-
-            const workflowIns = new Map<any[], string>();
-
-            connections.forEach(c => {
-
-                let [, sName, spName] = c.source.id.split("/");
-                let [, dName, dpName] = c.destination.id.split("/");
-
-                tracker[sName] || (tracker[sName] = []);
-                (tracker[dName] || (tracker[dName] = [])).push(tracker[sName]);
-                if (sName === spName) {
-                    workflowIns.set(tracker[sName], sName);
-                }
-            });
-
-            const trace = (arr, visited: Set<any>) => {
-                visited.add(arr);
-                return 1 + ( arr.length ? Math.max(...arr.filter(e => !visited.has(e)).map((e) => trace(e, visited))) : 0);
-            };
-
-
-            const trackerKeys = Object.keys(tracker);
-            const idToZoneMap = trackerKeys.reduce(
-                (acc, k) => Object.assign(acc, {[k]: trace(tracker[k], new Set()) - 1}), {}
-            );
-
-            trackerKeys.forEach(k => {
-                tracker[k].filter(p => workflowIns.has(p)).forEach(pre => {
-                    idToZoneMap[workflowIns.get(pre)] = idToZoneMap[k] - 1;
-                });
-            });
-
-            trackerKeys.forEach(k => {
-
-                try {
-                    const snap = Snap(`.node.${k}`);
-                    const zone = idToZoneMap[k];
-                    if (!snap) {
-                        throw new Error("Cant find node " + k);
-                    }
-                    (zones[zone] || (zones[zone] = [])).push(snap);
-                } catch (ex) {
-                    console.error("ERROR", k, ex, tracker);
-                }
-            });
-
-            const columnCount = Object.keys(zones).length + 1;
-            const columnWidth = (width / columnCount);
-
-            for (let z in zones) {
-                const rowCount  = zones[z].length + 1;
-                const rowHeight = height / rowCount;
-
-                zones[z].forEach((el: Snap.Element, i) => {
-                    el.transform(new Snap.Matrix()
-                        .translate(columnWidth * (~~z + 1), (i + 1) * rowHeight));
-                });
-            }
-        });
     }
 
-    scaleWorkflow(scaleCoefficient: number = 1, ev?: { clientX: number, clientY: number }) {
+    scaleWorkflow(scaleCoefficient = 1, ev?: { clientX: number, clientY: number }) {
         this.scale              = scaleCoefficient;
         const transform         = this.workflow.transform.baseVal;
         const matrix: SVGMatrix = transform.getItem(0).matrix;
 
-        const coords = this.translateMouseCoords(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
+        const coords = this.transformScreenCTMtoCanvas(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
 
         matrix.e += matrix.a * coords.x;
         matrix.f += matrix.a * coords.y;
@@ -387,44 +483,15 @@ export class Workflow {
 
         const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
 
-            Array.from(this.workflow.querySelectorAll(".node .label"))
-                .map((el: SVGGElement) => el.transform.baseVal.getItem(0).matrix)
-                .forEach(m => {
-                    m.a = labelScale;
-                    m.d = labelScale;
-                });
-
-        /**
-         * @name workflow.fit
-         */
-        this.eventHub.on("workflow.fit", () => {
-
-            this.group.transform(new Snap.Matrix());
-
-            let {clientWidth: paperWidth, clientHeight: paperHeight} = this.paper.node;
-            let clientBounds                                         = this.paper.node.getBoundingClientRect();
-            let wfBounds                                             = this.group.node.getBoundingClientRect();
-
-            const padding = 200;
-
-            const verticalScale   = (wfBounds.height + padding) / paperHeight;
-            const horizontalScale = (wfBounds.width + padding) / paperWidth;
-
-            const scaleFactor = Math.max(verticalScale, horizontalScale);
-
-            this.command("workflow.scale", 1 / scaleFactor);
-
-            let paperBounds = this.paper.node.getBoundingClientRect();
-            wfBounds        = this.group.node.getBoundingClientRect();
-
-            const moveY = scaleFactor * -wfBounds.top + scaleFactor * clientBounds.top + scaleFactor * Math.abs(paperBounds.height - wfBounds.height) / 2;
-            const moveX = scaleFactor * -wfBounds.left + scaleFactor * clientBounds.left + scaleFactor * Math.abs(paperBounds.width - wfBounds.width) / 2;
-
-            this.group.transform(this.group.transform().localMatrix.clone().translate(moveX, moveY));
-        });
+        Array.from(this.workflow.querySelectorAll(".node .label"))
+            .map((el: SVGTextElement) => el.transform.baseVal.getItem(0).matrix)
+            .forEach(m => {
+                m.a = labelScale;
+                m.d = labelScale;
+            });
     }
 
-    private addEventListeners(root: HTMLElement): void {
+    private addEventListeners(root: SVGSVGElement): void {
 
         /**
          * Whenever a click happens on a blank space, remove selections
@@ -438,7 +505,7 @@ export class Workflow {
          * highlight all connecting edges and adjacent vertices
          * while shadowing others.
          */
-        this.domEvents.on("click", ".node", (ev, el) => {
+        this.domEvents.on("click", ".node", (ev, el: SVGGElement) => {
             this.activateSelection(el);
         });
 
@@ -454,36 +521,37 @@ export class Workflow {
             let newY: number;
 
             this.domEvents.drag(".node .drag-handle", (dx: number, dy: number,
-                                                       ev: any, handle: SVGGElement): any => {
-                const el  = handle.parentNode;
+                                                       ev, handle: SVGGElement) => {
+                const nodeEl = handle.parentNode as SVGGElement;
                 let sdx, sdy;
 
                 const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
 
                 // if a workflow boundary has been hit, then call function which calls the interval
                 if (boundary.x || boundary.y) {
-                    this.setDragBoundaryIntervalIfNecessary(el, { x: boundary.x, y: boundary.y },
-                        { startX: startX, startY: startY, inputEdges: inputEdges, outputEdges: outputEdges });
+
+                    this.setDragBoundaryIntervalIfNecessary(nodeEl, {x: boundary.x, y: boundary.y},
+                        {startX: startX, startY: startY, inputEdges: inputEdges, outputEdges: outputEdges});
                 }
 
                 // returns the delta x and y - change in node position - based on mouse position and
                 // boundary offsets (if necessary)
                 const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, startX, startY, dx, dy);
-                sdx = scaledDeltas.x;
-                sdy = scaledDeltas.y;
-                newX = startX + sdx;
-                newY = startY + sdy;
-                el.transform.baseVal.getItem(0).setTranslate(newX, newY);
+                sdx                = scaledDeltas.x;
+                sdy                = scaledDeltas.y;
+                newX               = startX + sdx;
+                newY               = startY + sdy;
+                nodeEl.transform.baseVal.getItem(0).setTranslate(newX, newY);
 
                 this.setInputAndOutputEdges(inputEdges, outputEdges, sdx, sdy);
             }, (ev, handle, root) => {
                 this.isDragging = true;
-                const el     = handle.parentNode;
-                const matrix = el.transform.baseVal.getItem(0).matrix;
-                startX       = matrix.e;
-                startY       = matrix.f;
-                inputEdges   = new Map();
-                outputEdges  = new Map();
+                const el                        = handle.parentNode as SVGGElement;
+                const matrix                    = el.transform.baseVal.getItem(0).matrix;
+                startX                          = matrix.e;
+                startY                          = matrix.f;
+                inputEdges                      = new Map<SVGElement, number[]>();
+                outputEdges                     = new Map<SVGElement, number[]>();
                 this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
 
                 Array.from(root.querySelectorAll(`.edge[data-destination-node='${el.getAttribute("data-id")}'] .sub-edge`))
@@ -515,7 +583,7 @@ export class Workflow {
          * Attach canvas panning
          */
         {
-            let pane: SVGElement;
+            let pane: SVGGElement;
             let x;
             let y;
             let matrix: SVGMatrix;
@@ -525,7 +593,7 @@ export class Workflow {
                 matrix.f = y + dy;
 
             }, (ev, el, root) => {
-                pane   = root.querySelector(".workflow") as SVGElement;
+                pane   = root.querySelector(".workflow") as SVGGElement;
                 matrix = pane.transform.baseVal.getItem(0).matrix;
                 x      = matrix.e;
                 y      = matrix.f;
@@ -538,7 +606,7 @@ export class Workflow {
         /**
          * Edge Selection
          */
-        this.domEvents.on("click", ".edge", (ev, target, root) => {
+        this.domEvents.on("click", ".edge", (ev, target: SVGPathElement, root) => {
             this.highlightEdge(target);
             target.classList.add("selected");
         });
@@ -578,24 +646,30 @@ export class Workflow {
      */
     private setDragBoundaryIntervalIfNecessary(el: SVGGElement,
                                                boundary: { x: 1 | 0 | -1, y: 1 | 0 | -1 },
-                                               pathInfo?: { startX: number, startY: number,
-                                           inputEdges: Map<SVGElement, number[]>,
-                                           outputEdges: Map<SVGElement, number[]> },
-                                               ghostIO?: { edge: SVGPathElement, nodeToMouseDistance: number,
-                                           allConnectionPorts: SVGGElement[], highlightedPort: SVGGElement,
-                                           origin: { x: number, y: number },
-                                           coords: { x: number, y: number }
-                                           edgeDirection: "left" | "right" }): void {
+                                               pathInfo?: {
+                                                   startX: number, startY: number,
+                                                   inputEdges: Map<SVGElement, number[]>,
+                                                   outputEdges: Map<SVGElement, number[]> },
+                                               ghostIO?: {
+                                                   edge: SVGPathElement,
+                                                   nodeToMouseDistance: number,
+                                                   connectionPorts: SVGGElement[],
+                                                   highlightedPort: SVGGElement,
+                                                   origin: { x: number, y: number },
+                                                   coords: { x: number, y: number },
+                                                   portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>,
+                                                   edgeDirection: "left" | "right"
+                                               }): void {
 
         // If boundary areas overlap or if boundary areas take up half - or more - of the svg, resize dragBoundary
         while (this.workflowBoundingClientRect.right - this.dragBoundary <= this.workflowBoundingClientRect.left + this.dragBoundary ||
-            this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) { // CHANGE HERE
+            this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) {
             this.dragBoundary = this.dragBoundary / 2;
         }
 
-        const checkIfLeftBoundary: boolean = boundary.x === -1;
-        const checkIfRightBoundary: boolean = boundary.x === 1;
-        const checkIfTopBoundary: boolean = boundary.y === -1;
+        const checkIfLeftBoundary: boolean   = boundary.x === -1;
+        const checkIfRightBoundary: boolean  = boundary.x === 1;
+        const checkIfTopBoundary: boolean    = boundary.y === -1;
         const checkIfBottomBoundary: boolean = boundary.y === 1;
 
         if (boundary.x || boundary.y) {
@@ -609,7 +683,7 @@ export class Workflow {
                 this.dragBoundaryInterval.y = boundary.y !== 0;
 
                 const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
-                const mx = el.transform.baseVal.getItem(0).matrix;
+                const mx: SVGMatrix             = el.transform.baseVal.getItem(0).matrix;
 
                 if (ghostIO) {
                     this.dragBoundaryInterval.highlightedPort = ghostIO.highlightedPort;
@@ -657,8 +731,8 @@ export class Workflow {
                             );
                         });
 
-                        const sorted = this.getSortedConnectionPorts(ghostIO.allConnectionPorts,
-                            { x: mx.e, y: mx.f });
+                        const sorted = this.getSortedConnectionPorts(ghostIO.connectionPorts,
+                            { x: mx.e, y: mx.f }, ghostIO.portToOriginTransformation);
                         this.removeHighlightedPort(this.dragBoundaryInterval.highlightedPort, ghostIO.edgeDirection);
                         this.dragBoundaryInterval.highlightedPort = this.setHighlightedPort(sorted, ghostIO.edgeDirection);
                         this.translateGhostNodeAndShowIfNecessary(el, ghostIO.nodeToMouseDistance,
@@ -678,9 +752,9 @@ export class Workflow {
      * @returns {{x: number, y: number}}
      */
     private getBoundaryZonesXYAxes(x: number, y: number): { x: 1 | 0 | -1, y: 1 | 0 | -1 } {
-        const isLeftBoundary = x < this.workflowBoundingClientRect.left + this.dragBoundary;
-        const isRightBoundary = x > this.workflowBoundingClientRect.right - this.dragBoundary;
-        const isTopBoundary = y < this.workflowBoundingClientRect.top + this.dragBoundary;
+        const isLeftBoundary   = x < this.workflowBoundingClientRect.left + this.dragBoundary;
+        const isRightBoundary  = x > this.workflowBoundingClientRect.right - this.dragBoundary;
+        const isTopBoundary    = y < this.workflowBoundingClientRect.top + this.dragBoundary;
         const isBottomBoundary = y > this.workflowBoundingClientRect.bottom - this.dragBoundary;
 
         // if cursor is not on a boundary, then clear interval if it exists
@@ -715,7 +789,7 @@ export class Workflow {
      * @returns {{x: number, y: number}}
      */
     private getScaledDeltaXYForDrag(boundary: { x: 1 | 0 | -1, y: 1 | 0 | -1 },
-                                    ev: {clientX: number, clientY: number},
+                                    ev: { clientX: number, clientY: number },
                                     startX: number, startY: number,
                                     dx: number, dy: number): { x: number, y: number } {
         const edgeIntervalOn = this.dragBoundaryInterval.interval !== null;
@@ -723,18 +797,18 @@ export class Workflow {
 
         if (boundary.x !== 0 || boundary.y !== 0) {
             if (boundary.x !== 0) {
-                const edgeX = this.translateMouseCoords(boundary.x === 1 ?
+                const edgeX = this.transformScreenCTMtoCanvas(boundary.x === 1 ?
                     this.workflowBoundingClientRect.right - this.dragBoundary :
                     this.workflowBoundingClientRect.left + this.dragBoundary, 0).x; // CHANGE HERE
-                sdx = edgeX - startX;
+                sdx         = edgeX - startX;
             } else {
                 sdx = this.adaptToScale(dx) + this.dragBoundaryInterval.xOffset;
             }
             if (boundary.y !== 0) {
-                const edgeY = this.translateMouseCoords(0, boundary.y === 1 ?
+                const edgeY = this.transformScreenCTMtoCanvas(0, boundary.y === 1 ?
                     this.workflowBoundingClientRect.bottom - this.dragBoundary :
                     this.workflowBoundingClientRect.top + this.dragBoundary).y; // CHANGE HERE
-                sdy = edgeY - startY;
+                sdy         = edgeY - startY;
             } else {
                 sdy = this.adaptToScale(dy) + this.dragBoundaryInterval.yOffset;
             }
@@ -762,7 +836,6 @@ export class Workflow {
                                    dx: number,
                                    dy: number) {
         inputEdges.forEach((p: number[], el: SVGElement) => {
-            //console.log("p[6]: %d", p[6]);
             el.setAttribute("d", IOPort.makeConnectionPath(p[0], p[1], p[6] + dx, p[7] + dy));
         });
 
@@ -771,7 +844,7 @@ export class Workflow {
         });
     }
 
-    private highlightEdge(el) {
+    private highlightEdge(el: SVGPathElement) {
         const sourceNode = el.getAttribute("data-source-node");
         const destNode   = el.getAttribute("data-destination-node");
         const sourcePort = el.getAttribute("data-source-port");
@@ -799,10 +872,9 @@ export class Workflow {
         }
     }
 
-    public translateMouseCoords(x, y) {
-        const svg   = this.paper.node;
-        const wf    = svg.querySelector(".workflow");
-        const ctm   = wf.getScreenCTM();
+    public transformScreenCTMtoCanvas(x, y) {
+        const svg   = this.svgRoot;
+        const ctm   = this.workflow.getScreenCTM();
         const point = svg.createSVGPoint();
         point.x     = x;
         point.y     = y;
@@ -822,7 +894,7 @@ export class Workflow {
             if (!tipEl) {
                 return;
             }
-            const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
+            const coords = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
             tipEl.setAttribute("x", coords.x);
             tipEl.setAttribute("y", coords.y - 16);
 
@@ -839,7 +911,7 @@ export class Workflow {
             const sourceLabel = sourceNode === sourcePort ? sourceNode : `${sourceNode} (${sourcePort})`;
             const destLabel   = destNode === destPort ? destNode : `${destNode} (${destPort})`;
 
-            const coords = this.translateMouseCoords(ev.clientX, ev.clientY);
+            const coords = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
 
             const ns = "http://www.w3.org/2000/svg";
             tipEl    = document.createElementNS(ns, "text");
@@ -917,25 +989,26 @@ export class Workflow {
     private attachPortDragBehavior() {
         let edge: SVGPathElement;
         let preferredConnectionPorts: SVGGElement[];
-        let allConnectionPorts: SVGGElement[];
+        let allOppositeConnectionPorts: SVGGElement[];
         let highlightedPort: SVGGElement;
         let edgeDirection: "left" | "right";
         let ghostIONode: SVGGElement;
         let originNodeCoords: { x: number, y: number };
+        let portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>;
 
-        this.domEvents.drag(".port", (dx: number, dy: number, ev, target) => {
+        this.domEvents.drag(".port", (dx: number, dy: number, ev, target: SVGGElement) => {
             // Gather the necessary positions that we need in order to draw a path
             const ctm                 = target.getScreenCTM();
-            const coords              = this.translateMouseCoords(ev.clientX, ev.clientY);
-            const origin              = this.translateMouseCoords(ctm.e, ctm.f);
+            const coords              = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
+            const origin              = this.transformScreenCTMtoCanvas(ctm.e, ctm.f);
             const nodeToMouseDistance = Geometry.distance(originNodeCoords.x, originNodeCoords.y, coords.x, coords.y);
 
             const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
 
             if (boundary.x || boundary.y) {
                 this.setDragBoundaryIntervalIfNecessary(ghostIONode, { x: boundary.x, y: boundary.y }, null,
-                    { edge: edge, nodeToMouseDistance: nodeToMouseDistance, allConnectionPorts,
-                        highlightedPort, origin, coords, edgeDirection: edgeDirection } );
+                    { edge, nodeToMouseDistance, connectionPorts: allOppositeConnectionPorts, highlightedPort,
+                        origin, coords, portToOriginTransformation, edgeDirection } );
             }
 
             const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, origin.x, origin.y, dx, dy);
@@ -953,7 +1026,7 @@ export class Workflow {
                 );
             });
 
-            const sorted = this.getSortedConnectionPorts(allConnectionPorts, coords);
+            const sorted = this.getSortedConnectionPorts(allOppositeConnectionPorts, coords, portToOriginTransformation);
             highlightedPort = this.dragBoundaryInterval.highlightedPort || highlightedPort;
             this.removeHighlightedPort(highlightedPort, edgeDirection);
             highlightedPort = this.setHighlightedPort(sorted, edgeDirection);
@@ -962,12 +1035,15 @@ export class Workflow {
 
         }, (ev, origin, root) => {
             this.isDragging = true;
+
+            portToOriginTransformation = new WeakMap<SVGGElement, SVGMatrix>()
+
             this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
 
             const originNode    = Workflow.findParentNode(origin);
             const originNodeCTM = originNode.getScreenCTM();
 
-            originNodeCoords = this.translateMouseCoords(originNodeCTM.e, originNodeCTM.f);
+            originNodeCoords = this.transformScreenCTMtoCanvas(originNodeCTM.e, originNodeCTM.f);
 
             const isInputPort = origin.classList.contains("input-port");
 
@@ -986,28 +1062,25 @@ export class Workflow {
             // We need the origin connection ID so we can ask CWLTS for connection recommendations
             const targetConnectionId = origin.getAttribute("data-connection-id");
 
-            // Have a set of all ports of the opposite type, they are all possible destinations
-            allConnectionPorts = Array.from(
+            // Have a set of all ports of the opposite type, they are all possible destinations.
+            // Except the same node that we are dragging from.
+            allOppositeConnectionPorts = Array.from(
                 this.workflow.querySelectorAll(`.port.${isInputPort ? "output-port" : "input-port"}`)
-            ).filter((el: SVGGElement) => {
-                // Except the same node that we are dragging from
-                return Workflow.findParentNode(el) !== originNode;
-            }).map((el: SVGGElement) => {
+            ).filter((el: SVGGElement) => Workflow.findParentNode(el) !== originNode) as SVGGElement[];
 
+
+            allOppositeConnectionPorts.forEach((el: SVGGElement) => {
                 // Find the position of the port relative to the canvas origin
-                el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
-                return el;
+                portToOriginTransformation.set(el, Geometry.getTransformToElement(el, this.workflow));
             });
 
-
-            // Get all valid connection destinations
+            // Get all valid and visible connection destinations
+            // Find them in the dom and mark them as connection candidates
             preferredConnectionPorts = (this.model.gatherValidConnectionPoints(targetConnectionId) || [])
-            // Take out just the visible ones
                 .filter(point => point.isVisible)
-                // Find them in the DOM and mark them as connection candidates
                 .map(p => {
-                    const el: SVGGElement = <SVGGElement>this.workflow.querySelector(`.port[data-connection-id="${p.connectionId}"]`);
-                    el.wfCTM = Geometry.getTransformToElement(el, this.workflow);
+                    const el = this.workflow.querySelector(`.port[data-connection-id="${p.connectionId}"]`) as SVGGElement;
+                    portToOriginTransformation.set(el, Geometry.getTransformToElement(el, this.workflow));
                     el.classList.add("connection-suggestion");
                     return el;
                 });
@@ -1088,23 +1161,23 @@ export class Workflow {
                 // Check to see if cursor is on boundary (or boundaries)
                 const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
 
-                const mouseCoords = this.translateMouseCoords(ev.clientX, ev.clientY);
-                let newX = mouseCoords.x;
-                let newY = mouseCoords.y;
+                const mouseCoords = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
+                let newX          = mouseCoords.x;
+                let newY          = mouseCoords.y;
                 if (boundary.x) {
-                    newX = this.translateMouseCoords(boundary.x === -1 ? this.workflowBoundingClientRect.left + this.dragBoundary :
+                    newX = this.transformScreenCTMtoCanvas(boundary.x === -1 ? this.workflowBoundingClientRect.left + this.dragBoundary :
                         this.workflowBoundingClientRect.right - this.dragBoundary, 0).x;
                 }
                 if (boundary.y) {
-                    newY = this.translateMouseCoords(0, boundary.y === -1 ? this.workflowBoundingClientRect.top + this.dragBoundary :
+                    newY = this.transformScreenCTMtoCanvas(0, boundary.y === -1 ? this.workflowBoundingClientRect.top + this.dragBoundary :
                         this.workflowBoundingClientRect.bottom - this.dragBoundary).y;
                 }
 
                 // Translate mouse coordinates to the canvas coordinates,
                 // make a template for the graph node, create an element out of that,
                 // and add that element to the dom
-                const tpl         = GraphNode.makeTemplate(newX, newY, newIO);
-                const el          = TemplateParser.parse(tpl);
+                const tpl = GraphNode.makeTemplate(newX, newY, newIO);
+                const el  = TemplateParser.parse(tpl);
                 this.workflow.appendChild(el);
 
                 // Update the cwlts model with the new x and y coords for this node
@@ -1113,7 +1186,7 @@ export class Workflow {
                 // Spawn an edge between origin and destination ports
                 const edge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
 
-                // This edge still gas no events bound to it, so fix that
+                // This edge still has no events bound to it, so fix that
                 this.attachEdgeHoverBehavior(edge);
 
                 // Re-scale the workflow so the label gets upscaled or downscaled properly
@@ -1133,30 +1206,35 @@ export class Workflow {
 
             edge.remove();
             ghostIONode.remove();
-            edge                     = undefined;
-            ghostIONode              = undefined;
-            originNodeCoords         = undefined;
-            edgeDirection            = undefined;
-            preferredConnectionPorts = undefined;
+
+            edge                       = undefined;
+            ghostIONode                = undefined;
+            edgeDirection              = undefined;
+            originNodeCoords           = undefined;
+            preferredConnectionPorts   = undefined;
+            portToOriginTransformation = undefined;
         });
     }
 
     /**
      * Goes through all the potential connection ports for a new path,
      * and sorts them by distance in ascending order
-     * @param allConnectionPorts
+     * @param connectionPorts
+     * @param portToOriginTransformation
+     * @param transformationDisplacement
      * @param coords
      * @returns {SVGGElement[]}
      */
-    private getSortedConnectionPorts(allConnectionPorts: SVGGElement[], coords: { x: number, y: number}): SVGGElement[] {
-        const sorted = allConnectionPorts.map(el => {
-            const ctm   = el.wfCTM;
+    private getSortedConnectionPorts(connectionPorts: SVGGElement[],
+                                     coords: { x: number, y: number},
+                                     portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>): SVGGElement[] {
+        return connectionPorts.map(el => {
+            const ctm   = portToOriginTransformation.get(el);
             el.distance = Geometry.distance(coords.x, coords.y, ctm.e, ctm.f);
             return el;
         }).sort((el1, el2) => {
             return el1.distance - el2.distance
         });
-        return sorted;
     }
 
     /**
@@ -1292,7 +1370,7 @@ export class Workflow {
         });
 
         el.classList.add("selected");
-        if (typeof el.focus === "function") {
+        if (typeof (el as any).focus === "function") {
             (el as any).focus();
         }
     }
@@ -1300,5 +1378,9 @@ export class Workflow {
     destroy() {
         this.clearCanvas();
         this.eventHub.empty();
+    }
+
+    private resetTransform() {
+        this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
     }
 }

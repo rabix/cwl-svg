@@ -6,12 +6,15 @@ export class DomEvents {
 
     }
 
-    public on(event: string, selector: string, handler: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any, root?) {
-        if (typeof selector === "function") {
-            root     = handler;
-            handler  = selector;
-            selector = undefined;
-        }
+    public on(event: string, selector: string, handler: (UIEvent, target?: Element, root?: Element) => any, root?);
+    public on(event: string, handler: (UIEvent, target?: Element, root?: Element) => any, root?);
+    public on(...args: any[]) {
+
+        const event    = args.shift();
+        const selector = typeof args[0] === "string" ? args.shift() : undefined;
+        const handler  = typeof args[0] === "function" ? args.shift() : () => {
+        };
+        const root     = args.shift();
 
         const eventHolder = root || this.root;
 
@@ -62,13 +65,13 @@ export class DomEvents {
     }
 
     public drag(selector,
-                move: (dx: number, dy: number, UIEvent, target?: HTMLElement, root?: HTMLElement) => any,
-                start: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any,
-                end: (UIEvent, target?: HTMLElement, root?: HTMLElement) => any) {
+                move: (dx: number, dy: number, UIEvent, target?: Element, root?: Element) => any,
+                start: (UIEvent, target?: Element, root?: Element) => any,
+                end: (UIEvent, target?: Element, root?: Element) => any) {
 
         let dragging       = false;
         let lastMove: MouseEvent;
-        let draggedEl: HTMLElement;
+        let draggedEl: Element;
         let moveEventCount = 0;
         let mouseDownEv;
         let threshold      = 3;

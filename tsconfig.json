@@ -15,9 +15,6 @@
         ],
         "typeRoots": [
             "node_modules/@types"
-        ],
-        "types": [
-            "snapsvg"
         ]
     },
     "exclude": ["dist", "node_modules", "compiled"],
