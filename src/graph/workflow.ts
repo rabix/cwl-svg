@@ -13,6 +13,10 @@ export class Workflow {
     /** Current scale of the document */
     private scale = 1;
 
+    public static readonly minScale = 0.2;
+
+    public static readonly maxScale = 2;
+
     public readonly eventHub: EventHub;
 
     private domEvents: DomEvents;
@@ -74,7 +78,7 @@ export class Workflow {
             const scale = this.scale + ev.deltaY / 500;
 
             // Prevent scaling to unreasonable proportions.
-            if (scale <= 0.15 || scale * scale > 3) {
+            if (scale <= Workflow.minScale || scale >= Workflow.maxScale) {
                 return;
             }
 
@@ -939,52 +943,59 @@ export class Workflow {
                 return;
             }
 
-            const selection = Array.from(this.workflow.querySelectorAll(".selected"));
-            if (ev.which !== 8 || selection.length === 0) {
+            if (ev.which !== 8) {
                 return;
             }
 
-            this.eventHub.emit("beforeChange", {
-                type: "deletion",
-                data: selection
-            });
-
-            selection.forEach(el => {
-                if (el.classList.contains("step")) {
-
-                    this.model.removeStep(el.getAttribute("data-connection-id"));
-                    this.renderModel(this.model);
-                    (this.svgRoot as any).focus();
-                } else if (el.classList.contains("edge")) {
-
-                    const sourcePortID      = el.getAttribute("data-source-connection");
-                    const destinationPortID = el.getAttribute("data-destination-connection");
-
-                    const sourcePort      = this.workflow.querySelector(`.port[data-connection-id="${sourcePortID}"]`);
-                    const destinationPort = this.workflow.querySelector(`.port[data-connection-id="${destinationPortID}"]`);
-
-                    const sourceNode      = Workflow.findParentNode(sourcePort);
-                    const destinationNode = Workflow.findParentNode(destinationPort);
-
-                    this.model.disconnect(sourcePortID, destinationPortID);
-                    this.renderModel(this.model);
-                    (this.svgRoot as any).focus();
-                } else if (el.classList.contains("input")) {
-
-                    this.model.removeInput(el.getAttribute("data-connection-id"));
-                    this.renderModel(this.model);
-                    (this.svgRoot as any).focus();
-                } else if (el.classList.contains("output")) {
-
-                    this.model.removeOutput(el.getAttribute("data-connection-id"));
-                    this.renderModel(this.model);
-                    (this.svgRoot as any).focus();
-                }
-            });
-
-
+            this.deleteSelection();
             // Only input elements can be focused, but we added tabindex to the svg so this works
         }, window);
+    }
+
+    public deleteSelection() {
+
+        const selection = Array.from(this.workflow.querySelectorAll(".selected"));
+        if (selection.length == 0) {
+            return;
+        }
+
+        this.eventHub.emit("beforeChange", {
+            type: "deletion",
+            data: selection
+        });
+
+        selection.forEach(el => {
+            if (el.classList.contains("step")) {
+
+                this.model.removeStep(el.getAttribute("data-connection-id"));
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            } else if (el.classList.contains("edge")) {
+
+                const sourcePortID      = el.getAttribute("data-source-connection");
+                const destinationPortID = el.getAttribute("data-destination-connection");
+
+                const sourcePort      = this.workflow.querySelector(`.port[data-connection-id="${sourcePortID}"]`);
+                const destinationPort = this.workflow.querySelector(`.port[data-connection-id="${destinationPortID}"]`);
+
+                const sourceNode      = Workflow.findParentNode(sourcePort);
+                const destinationNode = Workflow.findParentNode(destinationPort);
+
+                this.model.disconnect(sourcePortID, destinationPortID);
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            } else if (el.classList.contains("input")) {
+
+                this.model.removeInput(el.getAttribute("data-connection-id"));
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            } else if (el.classList.contains("output")) {
+
+                this.model.removeOutput(el.getAttribute("data-connection-id"));
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            }
+        });
     }
 
     private attachPortDragBehavior() {
