@@ -29,19 +29,21 @@ export class Workflow {
 
     private workflowBoundingClientRect;
 
+    private isDragging = false;
+
     /**
      * The size of the workflow boundary / padding that stops nodes from being dragged
      * outside the workflow viewport; drag "scroll" is activated when cursor hits a boundary
      * @type {number}
      */
-    private dragBoundary: number = 50;
+    private dragBoundary = 50;
 
     /**
      * The amount which the workflow, node, and necessary paths will be translated
      * when mouse is dragged on boundary or outside workflow every time the interval runs
      * @type {number}
      */
-    private dragBoundaryTranslation: number = 5;
+    private dragBoundaryTranslation = 5;
 
     /**
      * The interval that is set when the cursor hits a boundary (or multiple boundaries)
@@ -53,7 +55,8 @@ export class Workflow {
         y: false,
         interval: null,
         xOffset: 0,
-        yOffset: 0
+        yOffset: 0,
+        highlightedPort: undefined
     };
 
     constructor(svgRoot: SVGSVGElement, model: WorkflowModel) {
@@ -75,6 +78,9 @@ export class Workflow {
          * Whenever user scrolls, take the scroll delta and scale the workflow.
          */
         this.svgRoot.addEventListener("mousewheel", (ev: MouseWheelEvent) => {
+            if (this.isDragging) {
+                return;
+            }
             const scale = this.scale + ev.deltaY / 500;
 
             // Prevent scaling to unreasonable proportions.
@@ -204,7 +210,7 @@ export class Workflow {
         const idToZoneMap = Object.keys(nodeSet).reduce((zoneMap, nid) => {
 
             const item = nodeSet[nid];
-            let zone   = traceLongestPath(item, new Set()) - 1;
+            let zone   = traceLongestPath(item, new Set<NodeIO>()) - 1;
             return {...zoneMap, [nid]: zone};
         }, {});
 
@@ -533,10 +539,11 @@ export class Workflow {
             let startY: number;
             let inputEdges: Map<SVGElement, number[]>;
             let outputEdges: Map<SVGElement, number[]>;
-            let newX;
-            let newY;
+            let newX: number;
+            let newY: number;
 
-            this.domEvents.drag(".node .drag-handle", (dx, dy, ev, handle: SVGGElement) => {
+            this.domEvents.drag(".node .drag-handle", (dx: number, dy: number,
+                                                       ev, handle: SVGGElement) => {
                 const nodeEl = handle.parentNode as SVGGElement;
                 let sdx, sdy;
 
@@ -560,6 +567,7 @@ export class Workflow {
 
                 this.setInputAndOutputEdges(inputEdges, outputEdges, sdx, sdy);
             }, (ev, handle, root) => {
+                this.isDragging = true;
                 const el                        = handle.parentNode as SVGGElement;
                 const matrix                    = el.transform.baseVal.getItem(0).matrix;
                 startX                          = matrix.e;
@@ -578,12 +586,8 @@ export class Workflow {
                         outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
                     });
             }, (ev, target) => {
-                if (this.dragBoundaryInterval.interval) {
-                    clearInterval(this.dragBoundaryInterval.interval);
-                    this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
-                    this.dragBoundaryInterval.interval = null;
-                }
-                this.dragBoundaryInterval.xOffset = this.dragBoundaryInterval.yOffset = 0;
+                this.isDragging = false;
+                this.setDragBoundaryIntervalToDefault();
 
                 const parentNode = Workflow.findParentNode(target);
 
@@ -624,7 +628,7 @@ export class Workflow {
         /**
          * Edge Selection
          */
-        this.domEvents.on("click", ".edge", (ev, target, root) => {
+        this.domEvents.on("click", ".edge", (ev, target: SVGPathElement, root) => {
             this.highlightEdge(target);
             target.classList.add("selected");
         });
@@ -667,17 +671,21 @@ export class Workflow {
                                                pathInfo?: {
                                                    startX: number, startY: number,
                                                    inputEdges: Map<SVGElement, number[]>,
-                                                   outputEdges: Map<SVGElement, number[]>
-                                               },
+                                                   outputEdges: Map<SVGElement, number[]> },
                                                ghostIO?: {
-                                                   edge,
-                                                   originX: number, originY: number,
-                                                   edgeDirection: string
+                                                   edge: SVGPathElement,
+                                                   nodeToMouseDistance: number,
+                                                   connectionPorts: SVGGElement[],
+                                                   highlightedPort: SVGGElement,
+                                                   origin: { x: number, y: number },
+                                                   coords: { x: number, y: number },
+                                                   portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>,
+                                                   edgeDirection: "left" | "right"
                                                }): void {
 
         // If boundary areas overlap or if boundary areas take up half - or more - of the svg, resize dragBoundary
         while (this.workflowBoundingClientRect.right - this.dragBoundary <= this.workflowBoundingClientRect.left + this.dragBoundary ||
-        this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) { // CHANGE HERE
+            this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) {
             this.dragBoundary = this.dragBoundary / 2;
         }
 
@@ -697,13 +705,19 @@ export class Workflow {
                 this.dragBoundaryInterval.y = boundary.y !== 0;
 
                 const workflowMatrix: SVGMatrix = this.workflow.transform.baseVal.getItem(0).matrix;
-                const mx                        = el.transform.baseVal.getItem(0).matrix;
+                const mx: SVGMatrix             = el.transform.baseVal.getItem(0).matrix;
+
+                if (ghostIO) {
+                    this.dragBoundaryInterval.highlightedPort = ghostIO.highlightedPort;
+                }
 
                 // Create new interval every time mouse hits new edge
                 clearInterval(this.dragBoundaryInterval.interval);
                 this.dragBoundaryInterval.interval = setInterval(() => {
-                    const moveX = checkIfRightBoundary ? this.dragBoundaryTranslation : checkIfLeftBoundary ? -this.dragBoundaryTranslation : 0;
-                    const moveY = checkIfBottomBoundary ? this.dragBoundaryTranslation : checkIfTopBoundary ? -this.dragBoundaryTranslation : 0;
+                    const moveX = checkIfRightBoundary ? this.dragBoundaryTranslation :
+                        checkIfLeftBoundary ? -this.dragBoundaryTranslation : 0;
+                    const moveY = checkIfBottomBoundary ? this.dragBoundaryTranslation :
+                        checkIfTopBoundary ? -this.dragBoundaryTranslation : 0;
 
                     // Change matrix e and f values - these represent x and y translate, respectively -
                     // by 'this.dragBoundaryTranslation' every time this function is called. This translates the matrix
@@ -714,7 +728,8 @@ export class Workflow {
                     this.dragBoundaryInterval.xOffset += this.adaptToScale(moveX);
                     this.dragBoundaryInterval.yOffset += this.adaptToScale(moveY);
 
-                    // Translates the node by 'this.dragBoundaryTranslation' every time this interval function is called.
+                    // Translates the node by scaled 'moveX' (and/or 'moveY') every time
+                    // this interval function is called.
                     mx.e += this.adaptToScale(moveX);
                     mx.f += this.adaptToScale(moveY);
 
@@ -725,17 +740,25 @@ export class Workflow {
                             mx.e - pathInfo.startX, mx.f - pathInfo.startY);
                     }
                     else if (ghostIO) {
+                        // Creates the ghost node path
                         Array.from(ghostIO.edge.children).forEach((el: SVGPathElement) => {
                             el.setAttribute("d",
                                 IOPort.makeConnectionPath(
-                                    ghostIO.originX,
-                                    ghostIO.originY,
+                                    ghostIO.origin.x,
+                                    ghostIO.origin.y,
                                     mx.e,
                                     mx.f,
                                     ghostIO.edgeDirection
                                 )
                             );
                         });
+
+                        const sorted = this.getSortedConnectionPorts(ghostIO.connectionPorts,
+                            { x: mx.e, y: mx.f }, ghostIO.portToOriginTransformation);
+                        this.removeHighlightedPort(this.dragBoundaryInterval.highlightedPort, ghostIO.edgeDirection);
+                        this.dragBoundaryInterval.highlightedPort = this.setHighlightedPort(sorted, ghostIO.edgeDirection);
+                        this.translateGhostNodeAndShowIfNecessary(el, ghostIO.nodeToMouseDistance,
+                            this.dragBoundaryInterval.highlightedPort !== undefined, { x: mx.e, y: mx.f });
                     }
                 }, 1000 / 60);
             }
@@ -746,6 +769,9 @@ export class Workflow {
      * Check all possible workflow boundaries to see if (x,y) is on edge(s)
      * -1 / 1 values are left / right and top / bottom depending on the axis,
      * and 0 means it has not hit a boundary on that axis
+     * @param x
+     * @param y
+     * @returns {{x: number, y: number}}
      */
     private getBoundaryZonesXYAxes(x: number, y: number): { x: 1 | 0 | -1, y: 1 | 0 | -1 } {
         const isLeftBoundary   = x < this.workflowBoundingClientRect.left + this.dragBoundary;
@@ -753,13 +779,14 @@ export class Workflow {
         const isTopBoundary    = y < this.workflowBoundingClientRect.top + this.dragBoundary;
         const isBottomBoundary = y > this.workflowBoundingClientRect.bottom - this.dragBoundary;
 
-        // if cursor is not on a boundary, then clear interval
+        // if cursor is not on a boundary, then clear interval if it exists
         if (!isLeftBoundary && !isRightBoundary &&
             !isTopBoundary && !isBottomBoundary) {
             if (this.dragBoundaryInterval.interval) {
                 clearInterval(this.dragBoundaryInterval.interval);
                 this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
                 this.dragBoundaryInterval.interval = null;
+                this.dragBoundaryInterval.highlightedPort = undefined;
             }
         }
 
@@ -781,7 +808,7 @@ export class Workflow {
      * @param startY
      * @param dx
      * @param dy
-     * @returns {{x: any, y: any}}
+     * @returns {{x: number, y: number}}
      */
     private getScaledDeltaXYForDrag(boundary: { x: 1 | 0 | -1, y: 1 | 0 | -1 },
                                     ev: { clientX: number, clientY: number },
@@ -807,15 +834,6 @@ export class Workflow {
             } else {
                 sdy = this.adaptToScale(dy) + this.dragBoundaryInterval.yOffset;
             }
-
-        }
-        // when mouse is brought back to the main workflow area
-        else if (edgeIntervalOn) {
-            const mouseCoords                 = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
-            sdx                               = mouseCoords.x - startX;
-            sdy                               = mouseCoords.y - startY;
-            this.dragBoundaryInterval.xOffset = sdx - this.adaptToScale(dx);
-            this.dragBoundaryInterval.yOffset = sdy - this.adaptToScale(dy);
 
         } else {
             sdx = this.adaptToScale(dx) + this.dragBoundaryInterval.xOffset;
@@ -848,7 +866,7 @@ export class Workflow {
         });
     }
 
-    private highlightEdge(el) {
+    private highlightEdge(el: SVGPathElement) {
         const sourceNode = el.getAttribute("data-source-node");
         const destNode   = el.getAttribute("data-destination-node");
         const sourcePort = el.getAttribute("data-source-port");
@@ -999,16 +1017,16 @@ export class Workflow {
     }
 
     private attachPortDragBehavior() {
-        let edge;
-        let preferredConnectionPorts;
-        let allOppositeConnectionPorts;
+        let edge: SVGPathElement;
+        let preferredConnectionPorts: SVGGElement[];
+        let allOppositeConnectionPorts: SVGGElement[];
         let highlightedPort: SVGGElement;
         let edgeDirection: "left" | "right";
         let ghostIONode: SVGGElement;
-        let originNodeCoords;
+        let originNodeCoords: { x: number, y: number };
         let portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>;
 
-        this.domEvents.drag(".port", (dx, dy, ev, target: SVGGElement) => {
+        this.domEvents.drag(".port", (dx: number, dy: number, ev, target: SVGGElement) => {
             // Gather the necessary positions that we need in order to draw a path
             const ctm                 = target.getScreenCTM();
             const coords              = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
@@ -1018,8 +1036,9 @@ export class Workflow {
             const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
 
             if (boundary.x || boundary.y) {
-                this.setDragBoundaryIntervalIfNecessary(ghostIONode, {x: boundary.x, y: boundary.y}, null,
-                    {edge: edge, originX: origin.x, originY: origin.y, edgeDirection: edgeDirection});
+                this.setDragBoundaryIntervalIfNecessary(ghostIONode, { x: boundary.x, y: boundary.y }, null,
+                    { edge, nodeToMouseDistance, connectionPorts: allOppositeConnectionPorts, highlightedPort,
+                        origin, coords, portToOriginTransformation, edgeDirection } );
             }
 
             const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, origin.x, origin.y, dx, dy);
@@ -1037,41 +1056,15 @@ export class Workflow {
                 );
             });
 
-            const sorted = allOppositeConnectionPorts.map(el => {
-                const ctm   = portToOriginTransformation.get(el);
-                el.distance = Geometry.distance(coords.x, coords.y, ctm.e, ctm.f);
-                return el;
-            }).sort((el1, el2) => {
-                return el1.distance - el2.distance
-            });
+            const sorted = this.getSortedConnectionPorts(allOppositeConnectionPorts, coords, portToOriginTransformation);
+            highlightedPort = this.dragBoundaryInterval.highlightedPort || highlightedPort;
+            this.removeHighlightedPort(highlightedPort, edgeDirection);
+            highlightedPort = this.setHighlightedPort(sorted, edgeDirection);
+            this.translateGhostNodeAndShowIfNecessary(ghostIONode, nodeToMouseDistance,
+                highlightedPort !== undefined, { x: origin.x + scaledDeltas.x, y: origin.y + scaledDeltas.y});
 
-            if (highlightedPort) {
-                const parentNode = Workflow.findParentNode(highlightedPort);
-                highlightedPort.classList.remove("highlighted", "preferred-port");
-                parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
-            }
-
-            ghostIONode.classList.add("hidden");
-            // If there is a port in close proximity, assume that we want to connect to it, so highlight it
-            if (sorted.length && sorted[0].distance < 100) {
-                highlightedPort = sorted[0];
-                highlightedPort.classList.add("highlighted", "preferred-port");
-                const parentNode = Workflow.findParentNode(highlightedPort);
-                this.workflow.appendChild(parentNode);
-                parentNode.classList.add("highlighted", "preferred-node", edgeDirection);
-            } else {
-
-                highlightedPort = undefined;
-
-                if (nodeToMouseDistance > 120) {
-                    ghostIONode.classList.remove("hidden");
-                    // Otherwise, we might create an input or an ooutput node
-                    // ghostIONode.transform.baseVal.getItem(0).setTranslate(coords.x, coords.y);
-                    ghostIONode.transform.baseVal.getItem(0).setTranslate(origin.x + scaledDeltas.x, origin.y + scaledDeltas.y);
-                } else {
-                }
-            }
         }, (ev, origin, root) => {
+            this.isDragging = true;
 
             portToOriginTransformation = new WeakMap<SVGGElement, SVGMatrix>()
 
@@ -1092,7 +1085,7 @@ export class Workflow {
             edgeDirection = isInputPort ? "left" : "right";
 
             // Draw the edge to the cursor and store the element's reference
-            edge = GraphEdge.spawn();
+            edge = <SVGPathElement>GraphEdge.spawn();
             edge.classList.add("dragged");
             this.workflow.appendChild(edge);
 
@@ -1103,7 +1096,7 @@ export class Workflow {
             // Except the same node that we are dragging from.
             allOppositeConnectionPorts = Array.from(
                 this.workflow.querySelectorAll(`.port.${isInputPort ? "output-port" : "input-port"}`)
-            ).filter(el => Workflow.findParentNode(el) !== originNode);
+            ).filter((el: SVGGElement) => Workflow.findParentNode(el) !== originNode) as SVGGElement[];
 
 
             allOppositeConnectionPorts.forEach((el: SVGGElement) => {
@@ -1133,12 +1126,9 @@ export class Workflow {
             this.workflow.classList.add("has-suggestion", "edge-dragging");
 
         }, (ev, origin) => {
-            if (this.dragBoundaryInterval.interval) {
-                clearInterval(this.dragBoundaryInterval.interval);
-                this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
-                this.dragBoundaryInterval.interval = null;
-            }
-            this.dragBoundaryInterval.xOffset = this.dragBoundaryInterval.yOffset = 0;
+            highlightedPort = this.dragBoundaryInterval.highlightedPort || highlightedPort;
+            this.isDragging = false;
+            this.setDragBoundaryIntervalToDefault();
 
             /**
              * If a port is highlighted, that means that we are supposed to snap the connection to that port
@@ -1256,6 +1246,96 @@ export class Workflow {
         });
     }
 
+    /**
+     * Goes through all the potential connection ports for a new path,
+     * and sorts them by distance in ascending order
+     * @param connectionPorts
+     * @param portToOriginTransformation
+     * @param transformationDisplacement
+     * @param coords
+     * @returns {SVGGElement[]}
+     */
+    private getSortedConnectionPorts(connectionPorts: SVGGElement[],
+                                     coords: { x: number, y: number},
+                                     portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>): SVGGElement[] {
+        return connectionPorts.map(el => {
+            const ctm   = portToOriginTransformation.get(el);
+            el.distance = Geometry.distance(coords.x, coords.y, ctm.e, ctm.f);
+            return el;
+        }).sort((el1, el2) => {
+            return el1.distance - el2.distance
+        });
+    }
+
+    /**
+     * Removes highlighted port if a highlighted port exists
+     * @param highlightedPort
+     * @param edgeDirection
+     */
+    private removeHighlightedPort(highlightedPort: SVGGElement, edgeDirection: "left" | "right"): void {
+        if (highlightedPort) {
+            const parentNode = Workflow.findParentNode(highlightedPort);
+            // highlightedPort.classList.remove("highlighted", "preferred-port");
+            highlightedPort.classList.remove("highlighted", "preferred-port");
+            // parentNode.classList.remove("highlighted", "preferred-node", edgeDirection);
+            parentNode.classList.remove("preferred-node", edgeDirection);
+        }
+    }
+
+    /**
+     * Check if the closest connection port is within a certain distance.
+     * If it is, highlight it and return the highlightedPort
+     * @param sorted
+     * @param edgeDirection
+     * @returns {any}
+     */
+    private setHighlightedPort(sorted: SVGGElement[], edgeDirection: "left" | "right"): SVGGElement {
+        let highlightedPort;
+        // If there is a port in close proximity, assume that we want to connect to it, so highlight it
+        if (sorted.length && sorted[0].distance < 100) {
+            highlightedPort = sorted[0];
+            highlightedPort.classList.add("highlighted", "preferred-port");
+            const parentNode = Workflow.findParentNode(highlightedPort);
+            this.workflow.appendChild(parentNode);
+            parentNode.classList.add("highlighted", "preferred-node", edgeDirection);
+        } else {
+            highlightedPort = undefined;
+        }
+        return highlightedPort;
+    }
+
+    /**
+     * Translate the ghost node and show it if the closest connection
+     * port is farther than 120px
+     * @param ghostIONode
+     * @param nodeToMouseDistance
+     * @param newCoords
+     */
+    private translateGhostNodeAndShowIfNecessary(ghostIONode: SVGGElement,
+                                                 nodeToMouseDistance: number,
+                                                 isCloseToPort: boolean,
+                                                 newCoords: { x: number, y: number }): void {
+        ghostIONode.classList.add("hidden");
+        if (nodeToMouseDistance > 120 && !isCloseToPort) {
+            ghostIONode.classList.remove("hidden");
+            // Otherwise, we might create an input or an ooutput node
+        }
+        ghostIONode.transform.baseVal.getItem(0).setTranslate(newCoords.x, newCoords.y);
+    }
+
+    /**
+     * Sets the dragBoundaryInterval object to its default values
+     */
+    private setDragBoundaryIntervalToDefault(): void {
+        if (this.dragBoundaryInterval.interval) {
+            clearInterval(this.dragBoundaryInterval.interval);
+            this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
+            this.dragBoundaryInterval.interval = null;
+            this.dragBoundaryInterval.highlightedPort = undefined;
+        }
+        this.dragBoundaryInterval.xOffset = this.dragBoundaryInterval.yOffset = 0;
+    }
+
     static findParentNode(el) {
         let parentNode = el;
         while (parentNode) {
@@ -1266,13 +1346,11 @@ export class Workflow {
         }
     }
 
-
     setModelPosition(obj, x, y) {
         const update = {
             "sbg:x": x,
             "sbg:y": y
         };
-
 
         this.eventHub.emit("beforeChange", {
             type: "move",
@@ -1301,7 +1379,7 @@ export class Workflow {
         const pc  = {
             pcx: abs.x / this.svgRoot.clientWidth,
             pcy: abs.y / this.svgRoot.clientHeight
-        }
+        };
 
         return {...abs, ...pc};
     }
