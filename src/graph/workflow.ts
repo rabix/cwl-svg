@@ -1036,9 +1036,24 @@ export class Workflow {
             const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
 
             if (boundary.x || boundary.y) {
-                this.setDragBoundaryIntervalIfNecessary(ghostIONode, { x: boundary.x, y: boundary.y }, null,
-                    { edge, nodeToMouseDistance, connectionPorts: allOppositeConnectionPorts, highlightedPort,
-                        origin, coords, portToOriginTransformation, edgeDirection } );
+                this.setDragBoundaryIntervalIfNecessary(
+                    ghostIONode,
+                    {
+                        x: boundary.x,
+                        y: boundary.y
+                    },
+                    null,
+                    {
+                        edge,
+                        nodeToMouseDistance,
+                        connectionPorts: allOppositeConnectionPorts,
+                        highlightedPort,
+                        origin,
+                        coords,
+                        portToOriginTransformation,
+                        edgeDirection
+                    }
+                );
             }
 
             const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, origin.x, origin.y, dx, dy);
@@ -1056,12 +1071,21 @@ export class Workflow {
                 );
             });
 
-            const sorted = this.getSortedConnectionPorts(allOppositeConnectionPorts, coords, portToOriginTransformation);
+            const sorted    = this.getSortedConnectionPorts(allOppositeConnectionPorts, coords, portToOriginTransformation);
             highlightedPort = this.dragBoundaryInterval.highlightedPort || highlightedPort;
+
             this.removeHighlightedPort(highlightedPort, edgeDirection);
             highlightedPort = this.setHighlightedPort(sorted, edgeDirection);
-            this.translateGhostNodeAndShowIfNecessary(ghostIONode, nodeToMouseDistance,
-                highlightedPort !== undefined, { x: origin.x + scaledDeltas.x, y: origin.y + scaledDeltas.y});
+
+            this.translateGhostNodeAndShowIfNecessary(
+                ghostIONode,
+                nodeToMouseDistance,
+                highlightedPort !== undefined,
+                {
+                    x: origin.x + scaledDeltas.x,
+                    y: origin.y + scaledDeltas.y
+                }
+            );
 
         }, (ev, origin, root) => {
             this.isDragging = true;
@@ -1256,15 +1280,22 @@ export class Workflow {
      * @returns {SVGGElement[]}
      */
     private getSortedConnectionPorts(connectionPorts: SVGGElement[],
-                                     coords: { x: number, y: number},
-                                     portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>): SVGGElement[] {
-        return connectionPorts.map(el => {
-            const ctm   = portToOriginTransformation.get(el);
-            el.distance = Geometry.distance(coords.x, coords.y, ctm.e, ctm.f);
-            return el;
-        }).sort((el1, el2) => {
-            return el1.distance - el2.distance
+                                     coords: { x: number, y: number },
+                                     portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>): Map<SVGGElement, number> {
+
+        const distances: Map<SVGGElement, number> = new Map();
+        const ordered: Map<SVGGElement, number>   = new Map();
+
+        connectionPorts.forEach(el => {
+            const ctm = portToOriginTransformation.get(el);
+            distances.set(el, Geometry.distance(coords.x, coords.y, ctm.e, ctm.f));
         });
+
+        connectionPorts.sort((el1, el2) => distances.get(el1) - distances.get(el2)).forEach(el => {
+            ordered.set(el, distances.get(el));
+        });
+
+        return ordered
     }
 
     /**
@@ -1285,15 +1316,17 @@ export class Workflow {
     /**
      * Check if the closest connection port is within a certain distance.
      * If it is, highlight it and return the highlightedPort
-     * @param sorted
+     * @param sortedMap
      * @param edgeDirection
      * @returns {any}
      */
-    private setHighlightedPort(sorted: SVGGElement[], edgeDirection: "left" | "right"): SVGGElement {
+    private setHighlightedPort(sortedMap: Map<SVGGElement, number>, edgeDirection: "left" | "right"): SVGGElement {
         let highlightedPort;
+
+        const portElements = Array.from(sortedMap.keys());
         // If there is a port in close proximity, assume that we want to connect to it, so highlight it
-        if (sorted.length && sorted[0].distance < 100) {
-            highlightedPort = sorted[0];
+        if (portElements.length && sortedMap.get(portElements[0]) < 100) {
+            highlightedPort = portElements[0];
             highlightedPort.classList.add("highlighted", "preferred-port");
             const parentNode = Workflow.findParentNode(highlightedPort);
             this.workflow.appendChild(parentNode);
