@@ -1295,7 +1295,7 @@ export class Workflow {
             ordered.set(el, distances.get(el));
         });
 
-        return ordered
+        return ordered;
     }
 
     /**
