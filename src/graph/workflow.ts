@@ -267,7 +267,7 @@ export class Workflow {
 
                 node.el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
                 const modelEntry = this.model.findById(node.connectionID);
-                this.setModelPosition(modelEntry, matrix.e, matrix.f);
+                this.setModelPosition(modelEntry, matrix.e, matrix.f, false);
             });
 
             xOffset += colSize.width;
@@ -291,6 +291,10 @@ export class Workflow {
             el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
             this.setModelPosition(modelEntry, matrix.e, matrix.f);
 
+        });
+
+        this.eventHub.emit("beforeChange", {
+            type: "arrange",
         });
 
         this.redrawEdges();
@@ -452,6 +456,10 @@ export class Workflow {
             const tpl = GraphNode.makeTemplate(x, y, step);
             const el  = TemplateParser.parse(tpl);
             this.workflow.appendChild(el);
+
+            this.eventHub.emit("beforeChange", {
+                type: "step.create",
+            });
 
             // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
             // So let's trigger the scaling again
@@ -1267,16 +1275,17 @@ export class Workflow {
     }
 
 
-    setModelPosition(obj, x, y) {
+    setModelPosition(obj, x, y, callBeforeChange = true) {
         const update = {
             "sbg:x": x,
             "sbg:y": y
         };
 
-
-        this.eventHub.emit("beforeChange", {
-            type: "move",
-        });
+        if (callBeforeChange) {
+            this.eventHub.emit("beforeChange", {
+                type: "move",
+            });
+        }
 
         if (!obj.customProps) {
             obj.customProps = update;
