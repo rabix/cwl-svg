@@ -885,6 +885,8 @@ export class Workflow {
             + `.node.${destNode} .input-port.${destPort}`)).forEach(el => {
             el.classList.add("highlighted");
         });
+
+        this.eventHub.emit("selectionChange", el);
     }
 
     private adaptToScale(x) {
