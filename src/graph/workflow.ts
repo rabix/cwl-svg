@@ -130,6 +130,10 @@ export class Workflow {
     }
 
     arrange() {
+        this.eventHub.emit("beforeChange", {
+            type: "arrange",
+        });
+
         this.resetTransform();
 
         type NodeIO = {
@@ -273,7 +277,7 @@ export class Workflow {
 
                 node.el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
                 const modelEntry = this.model.findById(node.connectionID);
-                this.setModelPosition(modelEntry, matrix.e, matrix.f);
+                this.setModelPosition(modelEntry, matrix.e, matrix.f, false);
             });
 
             xOffset += colSize.width;
@@ -295,7 +299,7 @@ export class Workflow {
             const matrix     = SVGUtils.createMatrix().translate(left, top);
             const modelEntry = this.model.findById(el.getAttribute("data-connection-id"));
             el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
-            this.setModelPosition(modelEntry, matrix.e, matrix.f);
+            this.setModelPosition(modelEntry, matrix.e, matrix.f, false);
 
         });
 
@@ -452,6 +456,10 @@ export class Workflow {
          * @name app.create.step
          */
         this.eventHub.on("app.create.step", (step: StepModel) => {
+
+            this.eventHub.emit("beforeChange", {
+                type: "step.create",
+            });
 
             const x   = step.customProps["sbg:x"] || Math.random() * 1000;
             const y   = step.customProps["sbg:y"] || Math.random() * 1000;
@@ -877,6 +885,8 @@ export class Workflow {
             + `.node.${destNode} .input-port.${destPort}`)).forEach(el => {
             el.classList.add("highlighted");
         });
+
+        this.eventHub.emit("selectionChange", el);
     }
 
     private adaptToScale(x) {
@@ -1379,15 +1389,17 @@ export class Workflow {
         }
     }
 
-    setModelPosition(obj, x, y) {
+    setModelPosition(obj, x, y, emitBeforeChange = true) {
         const update = {
             "sbg:x": x,
             "sbg:y": y
         };
 
-        this.eventHub.emit("beforeChange", {
-            type: "move",
-        });
+        if (emitBeforeChange) {
+            this.eventHub.emit("beforeChange", {
+                type: "move",
+            });
+        }
 
         if (!obj.customProps) {
             obj.customProps = update;
