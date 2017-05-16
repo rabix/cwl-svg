@@ -130,6 +130,10 @@ export class Workflow {
     }
 
     arrange() {
+        this.eventHub.emit("beforeChange", {
+            type: "arrange",
+        });
+
         this.resetTransform();
 
         type NodeIO = {
@@ -299,10 +303,6 @@ export class Workflow {
 
         });
 
-        this.eventHub.emit("beforeChange", {
-            type: "arrange",
-        });
-
         this.redrawEdges();
         this.fitToViewport();
     }
@@ -457,15 +457,15 @@ export class Workflow {
          */
         this.eventHub.on("app.create.step", (step: StepModel) => {
 
+            this.eventHub.emit("beforeChange", {
+                type: "step.create",
+            });
+
             const x   = step.customProps["sbg:x"] || Math.random() * 1000;
             const y   = step.customProps["sbg:y"] || Math.random() * 1000;
             const tpl = GraphNode.makeTemplate(x, y, step);
             const el  = TemplateParser.parse(tpl);
             this.workflow.appendChild(el);
-
-            this.eventHub.emit("beforeChange", {
-                type: "step.create",
-            });
 
             // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
             // So let's trigger the scaling again
