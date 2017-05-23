@@ -82,6 +82,8 @@ export class DomEvents {
             draggedEl   = el;
             mouseDownEv = ev;
 
+            ev.preventDefault();
+
             document.addEventListener("mousemove", moveHandler);
             document.addEventListener("mouseup", upHandler);
 
