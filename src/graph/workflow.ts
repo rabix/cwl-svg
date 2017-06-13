@@ -59,6 +59,14 @@ export class Workflow {
         highlightedPort: undefined
     };
 
+    /**
+     * Disables dragging nodes, dragging from ports, arranging and deleting
+     * @type {boolean}
+     */
+    private disableManipulations = false;
+
+    private handlersToBeDisabled = [];
+
     constructor(svgRoot: SVGSVGElement, model: WorkflowModel) {
 
         this.svgRoot = svgRoot;
@@ -130,6 +138,10 @@ export class Workflow {
     }
 
     arrange() {
+        if (this.disableManipulations) {
+            return;
+        }
+
         this.eventHub.emit("beforeChange", {
             type: "arrange",
         });
@@ -540,76 +552,6 @@ export class Workflow {
         });
 
         /**
-         * Move nodes and edges on drag
-         */
-        {
-            let startX: number;
-            let startY: number;
-            let inputEdges: Map<SVGElement, number[]>;
-            let outputEdges: Map<SVGElement, number[]>;
-            let newX: number;
-            let newY: number;
-
-            this.domEvents.drag(".node .drag-handle", (dx: number, dy: number,
-                                                       ev, handle: SVGGElement) => {
-                const nodeEl = handle.parentNode as SVGGElement;
-                let sdx, sdy;
-
-                const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
-
-                // if a workflow boundary has been hit, then call function which calls the interval
-                if (boundary.x || boundary.y) {
-
-                    this.setDragBoundaryIntervalIfNecessary(nodeEl, {x: boundary.x, y: boundary.y},
-                        {startX: startX, startY: startY, inputEdges: inputEdges, outputEdges: outputEdges});
-                }
-
-                // returns the delta x and y - change in node position - based on mouse position and
-                // boundary offsets (if necessary)
-                const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, startX, startY, dx, dy);
-                sdx                = scaledDeltas.x;
-                sdy                = scaledDeltas.y;
-                newX               = startX + sdx;
-                newY               = startY + sdy;
-                nodeEl.transform.baseVal.getItem(0).setTranslate(newX, newY);
-
-                this.setInputAndOutputEdges(inputEdges, outputEdges, sdx, sdy);
-            }, (ev, handle, root) => {
-                this.isDragging = true;
-                const el                        = handle.parentNode as SVGGElement;
-                const matrix                    = el.transform.baseVal.getItem(0).matrix;
-                startX                          = matrix.e;
-                startY                          = matrix.f;
-                inputEdges                      = new Map<SVGElement, number[]>();
-                outputEdges                     = new Map<SVGElement, number[]>();
-                this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
-
-                Array.from(root.querySelectorAll(`.edge[data-destination-node='${el.getAttribute("data-id")}'] .sub-edge`))
-                    .forEach((el: SVGElement) => {
-                        inputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
-                    });
-
-                Array.from(root.querySelectorAll(`.edge[data-source-node='${el.getAttribute("data-id")}'] .sub-edge`))
-                    .forEach((el: SVGElement) => {
-                        outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
-                    });
-            }, (ev, target) => {
-                this.isDragging = false;
-                this.setDragBoundaryIntervalToDefault();
-
-                const parentNode = Workflow.findParentNode(target);
-
-                const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
-                if (model) {
-                    this.setModelPosition(model, newX, newY);
-                }
-
-                inputEdges  = undefined;
-                outputEdges = undefined;
-            });
-        }
-
-        /**
          * Attach canvas panning
          */
         {
@@ -660,9 +602,84 @@ export class Workflow {
             target.parentElement.appendChild(target);
         });
 
-        this.attachPortDragBehavior();
+        if (!this.disableManipulations) {
+            this.attachNodeDragBehavior();
 
-        this.attachSelectionDeletionBehavior();
+            this.attachPortDragBehavior();
+
+            this.attachSelectionDeletionBehavior();
+        }
+    }
+
+    /**
+     * Move nodes and edges on drag
+     */
+    private attachNodeDragBehavior()
+    {
+        let startX: number;
+        let startY: number;
+        let inputEdges: Map<SVGElement, number[]>;
+        let outputEdges: Map<SVGElement, number[]>;
+        let newX: number;
+        let newY: number;
+
+        this.handlersToBeDisabled.push(this.domEvents.drag(".node .drag-handle", (dx: number, dy: number,
+                                                                                  ev, handle: SVGGElement) => {
+            const nodeEl = handle.parentNode as SVGGElement;
+            let sdx, sdy;
+
+            const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
+
+            // if a workflow boundary has been hit, then call function which calls the interval
+            if (boundary.x || boundary.y) {
+
+                this.setDragBoundaryIntervalIfNecessary(nodeEl, {x: boundary.x, y: boundary.y},
+                    {startX: startX, startY: startY, inputEdges: inputEdges, outputEdges: outputEdges});
+            }
+
+            // returns the delta x and y - change in node position - based on mouse position and
+            // boundary offsets (if necessary)
+            const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, startX, startY, dx, dy);
+            sdx                = scaledDeltas.x;
+            sdy                = scaledDeltas.y;
+            newX               = startX + sdx;
+            newY               = startY + sdy;
+            nodeEl.transform.baseVal.getItem(0).setTranslate(newX, newY);
+
+            this.setInputAndOutputEdges(inputEdges, outputEdges, sdx, sdy);
+        }, (ev, handle, root) => {
+            this.isDragging = true;
+            const el                        = handle.parentNode as SVGGElement;
+            const matrix                    = el.transform.baseVal.getItem(0).matrix;
+            startX                          = matrix.e;
+            startY                          = matrix.f;
+            inputEdges                      = new Map<SVGElement, number[]>();
+            outputEdges                     = new Map<SVGElement, number[]>();
+            this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
+
+            Array.from(root.querySelectorAll(`.edge[data-destination-node='${el.getAttribute("data-id")}'] .sub-edge`))
+                .forEach((el: SVGElement) => {
+                    inputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
+                });
+
+            Array.from(root.querySelectorAll(`.edge[data-source-node='${el.getAttribute("data-id")}'] .sub-edge`))
+                .forEach((el: SVGElement) => {
+                    outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
+                });
+        }, (ev, target) => {
+            this.isDragging = false;
+            this.setDragBoundaryIntervalToDefault();
+
+            const parentNode = Workflow.findParentNode(target);
+
+            const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
+            if (model) {
+                this.setModelPosition(model, newX, newY);
+            }
+
+            inputEdges  = undefined;
+            outputEdges = undefined;
+        }));
     }
 
     /**
@@ -965,7 +982,7 @@ export class Workflow {
     }
 
     private attachSelectionDeletionBehavior() {
-        this.domEvents.on("keyup", (ev: KeyboardEvent) => {
+        this.handlersToBeDisabled.push(this.domEvents.on("keyup", (ev: KeyboardEvent) => {
 
             if (!(ev.target instanceof SVGElement && ev.target.ownerSVGElement === this.svgRoot)) {
                 return;
@@ -977,7 +994,7 @@ export class Workflow {
 
             this.deleteSelection();
             // Only input elements can be focused, but we added tabindex to the svg so this works
-        }, window);
+        }, window));
     }
 
     public deleteSelection() {
@@ -1036,7 +1053,7 @@ export class Workflow {
         let originNodeCoords: { x: number, y: number };
         let portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>;
 
-        this.domEvents.drag(".port", (dx: number, dy: number, ev, target: SVGGElement) => {
+        this.handlersToBeDisabled.push(this.domEvents.drag(".port", (dx: number, dy: number, ev, target: SVGGElement) => {
             // Gather the necessary positions that we need in order to draw a path
             const ctm                 = target.getScreenCTM();
             const coords              = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
@@ -1277,7 +1294,7 @@ export class Workflow {
             originNodeCoords           = undefined;
             preferredConnectionPorts   = undefined;
             portToOriginTransformation = undefined;
-        });
+        }));
     }
 
     /**
@@ -1449,6 +1466,20 @@ export class Workflow {
             (el as any).focus();
         }
         this.eventHub.emit("selectionChange", el);
+    }
+
+    disableGraphManipulations() {
+        this.disableManipulations = true;
+        for (let i = 0; i < this.handlersToBeDisabled.length; i++) {
+            this.handlersToBeDisabled[i]();
+        }
+    }
+
+    enableGraphManipulations() {
+        this.disableManipulations = false;
+        this.attachNodeDragBehavior();
+        this.attachPortDragBehavior();
+        this.attachSelectionDeletionBehavior();
     }
 
     destroy() {
