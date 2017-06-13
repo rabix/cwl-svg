@@ -1245,7 +1245,7 @@ export class Workflow {
                 this.workflow.appendChild(el);
 
                 // Update the cwlts model with the new x and y coords for this node
-                this.setModelPosition(newIO, mouseCoords.x, mouseCoords.y);
+                this.setModelPosition(newIO, mouseCoords.x, mouseCoords.y, false);
 
                 // Spawn an edge between origin and destination ports
                 const edge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
