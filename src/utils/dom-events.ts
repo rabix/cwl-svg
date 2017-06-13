@@ -59,7 +59,6 @@ export class DomEvents {
         }
     }
 
-
     public keyup() {
 
     }
@@ -76,7 +75,7 @@ export class DomEvents {
         let mouseDownEv;
         let threshold      = 3;
 
-        this.on("mousedown", selector, (ev, el, root) => {
+        const onMouseDown = (ev, el, root) => {
             dragging    = true;
             lastMove    = ev;
             draggedEl   = el;
@@ -88,7 +87,9 @@ export class DomEvents {
             document.addEventListener("mouseup", upHandler);
 
             return false;
-        });
+        };
+
+        const off = this.on("mousedown", selector, onMouseDown);
 
         const moveHandler = (ev) => {
             if (!dragging) {
@@ -132,6 +133,8 @@ export class DomEvents {
             document.removeEventListener("mouseup", upHandler);
             document.removeEventListener("mousemove", moveHandler);
         };
+
+        return off;
     }
 
     public hover(element,
