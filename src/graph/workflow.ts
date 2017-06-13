@@ -420,7 +420,7 @@ export class Workflow {
     private attachEvents() {
 
         this.model.on("step.change", (change: StepModel) => {
-            const title = this.workflow.querySelector(`.node.step.${change.connectionId} .title`) as SVGTextElement;
+            const title = this.workflow.querySelector(`.node.step[data-id="${change.connectionId}"] .title`) as SVGTextElement;
             if (title) {
                 title.textContent = change.label;
             }
@@ -881,8 +881,8 @@ export class Workflow {
         const destPort   = el.getAttribute("data-destination-port");
 
         Array.from(this.workflow.querySelectorAll(
-            `.node.${sourceNode} .output-port.${sourcePort}, `
-            + `.node.${destNode} .input-port.${destPort}`)).forEach(el => {
+            `.node[data-id="${sourceNode}"] .output-port[data-port-id="${sourcePort}"], `
+            + `.node[data-id="${destNode}"] .input-port[data-port-id="${destPort}"]`)).forEach(el => {
             el.classList.add("highlighted");
         });
 
@@ -1435,12 +1435,12 @@ export class Workflow {
         this.workflow.classList.add("has-selection");
 
         const nodeID = el.getAttribute("data-id");
-        Array.from(this.workflow.querySelectorAll(`.edge.${nodeID}`)).forEach((edge: HTMLElement) => {
+        Array.from(this.workflow.querySelectorAll(`.edge[data-source-node="${nodeID}"], .edge[data-destination-node="${nodeID}"]`)).forEach((edge: HTMLElement) => {
             edge.classList.add("highlighted");
             const sourceNodeID      = edge.getAttribute("data-source-node");
             const destinationNodeID = edge.getAttribute("data-destination-node");
 
-            Array.from(this.workflow.querySelectorAll(`.node.${sourceNodeID}, .node.${destinationNodeID}`))
+            Array.from(this.workflow.querySelectorAll(`.node[data-id="${sourceNodeID}"], .node[data-id="${destinationNodeID}"]`))
                 .forEach((el: SVGGElement) => el.classList.add("highlighted"));
         });
 
