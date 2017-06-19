@@ -116,15 +116,7 @@ export class DomEvents {
                         end(ev, draggedEl, this.root)
                     }
                 }
-
-                const parentNode        = draggedEl.parentNode;
-                const clickCancellation = (ev) => {
-                    ev.stopPropagation();
-                    parentNode.removeEventListener("click", clickCancellation, true);
-                };
-                parentNode.addEventListener("click", clickCancellation, true);
             }
-
 
             dragging       = false;
             draggedEl      = undefined;
