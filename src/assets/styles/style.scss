@@ -180,6 +180,11 @@ svg.cwl-workflow {
       stroke: $background;
       stroke-width: 0;
       cursor: pointer;
+
+      .inner,
+      svg{
+        pointer-events: none;
+      }
     }
 
     &:hover {
