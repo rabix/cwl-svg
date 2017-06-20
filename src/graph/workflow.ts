@@ -675,12 +675,10 @@ export class Workflow {
          * On mouse over node, bring it to the front
          */
         this.domEvents.on("mouseover", ".node", (ev, target, root) => {
-            setTimeout(() => {
-                if (this.workflow.querySelector(".edge.dragged")) {
-                    return;
-                }
-                target.parentElement.appendChild(target);
-            });
+            if (this.workflow.querySelector(".edge.dragged") || !ev.path[0].classList.contains("outer")) {
+                return;
+            }
+            target.parentElement.appendChild(target);
         });
 
         if (!this.disableManipulations) {
