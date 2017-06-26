@@ -464,8 +464,10 @@ export class Workflow {
         const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
             .reduce((tpl, nodeModel: any) => {
-                const x = nodeModel.customProps["sbg:x"] || Math.random() * 500;
-                const y = nodeModel.customProps["sbg:y"] || Math.random() * 500;
+                const x = typeof nodeModel.customProps["sbg:x"] !== "undefined" ? nodeModel.customProps["sbg:x"] :
+                    Math.random() * 500;
+                const y = typeof nodeModel.customProps["sbg:y"] !== "undefined" ? nodeModel.customProps["sbg:y"] :
+                    Math.random() * 500;
                 return tpl + GraphNode.makeTemplate(x, y, nodeModel);
             }, "");
 
@@ -1063,7 +1065,7 @@ export class Workflow {
     private attachSelectionDeletionBehavior() {
         this.handlersThatCanBeDisabled.push(this.domEvents.on("keyup", (ev: KeyboardEvent) => {
 
-            if (!(ev.target instanceof SVGElement && ev.target.ownerSVGElement === this.svgRoot)) {
+            if (!(ev.target instanceof SVGElement)) {
                 return;
             }
 
@@ -1120,6 +1122,8 @@ export class Workflow {
                 (this.svgRoot as any).focus();
             }
         });
+
+        this.eventHub.emit("selectionChange", null);
     }
 
     private attachPortDragBehavior() {
