@@ -10,8 +10,8 @@ export class Edge {
         let [sourceSide, sourceStepId, sourcePort] = edge.source.id.split("/");
         let [destSide, destStepId, destPort] = edge.destination.id.split("/");
 
-        const sourceVertex = containerNode.querySelector(`.${sourceStepId} .output-port .${sourcePort}`) as SVGGElement;
-        const destVertex = containerNode.querySelector(`.${destStepId} .input-port .${destPort}`) as SVGGElement;
+        const sourceVertex = containerNode.querySelector(`.node[data-id="${sourceStepId}"] .output-port[data-port-id="${sourcePort}"] .io-port`) as SVGGElement;
+        const destVertex = containerNode.querySelector(`.node[data-id="${destStepId}"] .input-port[data-port-id="${destPort}"] .io-port`) as SVGGElement;
 
         if (edge.source.type === edge.destination.type) {
             console.error("Cant draw edge between nodes of the same type.", edge);
@@ -39,7 +39,7 @@ export class Edge {
         );
 
         return `
-            <g tabindex="-1" class="edge ${sourceStepId} ${destStepId}"
+            <g tabindex="-1" class="edge"
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"

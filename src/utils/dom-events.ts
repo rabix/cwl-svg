@@ -74,6 +74,7 @@ export class DomEvents {
         let moveEventCount = 0;
         let mouseDownEv;
         let threshold      = 3;
+        let mouseOverListeners: EventListener[];
 
         const onMouseDown = (ev, el, root) => {
             dragging    = true;
@@ -82,6 +83,8 @@ export class DomEvents {
             mouseDownEv = ev;
 
             ev.preventDefault();
+
+            mouseOverListeners = this.detachHandlers("mouseover");
 
             document.addEventListener("mousemove", moveHandler);
             document.addEventListener("mouseup", upHandler);
@@ -125,13 +128,18 @@ export class DomEvents {
                 parentNode.addEventListener("click", clickCancellation, true);
             }
 
-
             dragging       = false;
             draggedEl      = undefined;
             lastMove       = undefined;
             moveEventCount = 0;
             document.removeEventListener("mouseup", upHandler);
             document.removeEventListener("mousemove", moveHandler);
+
+            for (let i in mouseOverListeners) {
+                this.root.addEventListener("mouseover", mouseOverListeners[i]);
+                this.handlers.get(this.root)["mouseover"] = [];
+                this.handlers.get(this.root)["mouseover"].push(mouseOverListeners[i]);
+            }
         };
 
         return off;
@@ -165,6 +173,29 @@ export class DomEvents {
             }
             hover(ev, element, this.root);
         });
+    }
+
+    public detachHandlers(evName: string, root?): EventListener[] {
+        root = root || this.root;
+        let eventListeners: EventListener[] = [];
+        this.handlers.forEach((handlers: { [event: string]: EventListener[] }, listenerRoot: Element) => {
+            if (listenerRoot.id !== root.id || listenerRoot !== root) {
+                return;
+            }
+            for (let eventName in handlers) {
+                if (eventName !== evName) {
+                    continue;
+                }
+                handlers[eventName].forEach((handler) => {
+                    eventListeners.push(handler);
+                    listenerRoot.removeEventListener(eventName, handler);
+                });
+            }
+        });
+
+        delete this.handlers.get(this.root)[evName];
+
+        return eventListeners;
     }
 
     public detachAll() {

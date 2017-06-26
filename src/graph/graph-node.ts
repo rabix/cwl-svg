@@ -105,7 +105,7 @@ export class GraphNode {
 
 
         return `
-            <g tabindex="-1" class="node ${dataModel.id} ${nodeTypeClass}"
+            <g tabindex="-1" class="node ${nodeTypeClass}"
                data-connection-id="${dataModel.connectionId}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">
@@ -131,11 +131,11 @@ export class GraphNode {
         const portClass = type === "input" ? "input-port" : "output-port";
         const label     = port.label || port.id;
         return `
-            <g class="port ${portClass} ${port.id}" transform="${transform || 'matrix(1, 0, 0, 1, 0, 0)'}"
+            <g class="port ${portClass}" transform="${transform || 'matrix(1, 0, 0, 1, 0, 0)'}"
                data-connection-id="${port.connectionId}"
                data-port-id="${port.id}"
             >
-                <g class="io-port ${port.id}">
+                <g class="io-port">
                     <circle cx="0" cy="0" r="7" class="port-handle"></circle>
                 </g>
                 <text x="0" y="0" transform="matrix(1,0,0,1,0,0)" class="label unselectable">${label}</text>
