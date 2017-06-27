@@ -288,11 +288,12 @@ export class Workflow {
         columns.forEach((column, index) => {
             const rowCount = column.length + 1;
             const colSize  = columnDimensions[index];
-            let yOffset    = baseline - (colSize.height / 2);
+            let yOffset    = baseline - (colSize.height / 2) - column[0].rect.height / 2;
 
             column.forEach(node => {
+                yOffset += node.rect.height / 2;
                 const matrix = SVGUtils.createMatrix().translate(xOffset, yOffset);
-                yOffset += node.rect.height;
+                yOffset += node.rect.height / 2;
                 if (yOffset > maxYOffset) {
                     maxYOffset = yOffset;
                 }
