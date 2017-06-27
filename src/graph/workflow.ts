@@ -13,6 +13,12 @@ export class Workflow {
     /** Current scale of the document */
     private scale = 1;
 
+    private arrangeFlag = true;
+
+    public get canArrange() : boolean {
+        return this.arrangeFlag;
+    }
+
     public static readonly minScale = 0.2;
 
     public static readonly maxScale = 2;
@@ -119,6 +125,10 @@ export class Workflow {
         if (model) {
             this.renderModel(model);
         }
+
+        this.on("beforeChange", () => {
+            this.arrangeFlag = true;
+        });
     }
 
     command(event: string, ...data: any[]) {
@@ -138,7 +148,7 @@ export class Workflow {
     }
 
     arrange() {
-        if (this.disableManipulations) {
+        if (this.disableManipulations || !this.canArrange) {
             return;
         }
 
@@ -396,6 +406,8 @@ export class Workflow {
 
         this.redrawEdges();
         this.fitToViewport();
+
+        this.arrangeFlag = false;
     }
 
     /**
