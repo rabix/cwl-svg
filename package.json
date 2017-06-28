@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "core-js": "^2.4.1",
-    "cwlts": "^1.13.15"
+    "cwlts": "^1.13.23"
   },
   "peerDependencies": {
     "cwlts": "^1.13.15"
@@ -29,7 +29,7 @@
     "source-map-loader": "^0.2.1",
     "style-loader": "^0.16.1",
     "ts-loader": "2.0.3",
-    "typescript": "^2.1.6",
+    "typescript": "^2.4.1",
     "webpack": "^2.4.1"
   }
 }
