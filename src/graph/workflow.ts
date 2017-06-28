@@ -13,6 +13,12 @@ export class Workflow {
     /** Current scale of the document */
     private scale = 1;
 
+    private arrangeFlag = true;
+
+    public get canArrange() : boolean {
+        return this.arrangeFlag;
+    }
+
     public static readonly minScale = 0.2;
 
     public static readonly maxScale = 2;
@@ -119,6 +125,10 @@ export class Workflow {
         if (model) {
             this.renderModel(model);
         }
+
+        this.on("beforeChange", () => {
+            this.arrangeFlag = true;
+        });
     }
 
     command(event: string, ...data: any[]) {
@@ -138,7 +148,7 @@ export class Workflow {
     }
 
     arrange() {
-        if (this.disableManipulations) {
+        if (this.disableManipulations || !this.canArrange) {
             return;
         }
 
@@ -278,11 +288,12 @@ export class Workflow {
         columns.forEach((column, index) => {
             const rowCount = column.length + 1;
             const colSize  = columnDimensions[index];
-            let yOffset    = baseline - (colSize.height / 2);
+            let yOffset    = baseline - (colSize.height / 2) - column[0].rect.height / 2;
 
             column.forEach(node => {
+                yOffset += node.rect.height / 2;
                 const matrix = SVGUtils.createMatrix().translate(xOffset, yOffset);
-                yOffset += node.rect.height;
+                yOffset += node.rect.height / 2;
                 if (yOffset > maxYOffset) {
                     maxYOffset = yOffset;
                 }
@@ -396,6 +407,8 @@ export class Workflow {
 
         this.redrawEdges();
         this.fitToViewport();
+
+        this.arrangeFlag = false;
     }
 
     /**
@@ -464,8 +477,10 @@ export class Workflow {
         const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
             .reduce((tpl, nodeModel: any) => {
-                const x = nodeModel.customProps["sbg:x"] || Math.random() * 500;
-                const y = nodeModel.customProps["sbg:y"] || Math.random() * 500;
+                const x = typeof nodeModel.customProps["sbg:x"] !== "undefined" ? nodeModel.customProps["sbg:x"] :
+                    Math.random() * 500;
+                const y = typeof nodeModel.customProps["sbg:y"] !== "undefined" ? nodeModel.customProps["sbg:y"] :
+                    Math.random() * 500;
                 return tpl + GraphNode.makeTemplate(x, y, nodeModel);
             }, "");
 
@@ -1063,7 +1078,7 @@ export class Workflow {
     private attachSelectionDeletionBehavior() {
         this.handlersThatCanBeDisabled.push(this.domEvents.on("keyup", (ev: KeyboardEvent) => {
 
-            if (!(ev.target instanceof SVGElement && ev.target.ownerSVGElement === this.svgRoot)) {
+            if (!(ev.target instanceof SVGElement)) {
                 return;
             }
 
@@ -1120,6 +1135,8 @@ export class Workflow {
                 (this.svgRoot as any).focus();
             }
         });
+
+        this.eventHub.emit("selectionChange", null);
     }
 
     private attachPortDragBehavior() {
