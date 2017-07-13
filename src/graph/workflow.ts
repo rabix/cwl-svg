@@ -117,6 +117,7 @@ export class Workflow {
             "app.create.output",
             /** @link workflow.fit */
             "beforeChange",
+            "afterChange",
             "selectionChange"
         ]);
 
@@ -152,9 +153,8 @@ export class Workflow {
             return;
         }
 
-        this.eventHub.emit("beforeChange", {
-            type: "arrange",
-        });
+        const changeEventData = {type: "arrange"};
+        this.eventHub.emit("beforeChange", changeEventData);
 
         this.resetTransform();
 
@@ -306,7 +306,6 @@ export class Workflow {
             xOffset += colSize.width;
         });
 
-
         let danglingNodeKeys = Object.keys(danglingNodes).sort((a, b) => {
             const aIsInput  = a.indexOf("out/") > -1;
             const aIsOutput = a.indexOf("in/") > -1;
@@ -409,6 +408,8 @@ export class Workflow {
         this.fitToViewport();
 
         this.arrangeFlag = false;
+
+        this.eventHub.emit("afterChange", changeEventData);
     }
 
     /**
@@ -563,9 +564,8 @@ export class Workflow {
          */
         this.eventHub.on("app.create.step", (step: StepModel) => {
 
-            this.eventHub.emit("beforeChange", {
-                type: "step.create",
-            });
+            const changeEventData = {type: "step.create"};
+            this.eventHub.emit("beforeChange", changeEventData);
 
             const x   = step.customProps["sbg:x"] || Math.random() * 1000;
             const y   = step.customProps["sbg:y"] || Math.random() * 1000;
@@ -576,6 +576,8 @@ export class Workflow {
             // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
             // So let's trigger the scaling again
             this.scaleWorkflow(this.scale);
+
+            this.eventHub.emit("afterChange", changeEventData);
         });
 
         /**
@@ -1098,10 +1100,11 @@ export class Workflow {
             return;
         }
 
-        this.eventHub.emit("beforeChange", {
+        const changeEventData = {
             type: "deletion",
             data: selection
-        });
+        };
+        this.eventHub.emit("beforeChange", changeEventData);
 
         selection.forEach(el => {
             if (el.classList.contains("step")) {
@@ -1137,6 +1140,8 @@ export class Workflow {
         });
 
         this.eventHub.emit("selectionChange", null);
+
+        this.eventHub.emit("afterChange", changeEventData);
     }
 
     private attachPortDragBehavior() {
@@ -1304,13 +1309,14 @@ export class Workflow {
 
                 if (!GraphEdge.findEdge(this.workflow, sourceID, destinationID)) {
 
-                    this.eventHub.emit("beforeChange", {
-                        type: "connect",
-                    });
+                    const changeEventData = {type: "connect"};
+                    this.eventHub.emit("beforeChange", changeEventData);
 
                     const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
                     this.attachEdgeHoverBehavior(newEdge);
                     this.model.connect(sourceID, destinationID);
+
+                    this.eventHub.emit("afterChange", changeEventData);
                 }
 
                 // Deselect and cleanup
@@ -1326,9 +1332,10 @@ export class Workflow {
                 const portID    = origin.getAttribute("data-connection-id");
                 const ioIsInput = portID.startsWith("in");
 
-                this.eventHub.emit("beforeChange", {
-                    type: `${ioIsInput ? 'input' : 'output'}.create`,
-                });
+                const changeEventData = {
+                    type: `${ioIsInput ? 'input' : 'output'}.create`
+                };
+                this.eventHub.emit("beforeChange", changeEventData);
 
                 const newIO = GraphNode.patchModelPorts(ioIsInput
                     ? this.model.createInputFromPort(portID)
@@ -1369,6 +1376,8 @@ export class Workflow {
                 // Re-scale the workflow so the label gets upscaled or downscaled properly
 
                 this.scaleWorkflow(this.scale);
+
+                this.eventHub.emit("afterChange", changeEventData);
             }
 
             this.workflow.classList.remove("has-suggestion", "edge-dragging");
@@ -1502,16 +1511,16 @@ export class Workflow {
         }
     }
 
-    setModelPosition(obj, x, y, emitBeforeChange = true) {
+    setModelPosition(obj, x, y, emitEvents = true) {
         const update = {
             "sbg:x": x,
             "sbg:y": y
         };
 
-        if (emitBeforeChange) {
-            this.eventHub.emit("beforeChange", {
-                type: "move",
-            });
+        const changeEventData = {type: "move"};
+
+        if (emitEvents) {
+            this.eventHub.emit("beforeChange", changeEventData);
         }
 
         if (!obj.customProps) {
@@ -1520,6 +1529,10 @@ export class Workflow {
         }
 
         Object.assign(obj.customProps, update);
+
+        if (emitEvents) {
+            this.eventHub.emit("afterChange", changeEventData);
+        }
     }
 
     private clearCanvas() {
