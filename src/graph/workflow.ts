@@ -425,7 +425,7 @@ export class Workflow {
 
         let clientBounds = this.svgRoot.getBoundingClientRect();
         let wfBounds     = this.workflow.getBoundingClientRect();
-        const padding    = 200;
+        const padding    = 100;
 
         if (clientBounds.width === 0 || clientBounds.height === 0) {
             throw new Error("Cannot fit workflow to the area that has no visible viewport.");
@@ -442,13 +442,12 @@ export class Workflow {
 
         const scaledWFBounds = this.workflow.getBoundingClientRect();
 
-        const moveY = newScale * (clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2);
-        const moveX = newScale * (clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2);
+        const moveY = clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2;
+        const moveX = clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2;
 
-
-        const matrix = this.workflow.transform.baseVal.getItem(0).matrix;
-        matrix.e     = moveX;
-        matrix.f     = moveY;
+        const matrix  = this.workflow.transform.baseVal.getItem(0).matrix;
+        matrix.e     += moveX;
+        matrix.f     += moveY;
     }
 
     private redrawEdges() {
