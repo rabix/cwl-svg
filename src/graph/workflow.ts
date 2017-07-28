@@ -225,6 +225,7 @@ export class Workflow {
             nodeSet[sourceNodeID].outputs.push(destinationNodeID);
             nodeSet[destinationNodeID].inputs.push(sourceNodeID);
 
+
         });
 
         const traceLongestPath = (node: NodeIO, visited: Set<NodeIO>) => {
@@ -407,6 +408,10 @@ export class Workflow {
         });
 
         this.redrawEdges();
+        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
+            this.attachEdgeHoverBehavior(el);
+        });
+
         this.fitToViewport();
 
         this.arrangeFlag = false;
