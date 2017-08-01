@@ -157,6 +157,7 @@ export class Workflow {
         this.eventHub.emit("beforeChange", changeEventData);
 
         this.resetTransform();
+        this.scaleWorkflow(1);
 
         type NodeIO = {
             inputs: string[],
