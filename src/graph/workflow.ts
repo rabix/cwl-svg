@@ -157,7 +157,6 @@ export class Workflow {
         this.eventHub.emit("beforeChange", changeEventData);
 
         this.resetTransform();
-        this.scaleWorkflow(1);
 
         type NodeIO = {
             inputs: string[],
@@ -1599,5 +1598,6 @@ export class Workflow {
 
     private resetTransform() {
         this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
+        this.scaleWorkflow();
     }
 }
