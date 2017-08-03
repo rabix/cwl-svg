@@ -249,14 +249,16 @@ export class Workflow {
         }
 
 
-        const columns: NodeIO[][] = Object.keys(idToZoneMap).reduce((acc, nid) => {
-            const zone = idToZoneMap[nid];
-            if (!acc[zone]) {
-                acc[zone] = [];
-            }
-            acc[zone].push(nodeSet[nid]);
-            return acc;
-        }, []);
+        const columns: NodeIO[][] = Object.keys(idToZoneMap)
+            .sort((a, b) => -a.localeCompare(b))
+            .reduce((acc, nid) => {
+                const zone = idToZoneMap[nid];
+                if (!acc[zone]) {
+                    acc[zone] = [];
+                }
+                acc[zone].push(nodeSet[nid]);
+                return acc;
+            }, []);
 
         let distributionAreaHeight = 0;
         let distributionAreaWidth  = 0;
@@ -314,7 +316,7 @@ export class Workflow {
 
             if (aIsOutput) {
                 if (bIsOutput) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase());
+                    return b.toLowerCase().localeCompare(a.toLowerCase());
                 }
                 else {
                     return 1;
@@ -325,7 +327,7 @@ export class Workflow {
                     return -1;
                 }
                 if (bIsInput) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase());
+                    return b.toLowerCase().localeCompare(a.toLowerCase());
                 }
                 else {
                     return 1;
@@ -333,7 +335,7 @@ export class Workflow {
             }
             else {
                 if (!bIsOutput && !bIsInput) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase());
+                    return b.toLowerCase().localeCompare(a.toLowerCase());
                 }
                 else {
                     return -1;
