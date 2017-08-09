@@ -103,6 +103,7 @@ export class GraphNode {
             ))
             .reduce((acc, tpl) => acc + tpl, "");
 
+        const hasUpdate = dataModel["hasUpdate"] ? "hasUpdate" : "";
 
         return `
             <g tabindex="-1" class="node ${nodeTypeClass}"
@@ -111,7 +112,7 @@ export class GraphNode {
                data-id="${dataModel.id}">
                 <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
                     <circle cx="0" cy="0" r="${radius}" class="outer"></circle>
-                    <circle cx="0" cy="0" r="${radius * .75}" class="inner"></circle>
+                    <circle cx="0" cy="0" r="${radius * .75}" class="inner ${hasUpdate}"></circle>
                     ${GraphNode.makeIconFragment(dataModel)}
                 </g>
                 <text transform="matrix(1,0,0,1,0,${radius + 30})" class="title label">${dataModel.label || dataModel.id}</text>
