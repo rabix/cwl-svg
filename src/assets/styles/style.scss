@@ -97,8 +97,10 @@ svg.cwl-workflow {
         &.step {
           .inner {
             fill: darken($color-primary, 15%);
+          }
 
-            &.hasUpdate {
+          &.hasUpdate {
+            .inner {
               fill: darken($color-warning, 15%);
             }
           }
@@ -198,6 +200,12 @@ svg.cwl-workflow {
       }
     }
 
+    &.hasUpdate {
+      .inner {
+        fill: $color-warning;
+      }
+    }
+
     .outer {
       stroke: $node-outer-color;
       stroke-width: 2px;
@@ -207,10 +215,6 @@ svg.cwl-workflow {
     .inner {
       stroke: 0;
       fill: $node-background-color;
-
-      &.hasUpdate {
-        fill: $color-warning;
-      }
     }
 
     .port {

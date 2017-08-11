@@ -106,13 +106,13 @@ export class GraphNode {
         const hasUpdate = dataModel["hasUpdate"] ? "hasUpdate" : "";
 
         return `
-            <g tabindex="-1" class="node ${nodeTypeClass}"
+            <g tabindex="-1" class="node ${nodeTypeClass} ${hasUpdate}"
                data-connection-id="${dataModel.connectionId}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">
                 <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
                     <circle cx="0" cy="0" r="${radius}" class="outer"></circle>
-                    <circle cx="0" cy="0" r="${radius * .75}" class="inner ${hasUpdate}"></circle>
+                    <circle cx="0" cy="0" r="${radius * .75}" class="inner"></circle>
                     ${GraphNode.makeIconFragment(dataModel)}
                 </g>
                 <text transform="matrix(1,0,0,1,0,${radius + 30})" class="title label">${dataModel.label || dataModel.id}</text>
