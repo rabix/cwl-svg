@@ -31,11 +31,13 @@ export class Edge {
         const sourceCTM = sourceVertex.getCTM() as SVGMatrix;
         const destCTM = destVertex.getCTM() as SVGMatrix;
 
+        const wfMatrix = containerNode.transform.baseVal[0].matrix;
+
         const pathStr = IOPort.makeConnectionPath(
-            sourceCTM.e,
-            sourceCTM.f,
-            destCTM.e,
-            destCTM.f,
+            (sourceCTM.e - wfMatrix.e) / sourceCTM.a,
+            (sourceCTM.f - wfMatrix.f) / sourceCTM.a,
+            (destCTM.e - wfMatrix.e) / sourceCTM.a,
+            (destCTM.f - wfMatrix.f) / sourceCTM.a
         );
 
         return `
