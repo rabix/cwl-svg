@@ -225,6 +225,7 @@ export class Workflow {
             nodeSet[sourceNodeID].outputs.push(destinationNodeID);
             nodeSet[destinationNodeID].inputs.push(sourceNodeID);
 
+
         });
 
         const traceLongestPath = (node: NodeIO, visited: Set<NodeIO>) => {
@@ -249,14 +250,16 @@ export class Workflow {
         }
 
 
-        const columns: NodeIO[][] = Object.keys(idToZoneMap).reduce((acc, nid) => {
-            const zone = idToZoneMap[nid];
-            if (!acc[zone]) {
-                acc[zone] = [];
-            }
-            acc[zone].push(nodeSet[nid]);
-            return acc;
-        }, []);
+        const columns: NodeIO[][] = Object.keys(idToZoneMap)
+            .sort((a, b) => -a.localeCompare(b))
+            .reduce((acc, nid) => {
+                const zone = idToZoneMap[nid];
+                if (!acc[zone]) {
+                    acc[zone] = [];
+                }
+                acc[zone].push(nodeSet[nid]);
+                return acc;
+            }, []);
 
         let distributionAreaHeight = 0;
         let distributionAreaWidth  = 0;
@@ -314,7 +317,7 @@ export class Workflow {
 
             if (aIsOutput) {
                 if (bIsOutput) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase());
+                    return b.toLowerCase().localeCompare(a.toLowerCase());
                 }
                 else {
                     return 1;
@@ -325,7 +328,7 @@ export class Workflow {
                     return -1;
                 }
                 if (bIsInput) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase());
+                    return b.toLowerCase().localeCompare(a.toLowerCase());
                 }
                 else {
                     return 1;
@@ -333,7 +336,7 @@ export class Workflow {
             }
             else {
                 if (!bIsOutput && !bIsInput) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase());
+                    return b.toLowerCase().localeCompare(a.toLowerCase());
                 }
                 else {
                     return -1;
@@ -405,6 +408,10 @@ export class Workflow {
         });
 
         this.redrawEdges();
+        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
+            this.attachEdgeHoverBehavior(el);
+        });
+
         this.fitToViewport();
 
         this.arrangeFlag = false;
@@ -425,7 +432,7 @@ export class Workflow {
 
         let clientBounds = this.svgRoot.getBoundingClientRect();
         let wfBounds     = this.workflow.getBoundingClientRect();
-        const padding    = 200;
+        const padding    = 100;
 
         if (clientBounds.width === 0 || clientBounds.height === 0) {
             throw new Error("Cannot fit workflow to the area that has no visible viewport.");
@@ -442,13 +449,12 @@ export class Workflow {
 
         const scaledWFBounds = this.workflow.getBoundingClientRect();
 
-        const moveY = newScale * (clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2);
-        const moveX = newScale * (clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2);
+        const moveY = clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2;
+        const moveX = clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2;
 
-
-        const matrix = this.workflow.transform.baseVal.getItem(0).matrix;
-        matrix.e     = moveX;
-        matrix.f     = moveY;
+        const matrix  = this.workflow.transform.baseVal.getItem(0).matrix;
+        matrix.e     += moveX;
+        matrix.f     += moveY;
     }
 
     private redrawEdges() {

@@ -9,8 +9,8 @@ $color-success: #76ed21;
 $color-highlight: #5196ce;
 //$color-neutral: rgb(121, 121, 121);
 $color-neutral: #c3c3c3;
-$color-warning: rgb(246, 147, 54);
-$color-danger: rgb(214, 18, 33);
+$color-warning: #f89406;
+$color-danger: #dd4a38;
 
 // Color Application
 $background: $color-background;
@@ -97,6 +97,12 @@ svg.cwl-workflow {
         &.step {
           .inner {
             fill: darken($color-primary, 15%);
+          }
+
+          &.hasUpdate {
+            .inner {
+              fill: darken($color-warning, 15%);
+            }
           }
         }
         &.input,
@@ -191,6 +197,12 @@ svg.cwl-workflow {
       .port .label {
         transition: all .1s;
         opacity: 1;
+      }
+    }
+
+    &.hasUpdate {
+      .inner {
+        fill: $color-warning;
       }
     }
 
