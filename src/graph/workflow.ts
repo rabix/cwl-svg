@@ -458,12 +458,8 @@ export class Workflow {
     }
 
     private redrawEdges() {
-        const modelEdges = this.model.connections
-            .sort((a, b) => {
-                return a.source.id.localeCompare(b.source.id) || a.destination.id.localeCompare(b.destination.id);
-            });
 
-        const edgeEls             = modelEdges.filter(el => el.isVisible);
+        const edgeEls             = this.model.connections.filter(el => el.isVisible);
         const highlightedEdgesMap = new Map<Edge, boolean>();
 
         Array.from(this.workflow.querySelectorAll(".edge"))
@@ -475,7 +471,7 @@ export class Workflow {
                 el.remove();
             });
 
-        const edgesTpl = modelEdges.map(c => GraphEdge.makeTemplate(c, this.workflow, highlightedEdgesMap.get(c) ? "highlighted" : ""))
+        const edgesTpl = this.model.connections.map(c => GraphEdge.makeTemplate(c, this.workflow, highlightedEdgesMap.get(c) ? "highlighted" : ""))
             .reduce((acc, tpl) => acc + tpl, "");
 
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
