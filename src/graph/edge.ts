@@ -2,7 +2,7 @@ import {Edge as ModelEdge} from "cwlts/models";
 import {IOPort} from "./io-port";
 import {Geometry} from "../utils/geometry";
 export class Edge {
-    static makeTemplate(edge: ModelEdge, containerNode: SVGGElement): string {
+    static makeTemplate(edge: ModelEdge, containerNode: SVGGElement, connectionStates?: string): string {
         if (!edge.isVisible || edge.source.type === "Step" || edge.destination.type === "Step") {
             return "";
         }
@@ -39,7 +39,7 @@ export class Edge {
         );
 
         return `
-            <g tabindex="-1" class="edge"
+            <g tabindex="-1" class="edge ${connectionStates}"
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"
