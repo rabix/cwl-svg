@@ -481,13 +481,29 @@ export class Workflow {
 
         this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
 
+        // If there is a missing sbg:x or sbg:y property on any node model,
+        // the graph should be arranged to avoid random placement
+        let arrangeNecessary = false;
+
         const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
             .reduce((tpl, nodeModel: any) => {
-                const x = typeof nodeModel.customProps["sbg:x"] !== "undefined" ? nodeModel.customProps["sbg:x"] :
-                    Math.random() * 500;
-                const y = typeof nodeModel.customProps["sbg:y"] !== "undefined" ? nodeModel.customProps["sbg:y"] :
-                    Math.random() * 500;
+                let x, y;
+
+                if (typeof nodeModel.customProps["sbg:x"] !== "undefined") {
+                    x = nodeModel.customProps["sbg:x"];
+                } else {
+                    x = 0;
+                    arrangeNecessary = true;
+                }
+
+                if (typeof nodeModel.customProps["sbg:y"] !== "undefined") {
+                    y = nodeModel.customProps["sbg:y"];
+                } else {
+                    y = 0;
+                    arrangeNecessary = true;
+                }
+
                 return tpl + GraphNode.makeTemplate(x, y, nodeModel);
             }, "");
 
@@ -497,7 +513,6 @@ export class Workflow {
         console.timeEnd("Graph Rendering");
         console.time("Ordering");
 
-
         Array.from(this.workflow.querySelectorAll(".node")).forEach(e => {
             this.workflow.appendChild(e);
         });
@@ -506,7 +521,12 @@ export class Workflow {
 
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
-        this.scaleWorkflow(this.scale);
+
+        if (arrangeNecessary) {
+            this.arrange();
+        } else {
+            this.scaleWorkflow(this.scale);
+        }
 
         // If we had a selection before, restore it
         if (selectedItemConnectionID) {
