@@ -460,18 +460,23 @@ export class Workflow {
     private redrawEdges() {
 
         const edgeEls             = this.model.connections.filter(el => el.isVisible);
-        const highlightedEdgesMap = new Map<Edge, boolean>();
+        const highlightedEdgesMap = new Map<string, boolean>();
 
         Array.from(this.workflow.querySelectorAll(".edge"))
-            .forEach((el, i) => {
-                const edge = edgeEls[i];
+            .forEach((el) => {
                 if (el.classList.contains("highlighted")) {
-                    highlightedEdgesMap.set(edge, true);
+                    highlightedEdgesMap.set(JSON.stringify({
+                            source: el.attributes["data-source-connection"].value,
+                            destination: el.attributes["data-destination-connection"].value
+                        }), true);
                 }
                 el.remove();
             });
 
-        const edgesTpl = this.model.connections.map(c => GraphEdge.makeTemplate(c, this.workflow, highlightedEdgesMap.get(c) ? "highlighted" : ""))
+
+        const edgesTpl = this.model.connections
+            .map(c => GraphEdge.makeTemplate(c, this.workflow,
+                highlightedEdgesMap.get(JSON.stringify({ source: c.source.id, destination: c.destination.id })) ? "highlighted" : ""))
             .reduce((acc, tpl) => acc + tpl, "");
 
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
