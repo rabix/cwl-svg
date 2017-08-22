@@ -490,14 +490,14 @@ export class Workflow {
             .reduce((tpl, nodeModel: any) => {
                 let x, y;
 
-                if (!isNaN(nodeModel.customProps["sbg:x"])) {
+                if (!isNaN(parseInt(nodeModel.customProps["sbg:x"]))) {
                     x = nodeModel.customProps["sbg:x"];
                 } else {
                     x = 0;
                     arrangeNecessary = true;
                 }
 
-                if (!isNaN(nodeModel.customProps["sbg:y"])) {
+                if (!isNaN(parseInt(nodeModel.customProps["sbg:y"]))) {
                     y = nodeModel.customProps["sbg:y"];
                 } else {
                     y = 0;
