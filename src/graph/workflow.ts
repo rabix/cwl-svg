@@ -408,9 +408,6 @@ export class Workflow {
         });
 
         this.redrawEdges();
-        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
-            this.attachEdgeHoverBehavior(el);
-        });
 
         this.fitToViewport();
 
@@ -464,6 +461,10 @@ export class Workflow {
 
         const edgesTpl          = this.model.connections.map(c => GraphEdge.makeTemplate(c, this.workflow)).reduce((acc, tpl) => acc + tpl, "");
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
+
+        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
+            this.attachEdgeHoverBehavior(el);
+        });
     }
 
     private renderModel(model: WorkflowModel) {
