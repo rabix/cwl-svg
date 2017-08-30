@@ -629,6 +629,13 @@ export class Workflow {
 
             // this.workflow.innerHTML += GraphEdge.makeTemplate(connection, this.paper);
         });
+
+        /**
+         * @name connection.create
+         */
+        this.model.on("connections.updated", (input: WorkflowStepInputModel) => {
+            this.redrawEdges();
+        });
     }
 
     /**
@@ -1356,7 +1363,10 @@ export class Workflow {
 
                     const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
                     this.attachEdgeHoverBehavior(newEdge);
-                    this.model.connect(sourceID, destinationID);
+                    const isValid = this.model.connect(sourceID, destinationID);
+                    if (!isValid) {
+                        newEdge.classList.add("not-valid");
+                    }
 
                     this.eventHub.emit("afterChange", changeEventData);
                 }
