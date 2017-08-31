@@ -2,11 +2,11 @@ import {Edge, Graph, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowS
 import {DomEvents} from "../utils/dom-events";
 import {EventHub} from "../utils/event-hub";
 import {Geometry} from "../utils/geometry";
+import {SVGUtils} from "../utils/svg-utils";
 import {Edge as GraphEdge} from "./edge";
 import {GraphNode} from "./graph-node";
 import {IOPort} from "./io-port";
 import {TemplateParser} from "./template-parser";
-import {SVGUtils} from "../utils/svg-utils";
 
 export class Workflow {
 
@@ -458,11 +458,27 @@ export class Workflow {
     }
 
     private redrawEdges() {
-        Array.from(this.workflow.querySelectorAll(".edge")).forEach(el => {
+
+        const edgeEls          = this.model.connections.filter(el => el.isVisible);
+        const highlightedEdges = new Set();
+
+        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el) => {
+            if (el.classList.contains("highlighted")) {
+                const edgeID = el.attributes["data-source-connection"].value + el.attributes["data-destination-connection"].value;
+                highlightedEdges.add(edgeID);
+            }
             el.remove();
         });
 
-        const edgesTpl          = this.model.connections.map(c => GraphEdge.makeTemplate(c, this.workflow)).reduce((acc, tpl) => acc + tpl, "");
+
+        const edgesTpl = this.model.connections
+            .map(c => {
+                const edgeId     = c.source.id + c.destination.id;
+                const edgeStates = highlightedEdges.has(edgeId) ? "highlighted" : "";
+                return GraphEdge.makeTemplate(c, this.workflow, edgeStates);
+            })
+            .reduce((acc, tpl) => acc + tpl, "");
+
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
     }
 

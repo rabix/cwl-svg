@@ -2,7 +2,7 @@ import {Edge as ModelEdge} from "cwlts/models";
 import {IOPort} from "./io-port";
 import {Geometry} from "../utils/geometry";
 export class Edge {
-    static makeTemplate(edge: ModelEdge, containerNode: SVGGElement): string {
+    static makeTemplate(edge: ModelEdge, containerNode: SVGGElement, connectionStates?: string): string {
         if (!edge.isVisible || edge.source.type === "Step" || edge.destination.type === "Step") {
             return "";
         }
@@ -31,15 +31,17 @@ export class Edge {
         const sourceCTM = sourceVertex.getCTM() as SVGMatrix;
         const destCTM = destVertex.getCTM() as SVGMatrix;
 
+        const wfMatrix = containerNode.transform.baseVal[0].matrix;
+
         const pathStr = IOPort.makeConnectionPath(
-            sourceCTM.e,
-            sourceCTM.f,
-            destCTM.e,
-            destCTM.f,
+            (sourceCTM.e - wfMatrix.e) / sourceCTM.a,
+            (sourceCTM.f - wfMatrix.f) / sourceCTM.a,
+            (destCTM.e - wfMatrix.e) / sourceCTM.a,
+            (destCTM.f - wfMatrix.f) / sourceCTM.a
         );
 
         return `
-            <g tabindex="-1" class="edge"
+            <g tabindex="-1" class="edge ${connectionStates}"
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"
