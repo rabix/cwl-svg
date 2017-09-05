@@ -1,6 +1,7 @@
 import {StepModel, WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
 import {SVGUtils} from "../utils/svg-utils";
 import {IOPort} from "./io-port";
+import {HtmlUtils} from "../utils/html-utils";
 
 export type NodePosition = { x: number, y: number };
 export type NodeDataModel = WorkflowInputParameterModel | WorkflowOutputParameterModel | StepModel;
@@ -115,7 +116,7 @@ export class GraphNode {
                     <circle cx="0" cy="0" r="${radius * .75}" class="inner"></circle>
                     ${GraphNode.makeIconFragment(dataModel)}
                 </g>
-                <text transform="matrix(1,0,0,1,0,${radius + 30})" class="title label">${dataModel.label || dataModel.id}</text>
+                <text transform="matrix(1,0,0,1,0,${radius + 30})" class="title label">${HtmlUtils.escapeHTML(dataModel.label || dataModel.id)}</text>
                 ${inputPortTemplates}
                 ${outputPortTemplates}
             </g>
