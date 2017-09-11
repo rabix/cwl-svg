@@ -408,9 +408,6 @@ export class Workflow {
         });
 
         this.redrawEdges();
-        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
-            this.attachEdgeHoverBehavior(el);
-        });
 
         this.fitToViewport();
 
@@ -480,6 +477,10 @@ export class Workflow {
             .reduce((acc, tpl) => acc + tpl, "");
 
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
+
+        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
+            this.attachEdgeHoverBehavior(el);
+        });
     }
 
     private renderModel(model: WorkflowModel) {
@@ -1613,6 +1614,8 @@ export class Workflow {
         this.workflow.classList.add("has-selection");
 
         const nodeID = el.getAttribute("data-id");
+
+        const firstNode = this.workflow.getElementsByClassName("node")[0];
         Array.from(this.workflow.querySelectorAll(`.edge[data-source-node="${nodeID}"], .edge[data-destination-node="${nodeID}"]`)).forEach((edge: HTMLElement) => {
             edge.classList.add("highlighted");
             const sourceNodeID      = edge.getAttribute("data-source-node");
@@ -1620,6 +1623,8 @@ export class Workflow {
 
             Array.from(this.workflow.querySelectorAll(`.node[data-id="${sourceNodeID}"], .node[data-id="${destinationNodeID}"]`))
                 .forEach((el: SVGGElement) => el.classList.add("highlighted"));
+
+            this.workflow.insertBefore(edge, firstNode);
         });
 
         el.classList.add("selected");
