@@ -1365,7 +1365,7 @@ export class Workflow {
                     const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
                     this.attachEdgeHoverBehavior(newEdge);
                     const isValid = this.model.connect(sourceID, destinationID);
-                    if (!isValid) {
+                    if (isValid === false) {
                         newEdge.classList.add("not-valid");
                     }
 

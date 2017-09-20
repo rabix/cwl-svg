@@ -40,10 +40,10 @@ export class Edge {
             (destCTM.f - wfMatrix.f) / sourceCTM.a
         );
 
-        const isValid = edge.isValid ? "" : "not-valid";
+        const isInvalid = edge.isValid === false ? "not-valid" : "";
 
         return `
-            <g tabindex="-1" class="edge ${connectionStates} ${isValid}"
+            <g tabindex="-1" class="edge ${connectionStates} ${isInvalid}"
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"
