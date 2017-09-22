@@ -1,41 +1,31 @@
-import {Edge, Graph, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
-import {DomEvents} from "../utils/dom-events";
-import {EventHub} from "../utils/event-hub";
-import {Geometry} from "../utils/geometry";
-import {SVGUtils} from "../utils/svg-utils";
-import {Edge as GraphEdge} from "./edge";
-import {GraphNode} from "./graph-node";
-import {IOPort} from "./io-port";
-import {TemplateParser} from "./template-parser";
+import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
+import {DomEvents}                                                                       from "../utils/dom-events";
+import {EventHub}                                                                        from "../utils/event-hub";
+import {Geometry}                                                                        from "../utils/geometry";
+import {Edge as GraphEdge}                                                               from "./edge";
+import {GraphNode}                                                                       from "./graph-node";
+import {IOPort}                                                                          from "./io-port";
+import {TemplateParser}                                                                  from "./template-parser";
+import {SVGPlugin}                                                                       from "../plugins/plugin";
 
 export class Workflow {
 
-    /** Current scale of the document */
-    private scale = 1;
-
-    private arrangeFlag = true;
-
-    public get canArrange() : boolean {
-        return this.arrangeFlag;
-    }
-
-    public static readonly minScale = 0.2;
-
-    public static readonly maxScale = 2;
-
+    public static readonly minScale      = 0.2;
+    public static readonly maxScale      = 2;
     public readonly eventHub: EventHub;
+                           domEvents: DomEvents;
+                           svgRoot: SVGSVGElement;
+    /** Current scale of the document */
+                           private scale = 1;
 
-    private domEvents: DomEvents;
-
-    private workflow: SVGGElement;
-
-    private svgRoot: SVGSVGElement;
-
+    workflow: SVGGElement;
     private model: WorkflowModel;
 
     private workflowBoundingClientRect;
 
     private isDragging = false;
+
+    private plugins: SVGPlugin[] = [];
 
     /**
      * The size of the workflow boundary / padding that stops nodes from being dragged
@@ -65,6 +55,8 @@ export class Workflow {
         highlightedPort: undefined
     };
 
+    graphData;
+
     /**
      * Disables dragging nodes, dragging from ports, arranging and deleting
      * @type {boolean}
@@ -73,13 +65,19 @@ export class Workflow {
 
     private handlersThatCanBeDisabled = [];
 
-    constructor(svgRoot: SVGSVGElement, model: WorkflowModel) {
+    constructor(parameters: {
+        svgRoot: SVGSVGElement,
+        model: WorkflowModel,
+        plugins?: SVGPlugin[]
+    }) {
+        let {svgRoot, model} = parameters;
 
-        this.svgRoot = svgRoot;
-
-        this.model = model;
-
+        this.model     = model;
+        this.svgRoot   = svgRoot;
+        this.plugins   = parameters.plugins || [];
         this.domEvents = new DomEvents(this.svgRoot as any);
+
+        this.hookPlugins();
 
         this.svgRoot.innerHTML = `
             <rect x="0" y="0" width="100%" height="100%" class="pan-handle" transform="matrix(1,0,0,1,0,0)"></rect>
@@ -127,9 +125,36 @@ export class Workflow {
             this.renderModel(model);
         }
 
-        this.on("beforeChange", () => {
-            this.arrangeFlag = true;
-        });
+    }
+
+    static canDrawIn(element: SVGElement): boolean {
+        let clientBounds = element.getBoundingClientRect();
+        return clientBounds.width !== 0;
+    }
+
+    static findParentNode(el) {
+        let parentNode = el;
+        while (parentNode) {
+            if (parentNode.classList.contains("node")) {
+                return parentNode;
+            }
+            parentNode = parentNode.parentNode;
+        }
+    }
+
+    /**
+     * Retrieves a plugin instance
+     * @param {{new(...args: any[]) => T}} plugin
+     * @returns {T}
+     */
+    getPlugin<T extends SVGPlugin>(plugin: { new(...args: any[]): T }): T | undefined;
+    getPlugin<T extends SVGPlugin>(plugin: string): T | undefined;
+    getPlugin<T extends SVGPlugin>(plugin: any): T | undefined {
+        if (typeof plugin === "string") {
+            return this.plugins.find(p => p.getName() === plugin) as T;
+        }
+
+        return this.plugins.find(p => p instanceof plugin) as T;
     }
 
     command(event: string, ...data: any[]) {
@@ -146,274 +171,6 @@ export class Workflow {
 
     getScale() {
         return this.scale;
-    }
-
-    arrange() {
-        if (this.disableManipulations || !this.canArrange) {
-            return;
-        }
-
-        const changeEventData = {type: "arrange"};
-        this.eventHub.emit("beforeChange", changeEventData);
-
-        this.resetTransform();
-
-        type NodeIO = {
-            inputs: string[],
-            outputs: string[],
-            connectionID: string,
-            el: SVGGElement,
-            rect: ClientRect,
-            type: "step" | "input" | "output" | string
-        };
-        type NodeSet = { [connectionID: string]: NodeIO };
-
-        // Edges are the main source of information from which we will distribute nodes
-        const edges: SVGGElement[] = Array.from(this.workflow.querySelectorAll(".edge")) as SVGGElement[];
-
-        // Make a graph representation where you can trace inputs and outputs from/to connection ids
-        const nodeSet: NodeSet = {};
-
-        const danglingNodes = Array.from(this.workflow.querySelectorAll(`.node`)).reduce((acc, el) => {
-            return {...acc, [el.getAttribute("data-connection-id")]: el};
-        }, {});
-
-        edges.forEach(edge => {
-            const sourceConnectionID      = edge.getAttribute("data-source-connection");
-            const destinationConnectionID = edge.getAttribute("data-destination-connection");
-
-            const [sourceSide, sourceNodeID, sourcePortID]                = sourceConnectionID.split("/");
-            const [destinationSide, destinationNodeID, destinationPortID] = destinationConnectionID.split("/");
-
-            let sourceType      = "step";
-            let destinationType = "step";
-            if (sourceNodeID === sourcePortID) {
-                sourceType = sourceSide === "in" ? "output" : "input";
-            }
-            if (destinationNodeID === destinationPortID) {
-                destinationType = destinationSide === "in" ? "output" : "input";
-            }
-
-            // Initialize keys on graph if they don't exist
-            const sourceNode      = this.workflow.querySelector(`.node[data-id="${sourceNodeID}"]`) as SVGGElement;
-            const destinationNode = this.workflow.querySelector(`.node[data-id="${destinationNodeID}"]`) as SVGGElement;
-
-            const sourceNodeConnectionID      = sourceNode.getAttribute("data-connection-id");
-            const destinationNodeConnectionID = destinationNode.getAttribute("data-connection-id");
-
-            delete danglingNodes[sourceNodeConnectionID];
-            delete danglingNodes[destinationNodeConnectionID];
-            //
-            (nodeSet[sourceNodeID] || (nodeSet[sourceNodeID] = {
-                inputs: [],
-                outputs: [],
-                type: sourceType,
-                connectionID: sourceNodeConnectionID,
-                el: sourceNode,
-                rect: sourceNode.getBoundingClientRect()
-            }));
-
-            (nodeSet[destinationNodeID] || (nodeSet[destinationNodeID] = {
-                inputs: [],
-                outputs: [],
-                type: destinationType,
-                connectionID: destinationNodeConnectionID,
-                el: destinationNode,
-                rect: destinationNode.getBoundingClientRect()
-            }));
-
-            nodeSet[sourceNodeID].outputs.push(destinationNodeID);
-            nodeSet[destinationNodeID].inputs.push(sourceNodeID);
-
-
-        });
-
-        const traceLongestPath = (node: NodeIO, visited: Set<NodeIO>) => {
-            visited.add(node);
-            const ins = node.inputs.map(nid => nodeSet[nid]);
-            return 1 + (ins.length ? Math.max(...ins.filter(e => !visited.has(e)).map(e => traceLongestPath(e, visited))) : 0);
-        }
-
-        const idToZoneMap = Object.keys(nodeSet).reduce((zoneMap, nid) => {
-
-            const item = nodeSet[nid];
-            let zone   = traceLongestPath(item, new Set<NodeIO>()) - 1;
-            return {...zoneMap, [nid]: zone};
-        }, {});
-
-        for (const nid in nodeSet) {
-            const node = nodeSet[nid];
-            if (node.type === "input") {
-                const newZone    = Math.min(...node.outputs.map(out => idToZoneMap[out])) - 1;
-                idToZoneMap[nid] = newZone;
-            }
-        }
-
-
-        const columns: NodeIO[][] = Object.keys(idToZoneMap)
-            .sort((a, b) => -a.localeCompare(b))
-            .reduce((acc, nid) => {
-                const zone = idToZoneMap[nid];
-                if (!acc[zone]) {
-                    acc[zone] = [];
-                }
-                acc[zone].push(nodeSet[nid]);
-                return acc;
-            }, []);
-
-        let distributionAreaHeight = 0;
-        let distributionAreaWidth  = 0;
-
-        const columnDimensions = Object.keys(columns).map(col => ({height: 0, width: 0}));
-
-        columns.forEach((column, index) => {
-            let width  = 0;
-            let height = 0;
-            column.forEach(entry => {
-                height += entry.rect.height;
-                if (width < entry.rect.width) {
-                    width = entry.rect.width;
-                }
-            });
-
-            columnDimensions[index] = {height, width};
-
-            distributionAreaWidth += width;
-            if (height > distributionAreaHeight) {
-                distributionAreaHeight = height;
-            }
-        });
-
-        let baseline   = distributionAreaHeight / 2;
-        let xOffset    = 0;
-        let maxYOffset = 0;
-
-        columns.forEach((column, index) => {
-            const rowCount = column.length + 1;
-            const colSize  = columnDimensions[index];
-            let yOffset    = baseline - (colSize.height / 2) - column[0].rect.height / 2;
-
-            column.forEach(node => {
-                yOffset += node.rect.height / 2;
-                const matrix = SVGUtils.createMatrix().translate(xOffset, yOffset);
-                yOffset += node.rect.height / 2;
-                if (yOffset > maxYOffset) {
-                    maxYOffset = yOffset;
-                }
-
-                node.el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
-                const modelEntry = this.model.findById(node.connectionID);
-                this.setModelPosition(modelEntry, matrix.e, matrix.f, false);
-            });
-
-            xOffset += colSize.width;
-        });
-
-        let danglingNodeKeys = Object.keys(danglingNodes).sort((a, b) => {
-            const aIsInput  = a.indexOf("out/") > -1;
-            const aIsOutput = a.indexOf("in/") > -1;
-            const bIsInput  = b.indexOf("out/") > -1;
-            const bIsOutput = b.indexOf("in/") > -1;
-
-            if (aIsOutput) {
-                if (bIsOutput) {
-                    return b.toLowerCase().localeCompare(a.toLowerCase());
-                }
-                else {
-                    return 1;
-                }
-            }
-            else if (aIsInput) {
-                if (bIsOutput) {
-                    return -1;
-                }
-                if (bIsInput) {
-                    return b.toLowerCase().localeCompare(a.toLowerCase());
-                }
-                else {
-                    return 1;
-                }
-            }
-            else {
-                if (!bIsOutput && !bIsInput) {
-                    return b.toLowerCase().localeCompare(a.toLowerCase());
-                }
-                else {
-                    return -1;
-                }
-            }
-        });
-
-        const danglingNodeMarginOffset = 30;
-        const danglingNodeSideLength   = GraphNode.radius * 5;
-        let maxNodeHeightInRow         = 0;
-        let row                        = 0;
-        let indexWidthMap              = new Map<number, number>();
-        let rowMaxHeightMap            = new Map<number, number>();
-        xOffset                        = 0;
-
-        let danglingRowAreaWidth = Math.max(distributionAreaWidth, danglingNodeSideLength * 3);
-        danglingNodeKeys.forEach((connectionID, index) => {
-            const el   = danglingNodes[connectionID] as SVGGElement;
-            const rect = el.firstElementChild.getBoundingClientRect();
-            indexWidthMap.set(index, rect.width);
-
-            if (xOffset === 0) {
-                xOffset -= rect.width / 2;
-            }
-            if (rect.height > maxNodeHeightInRow) {
-                maxNodeHeightInRow = rect.height;
-            }
-            xOffset += rect.width + danglingNodeMarginOffset + Math.max(150 - rect.width, 0);
-
-            if (xOffset >= danglingRowAreaWidth && index < danglingNodeKeys.length - 1) {
-                rowMaxHeightMap.set(row++, maxNodeHeightInRow);
-                maxNodeHeightInRow = 0;
-                xOffset            = 0;
-            }
-        });
-
-        rowMaxHeightMap.set(row, maxNodeHeightInRow);
-        let colYOffset                 = maxYOffset;
-        xOffset                        = 0;
-        row                            = 0;
-
-        danglingNodeKeys.forEach((connectionID, index) => {
-            const el        = danglingNodes[connectionID] as SVGGElement;
-            const width     = indexWidthMap.get(index);
-            const rowHeight = rowMaxHeightMap.get(row);
-            let left        = xOffset + width / 2;
-            let top         = colYOffset
-                + danglingNodeMarginOffset
-                + Math.ceil(rowHeight / 2)
-                + ((xOffset === 0 ? 0 : left) / danglingRowAreaWidth) * danglingNodeSideLength;
-
-            if (xOffset === 0) {
-                left    -= width / 2;
-                xOffset -= width / 2;
-            }
-            xOffset += width + danglingNodeMarginOffset + Math.max(150 - width, 0);
-
-            const matrix     = SVGUtils.createMatrix().translate(left, top);
-            const modelEntry = this.model.findById(el.getAttribute("data-connection-id"));
-            el.setAttribute("transform", SVGUtils.matrixToTransformAttr(matrix));
-            this.setModelPosition(modelEntry, matrix.e, matrix.f, false);
-
-            if (xOffset >= danglingRowAreaWidth) {
-                colYOffset += Math.ceil(rowHeight) + danglingNodeMarginOffset;
-                xOffset            = 0;
-                maxNodeHeightInRow = 0;
-                row++
-            }
-        });
-
-        this.redrawEdges();
-
-        this.fitToViewport();
-
-        this.arrangeFlag = false;
-
-        this.eventHub.emit("afterChange", changeEventData);
     }
 
     /**
@@ -449,12 +206,12 @@ export class Workflow {
         const moveY = clientBounds.top - scaledWFBounds.top + Math.abs(clientBounds.height - scaledWFBounds.height) / 2;
         const moveX = clientBounds.left - scaledWFBounds.left + Math.abs(clientBounds.width - scaledWFBounds.width) / 2;
 
-        const matrix  = this.workflow.transform.baseVal.getItem(0).matrix;
-        matrix.e     += moveX;
-        matrix.f     += moveY;
+        const matrix = this.workflow.transform.baseVal.getItem(0).matrix;
+        matrix.e += moveX;
+        matrix.f += moveY;
     }
 
-    private redrawEdges() {
+    redrawEdges() {
 
         const edgeEls          = this.model.connections.filter(el => el.isVisible);
         const highlightedEdges = new Set();
@@ -481,6 +238,182 @@ export class Workflow {
         Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
             this.attachEdgeHoverBehavior(el);
         });
+    }
+
+    redraw(model?: WorkflowModel) {
+        if (model) {
+            this.model = model;
+        }
+        this.renderModel(this.model);
+    }
+
+    /**
+     * Scale the workflow by the scaleCoefficient over the center of the workflo
+     * @param scaleCoefficient
+     */
+    scaleWorkflowCenter(scaleCoefficient = 1) {
+        this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
+        this.scaleWorkflow(scaleCoefficient, {
+            clientX: (this.workflowBoundingClientRect.right + this.workflowBoundingClientRect.left) / 2,
+            clientY: (this.workflowBoundingClientRect.top + this.workflowBoundingClientRect.bottom) / 2
+        });
+    }
+
+    /**
+     * Scale the workflow by the scaleCoefficient (not compounded) over given coordinates
+     * @param scaleCoefficient
+     * @param ev
+     */
+    scaleWorkflow(scaleCoefficient = 1, ev?: { clientX: number, clientY: number }) {
+        this.scale              = scaleCoefficient;
+        const transform         = this.workflow.transform.baseVal;
+        const matrix: SVGMatrix = transform.getItem(0).matrix;
+
+        const coords = this.transformScreenCTMtoCanvas(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
+
+        matrix.e += matrix.a * coords.x;
+        matrix.f += matrix.a * coords.y;
+        matrix.a = matrix.d = scaleCoefficient;
+        matrix.e -= scaleCoefficient * coords.x;
+        matrix.f -= scaleCoefficient * coords.y;
+
+        const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
+
+        Array.from(this.workflow.querySelectorAll(".node .label"))
+            .map((el: SVGTextElement) => el.transform.baseVal.getItem(0).matrix)
+            .forEach(m => {
+                m.a = labelScale;
+                m.d = labelScale;
+            });
+    }
+
+    adaptToScale(x) {
+        return x * (1 / this.scale);
+    }
+
+    public deselectEverything() {
+        Array.from(this.workflow.querySelectorAll(".highlighted")).forEach(el => {
+            el.classList.remove("highlighted");
+        });
+        this.workflow.classList.remove("has-selection");
+        const selected = this.workflow.querySelector(".selected");
+        if (selected) {
+            selected.classList.remove("selected");
+        }
+        this.eventHub.emit("selectionChange", null);
+    }
+
+    public transformScreenCTMtoCanvas(x, y) {
+        const svg   = this.svgRoot;
+        const ctm   = this.workflow.getScreenCTM();
+        const point = svg.createSVGPoint();
+        point.x     = x;
+        point.y     = y;
+
+        const t = point.matrixTransform(ctm.inverse());
+        return {
+            x: t.x,
+            y: t.y
+        };
+    }
+
+    public deleteSelection() {
+
+        const selection = Array.from(this.workflow.querySelectorAll(".selected"));
+        if (selection.length == 0) {
+            return;
+        }
+
+        const changeEventData = {
+            type: "deletion",
+            data: selection
+        };
+        this.eventHub.emit("beforeChange", changeEventData);
+
+        selection.forEach(el => {
+            if (el.classList.contains("step")) {
+
+                this.model.removeStep(el.getAttribute("data-connection-id"));
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            } else if (el.classList.contains("edge")) {
+
+                const sourcePortID      = el.getAttribute("data-source-connection");
+                const destinationPortID = el.getAttribute("data-destination-connection");
+
+                const sourcePort      = this.workflow.querySelector(`.port[data-connection-id="${sourcePortID}"]`);
+                const destinationPort = this.workflow.querySelector(`.port[data-connection-id="${destinationPortID}"]`);
+
+                const sourceNode      = Workflow.findParentNode(sourcePort);
+                const destinationNode = Workflow.findParentNode(destinationPort);
+
+                this.model.disconnect(sourcePortID, destinationPortID);
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            } else if (el.classList.contains("input")) {
+
+                this.model.removeInput(el.getAttribute("data-connection-id"));
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            } else if (el.classList.contains("output")) {
+
+                this.model.removeOutput(el.getAttribute("data-connection-id"));
+                this.renderModel(this.model);
+                (this.svgRoot as any).focus();
+            }
+        });
+
+        this.eventHub.emit("selectionChange", null);
+
+        this.eventHub.emit("afterChange", changeEventData);
+    }
+
+    setModelPosition(obj, x, y, emitEvents = true) {
+        const update = {
+            "sbg:x": x,
+            "sbg:y": y
+        };
+
+        const changeEventData = {type: "move"};
+
+        if (emitEvents) {
+            this.eventHub.emit("beforeChange", changeEventData);
+        }
+
+        if (!obj.customProps) {
+            obj.customProps = update;
+            return;
+        }
+
+        Object.assign(obj.customProps, update);
+
+        if (emitEvents) {
+            this.eventHub.emit("afterChange", changeEventData);
+        }
+    }
+
+    disableGraphManipulations() {
+        this.disableManipulations = true;
+        for (let i = 0; i < this.handlersThatCanBeDisabled.length; i++) {
+            this.handlersThatCanBeDisabled[i]();
+        }
+    }
+
+    enableGraphManipulations() {
+        this.disableManipulations = false;
+        this.attachNodeDragBehavior();
+        this.attachPortDragBehavior();
+        this.attachSelectionDeletionBehavior();
+    }
+
+    destroy() {
+        this.clearCanvas();
+        this.eventHub.empty();
+    }
+
+    resetTransform() {
+        this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
+        this.scaleWorkflow();
     }
 
     private renderModel(model: WorkflowModel) {
@@ -510,14 +443,14 @@ export class Workflow {
                 if (!isNaN(parseInt(nodeModel.customProps["sbg:x"]))) {
                     x = nodeModel.customProps["sbg:x"];
                 } else {
-                    x = 0;
+                    x                = 0;
                     arrangeNecessary = true;
                 }
 
                 if (!isNaN(parseInt(nodeModel.customProps["sbg:y"]))) {
                     y = nodeModel.customProps["sbg:y"];
                 } else {
-                    y = 0;
+                    y                = 0;
                     arrangeNecessary = true;
                 }
 
@@ -540,7 +473,7 @@ export class Workflow {
         console.timeEnd("Ordering");
 
         if (arrangeNecessary) {
-            this.arrange();
+            // this.arrange();
         } else {
             this.scaleWorkflow(this.scale);
         }
@@ -553,18 +486,8 @@ export class Workflow {
                 this.activateSelection(newSelection as SVGGElement);
             }
         }
-    }
 
-    static canDrawIn(element: SVGElement): boolean {
-        let clientBounds = element.getBoundingClientRect();
-        return clientBounds.width !== 0;
-    }
-
-    redraw(model?: WorkflowModel) {
-        if (model) {
-            this.model = model;
-        }
-        this.renderModel(this.model);
+        this.invokePlugins("afterRender");
     }
 
     private attachEvents() {
@@ -637,46 +560,6 @@ export class Workflow {
         this.model.on("connections.updated", (input: WorkflowStepInputModel) => {
             this.redrawEdges();
         });
-    }
-
-    /**
-     * Scale the workflow by the scaleCoefficient over the center of the workflo
-     * @param scaleCoefficient
-     */
-    scaleWorkflowCenter(scaleCoefficient = 1) {
-        this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
-        this.scaleWorkflow(scaleCoefficient, {
-            clientX: (this.workflowBoundingClientRect.right + this.workflowBoundingClientRect.left) / 2,
-            clientY: (this.workflowBoundingClientRect.top + this.workflowBoundingClientRect.bottom) / 2
-        });
-    }
-
-    /**
-     * Scale the workflow by the scaleCoefficient (not compounded) over given coordinates
-     * @param scaleCoefficient
-     * @param ev
-     */
-    scaleWorkflow(scaleCoefficient = 1, ev?: { clientX: number, clientY: number }) {
-        this.scale              = scaleCoefficient;
-        const transform         = this.workflow.transform.baseVal;
-        const matrix: SVGMatrix = transform.getItem(0).matrix;
-
-        const coords = this.transformScreenCTMtoCanvas(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
-
-        matrix.e += matrix.a * coords.x;
-        matrix.f += matrix.a * coords.y;
-        matrix.a = matrix.d = scaleCoefficient;
-        matrix.e -= scaleCoefficient * coords.x;
-        matrix.f -= scaleCoefficient * coords.y;
-
-        const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
-
-        Array.from(this.workflow.querySelectorAll(".node .label"))
-            .map((el: SVGTextElement) => el.transform.baseVal.getItem(0).matrix)
-            .forEach(m => {
-                m.a = labelScale;
-                m.d = labelScale;
-            });
     }
 
     private addEventListeners(root: SVGSVGElement): void {
@@ -759,73 +642,11 @@ export class Workflow {
 
     /**
      * Move nodes and edges on drag
+     * @deprecated Removed, use plugin
+     * @
      */
-    private attachNodeDragBehavior()
-    {
-        let startX: number;
-        let startY: number;
-        let inputEdges: Map<SVGElement, number[]>;
-        let outputEdges: Map<SVGElement, number[]>;
-        let newX: number;
-        let newY: number;
+    private attachNodeDragBehavior() {
 
-        this.handlersThatCanBeDisabled.push(this.domEvents.drag(".node .drag-handle", (dx: number, dy: number,
-                                                                                  ev, handle: SVGGElement) => {
-            const nodeEl = handle.parentNode as SVGGElement;
-            let sdx, sdy;
-
-            const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
-
-            // if a workflow boundary has been hit, then call function which calls the interval
-            if (boundary.x || boundary.y) {
-
-                this.setDragBoundaryIntervalIfNecessary(nodeEl, {x: boundary.x, y: boundary.y},
-                    {startX: startX, startY: startY, inputEdges: inputEdges, outputEdges: outputEdges});
-            }
-
-            // returns the delta x and y - change in node position - based on mouse position and
-            // boundary offsets (if necessary)
-            const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, startX, startY, dx, dy);
-            sdx                = scaledDeltas.x;
-            sdy                = scaledDeltas.y;
-            newX               = startX + sdx;
-            newY               = startY + sdy;
-            nodeEl.transform.baseVal.getItem(0).setTranslate(newX, newY);
-
-            this.setInputAndOutputEdges(inputEdges, outputEdges, sdx, sdy);
-        }, (ev, handle, root) => {
-            this.isDragging = true;
-            const el                        = handle.parentNode as SVGGElement;
-            const matrix                    = el.transform.baseVal.getItem(0).matrix;
-            startX                          = matrix.e;
-            startY                          = matrix.f;
-            inputEdges                      = new Map<SVGElement, number[]>();
-            outputEdges                     = new Map<SVGElement, number[]>();
-            this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
-
-            Array.from(root.querySelectorAll(`.edge[data-destination-node='${el.getAttribute("data-id")}'] .sub-edge`))
-                .forEach((el: SVGElement) => {
-                    inputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
-                });
-
-            Array.from(root.querySelectorAll(`.edge[data-source-node='${el.getAttribute("data-id")}'] .sub-edge`))
-                .forEach((el: SVGElement) => {
-                    outputEdges.set(el, el.getAttribute("d").split(" ").map(e => Number(e)).filter(e => !isNaN(e)))
-                });
-        }, (ev, target) => {
-            this.isDragging = false;
-            this.setDragBoundaryIntervalToDefault();
-
-            const parentNode = Workflow.findParentNode(target);
-
-            const model = this.model.findById(parentNode.getAttribute("data-connection-id"));
-            if (model) {
-                this.setModelPosition(model, newX, newY);
-            }
-
-            inputEdges  = undefined;
-            outputEdges = undefined;
-        }));
     }
 
     /**
@@ -842,7 +663,8 @@ export class Workflow {
                                                pathInfo?: {
                                                    startX: number, startY: number,
                                                    inputEdges: Map<SVGElement, number[]>,
-                                                   outputEdges: Map<SVGElement, number[]> },
+                                                   outputEdges: Map<SVGElement, number[]>
+                                               },
                                                ghostIO?: {
                                                    edge: SVGPathElement,
                                                    nodeToMouseDistance: number,
@@ -856,7 +678,7 @@ export class Workflow {
 
         // If boundary areas overlap or if boundary areas take up half - or more - of the svg, resize dragBoundary
         while (this.workflowBoundingClientRect.right - this.dragBoundary <= this.workflowBoundingClientRect.left + this.dragBoundary ||
-            this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) {
+        this.workflowBoundingClientRect.right <= this.workflowBoundingClientRect.left + (this.dragBoundary * 4)) {
             this.dragBoundary = this.dragBoundary / 2;
         }
 
@@ -925,11 +747,11 @@ export class Workflow {
                         });
 
                         const sorted = this.getSortedConnectionPorts(ghostIO.connectionPorts,
-                            { x: mx.e, y: mx.f }, ghostIO.portToOriginTransformation);
+                            {x: mx.e, y: mx.f}, ghostIO.portToOriginTransformation);
                         this.removeHighlightedPort(this.dragBoundaryInterval.highlightedPort, ghostIO.edgeDirection);
                         this.dragBoundaryInterval.highlightedPort = this.setHighlightedPort(sorted, ghostIO.edgeDirection);
                         this.translateGhostNodeAndShowIfNecessary(el, ghostIO.nodeToMouseDistance,
-                            this.dragBoundaryInterval.highlightedPort !== undefined, { x: mx.e, y: mx.f });
+                            this.dragBoundaryInterval.highlightedPort !== undefined, {x: mx.e, y: mx.f});
                     }
                 }, 1000 / 60);
             }
@@ -956,7 +778,7 @@ export class Workflow {
             if (this.dragBoundaryInterval.interval) {
                 clearInterval(this.dragBoundaryInterval.interval);
                 this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
-                this.dragBoundaryInterval.interval = null;
+                this.dragBoundaryInterval.interval        = null;
                 this.dragBoundaryInterval.highlightedPort = undefined;
             }
         }
@@ -1052,36 +874,6 @@ export class Workflow {
         this.eventHub.emit("selectionChange", el);
     }
 
-    private adaptToScale(x) {
-        return x * (1 / this.scale);
-    }
-
-    public deselectEverything() {
-        Array.from(this.workflow.querySelectorAll(".highlighted")).forEach(el => {
-            el.classList.remove("highlighted");
-        });
-        this.workflow.classList.remove("has-selection");
-        const selected = this.workflow.querySelector(".selected");
-        if (selected) {
-            selected.classList.remove("selected");
-        }
-        this.eventHub.emit("selectionChange", null);
-    }
-
-    public transformScreenCTMtoCanvas(x, y) {
-        const svg   = this.svgRoot;
-        const ctm   = this.workflow.getScreenCTM();
-        const point = svg.createSVGPoint();
-        point.x     = x;
-        point.y     = y;
-
-        const t = point.matrixTransform(ctm.inverse());
-        return {
-            x: t.x,
-            y: t.y
-        };
-    }
-
     private attachEdgeHoverBehavior(el: SVGGElement) {
         let tipEl;
 
@@ -1141,57 +933,6 @@ export class Workflow {
             this.deleteSelection();
             // Only input elements can be focused, but we added tabindex to the svg so this works
         }, window));
-    }
-
-    public deleteSelection() {
-
-        const selection = Array.from(this.workflow.querySelectorAll(".selected"));
-        if (selection.length == 0) {
-            return;
-        }
-
-        const changeEventData = {
-            type: "deletion",
-            data: selection
-        };
-        this.eventHub.emit("beforeChange", changeEventData);
-
-        selection.forEach(el => {
-            if (el.classList.contains("step")) {
-
-                this.model.removeStep(el.getAttribute("data-connection-id"));
-                this.renderModel(this.model);
-                (this.svgRoot as any).focus();
-            } else if (el.classList.contains("edge")) {
-
-                const sourcePortID      = el.getAttribute("data-source-connection");
-                const destinationPortID = el.getAttribute("data-destination-connection");
-
-                const sourcePort      = this.workflow.querySelector(`.port[data-connection-id="${sourcePortID}"]`);
-                const destinationPort = this.workflow.querySelector(`.port[data-connection-id="${destinationPortID}"]`);
-
-                const sourceNode      = Workflow.findParentNode(sourcePort);
-                const destinationNode = Workflow.findParentNode(destinationPort);
-
-                this.model.disconnect(sourcePortID, destinationPortID);
-                this.renderModel(this.model);
-                (this.svgRoot as any).focus();
-            } else if (el.classList.contains("input")) {
-
-                this.model.removeInput(el.getAttribute("data-connection-id"));
-                this.renderModel(this.model);
-                (this.svgRoot as any).focus();
-            } else if (el.classList.contains("output")) {
-
-                this.model.removeOutput(el.getAttribute("data-connection-id"));
-                this.renderModel(this.model);
-                (this.svgRoot as any).focus();
-            }
-        });
-
-        this.eventHub.emit("selectionChange", null);
-
-        this.eventHub.emit("afterChange", changeEventData);
     }
 
     private attachPortDragBehavior() {
@@ -1364,7 +1105,7 @@ export class Workflow {
 
                     const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
                     this.attachEdgeHoverBehavior(newEdge);
-                    const isValid = this.model.connect(sourceID, destinationID);
+                    const isValid = <any>this.model.connect(sourceID, destinationID);
                     if (isValid === false) {
                         newEdge.classList.add("not-valid");
                     }
@@ -1548,44 +1289,10 @@ export class Workflow {
         if (this.dragBoundaryInterval.interval) {
             clearInterval(this.dragBoundaryInterval.interval);
             this.dragBoundaryInterval.x = this.dragBoundaryInterval.y = false;
-            this.dragBoundaryInterval.interval = null;
+            this.dragBoundaryInterval.interval        = null;
             this.dragBoundaryInterval.highlightedPort = undefined;
         }
         this.dragBoundaryInterval.xOffset = this.dragBoundaryInterval.yOffset = 0;
-    }
-
-    static findParentNode(el) {
-        let parentNode = el;
-        while (parentNode) {
-            if (parentNode.classList.contains("node")) {
-                return parentNode;
-            }
-            parentNode = parentNode.parentNode;
-        }
-    }
-
-    setModelPosition(obj, x, y, emitEvents = true) {
-        const update = {
-            "sbg:x": x,
-            "sbg:y": y
-        };
-
-        const changeEventData = {type: "move"};
-
-        if (emitEvents) {
-            this.eventHub.emit("beforeChange", changeEventData);
-        }
-
-        if (!obj.customProps) {
-            obj.customProps = update;
-            return;
-        }
-
-        Object.assign(obj.customProps, update);
-
-        if (emitEvents) {
-            this.eventHub.emit("afterChange", changeEventData);
-        }
     }
 
     private clearCanvas() {
@@ -1634,27 +1341,45 @@ export class Workflow {
         this.eventHub.emit("selectionChange", el);
     }
 
-    disableGraphManipulations() {
-        this.disableManipulations = true;
-        for (let i = 0; i < this.handlersThatCanBeDisabled.length; i++) {
-            this.handlersThatCanBeDisabled[i]();
+    private hookPlugins() {
+
+        this.plugins.forEach(plugin => {
+            plugin.registerWorkflowModel(this);
+
+            plugin.registerOnBeforeChange(event => {
+                this.eventHub.emit("beforeChange", event);
+            });
+
+            plugin.registerOnAfterChange(event => {
+                this.eventHub.emit("afterChange", event);
+            });
+        });
+    }
+
+    private invokePlugins(methodName: keyof SVGPlugin, ...args: any[]) {
+        this.plugins.forEach(plugin => {
+            if (typeof plugin[methodName] === "function") {
+                (plugin[methodName] as Function)(...args);
+            }
+        })
+    }
+
+    static makeConnectionPath(x1, y1, x2, y2, forceDirection: "right" | "left" | string = "right"): string {
+
+        if (!forceDirection) {
+            return `M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
+        } else if (forceDirection === "right") {
+            const outDir = x1 + Math.abs(x1 - x2) / 2;
+            const inDir  = x2 - Math.abs(x1 - x2) / 2;
+
+            return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
+        } else if (forceDirection === "left") {
+            const outDir = x1 - Math.abs(x1 - x2) / 2;
+            const inDir  = x2 + Math.abs(x1 - x2) / 2;
+
+            return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
         }
-    }
 
-    enableGraphManipulations() {
-        this.disableManipulations = false;
-        this.attachNodeDragBehavior();
-        this.attachPortDragBehavior();
-        this.attachSelectionDeletionBehavior();
-    }
 
-    destroy() {
-        this.clearCanvas();
-        this.eventHub.empty();
-    }
-
-    private resetTransform() {
-        this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
-        this.scaleWorkflow();
     }
 }

@@ -33,6 +33,7 @@ export class GraphNode {
     private static outputIconSvg: string     = '<svg class="node-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.36 365" x="-9" y="-10" width="20" height="20"><title>type_output</title><g id="output"><path d="M291.95,325.23a134,134,0,0,1-15.76,19,132.5,132.5,0,1,1,0-187.38,133.9,133.9,0,0,1,16.16,19.55l35.81-35.81A182.5,182.5,0,1,0,327.73,361Z" transform="translate(0 -68)"/><g id="circle_source_copy" data-name="circle source copy"><g id="Layer_22_copy" data-name="Layer 22 copy"><g id="Layer_9_copy_5" data-name="Layer 9 copy 5"><polygon points="500.36 182 386.68 295.68 351.32 260.32 404.64 207 210 207 210 157 404.64 157 352.32 104.68 387.68 69.32 500.36 182"/></g></g></g></g></svg>';
 
     private static makeIconFragment(model) {
+
         const modelType = model instanceof StepModel ? "step" :
             model instanceof WorkflowInputParameterModel ? "output" :
                 model instanceof WorkflowOutputParameterModel ? "input" : "";
@@ -111,11 +112,14 @@ export class GraphNode {
                data-connection-id="${dataModel.connectionId}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">
-                <g class="drag-handle" transform="matrix(1, 0, 0, 1, 0, 0)">
+               
+                <g class="core" transform="matrix(1, 0, 0, 1, 0, 0)">
                     <circle cx="0" cy="0" r="${radius}" class="outer"></circle>
                     <circle cx="0" cy="0" r="${radius * .75}" class="inner"></circle>
+                    
                     ${GraphNode.makeIconFragment(dataModel)}
                 </g>
+                
                 <text transform="matrix(1,0,0,1,0,${radius + 30})" class="title label">${HtmlUtils.escapeHTML(dataModel.label || dataModel.id)}</text>
                 ${inputPortTemplates}
                 ${outputPortTemplates}

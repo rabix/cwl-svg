@@ -11,11 +11,13 @@
         "outDir": "./compiled",
         "lib": [
             "dom",
+            "dom.iterable",
             "es6"
         ],
         "typeRoots": [
             "node_modules/@types"
-        ]
+        ],
+        "downlevelIteration": true
     },
     "exclude": ["dist", "node_modules", "compiled"],
     "awesomeTypescriptLoaderOptions": {
