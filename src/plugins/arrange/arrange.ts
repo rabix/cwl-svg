@@ -9,10 +9,6 @@ export class SVGArrangePlugin implements SVGPlugin {
     private onBeforeChange: () => void;
     private onAfterChange: (updates: NodePositionUpdates) => void;
 
-    getName(): string {
-        return "arrange";
-    }
-
     registerWorkflowModel(workflow: Workflow): void {
         this.workflow = workflow;
         this.svgRoot  = workflow.svgRoot;
@@ -209,7 +205,7 @@ export class SVGArrangePlugin implements SVGPlugin {
         const distributionArea = {width: 0, height: 0};
         const columnDimensions = [];
 
-        for (let i = 0; i < columns.length; i++) {
+        for (let i = 1; i < columns.length; i++) {
 
             let width  = 0;
             let height = 0;
@@ -279,11 +275,12 @@ export class SVGArrangePlugin implements SVGPlugin {
                         closestNodeZone = successorNodeZone;
                     }
                 }
-                if(closestNodeZone === Infinity){
-                    closestNodeZone = 1;
+                if (closestNodeZone === Infinity) {
+                    idToZoneMap[nodeID] = 1;
+                } else {
+                    idToZoneMap[nodeID] = closestNodeZone - 1;
                 }
 
-                idToZoneMap[nodeID] = closestNodeZone - 1;
             }
 
             const zone = idToZoneMap[nodeID];
@@ -312,7 +309,7 @@ export class SVGArrangePlugin implements SVGPlugin {
 
     /**
      * Finds length of the longest possible path from the graph root to a node.
-     * Lengths are 1-indexed. When a node has no predecessors, it will have length 1.
+     * Lengths are 1-indexed. When a node has no predecessors, it will have length of 1.
      */
     private traceLongestNodePathLength(node: NodeIO, nodeGraph, visited = new Set<NodeIO>()): number {
 

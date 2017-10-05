@@ -1,7 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "compiled",
+    "declaration": false,
     "sourceMap": true
-  }
+  },
+  "include": [
+    "src/**/tests/*.ts"
+  ]
 }

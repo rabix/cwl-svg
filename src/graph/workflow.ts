@@ -19,7 +19,7 @@ export class Workflow {
                            private scale = 1;
 
     workflow: SVGGElement;
-    private model: WorkflowModel;
+    model: WorkflowModel;
 
     private workflowBoundingClientRect;
 
@@ -132,7 +132,7 @@ export class Workflow {
         return clientBounds.width !== 0;
     }
 
-    static findParentNode(el) {
+    static findParentNode(el): SVGGElement | undefined {
         let parentNode = el;
         while (parentNode) {
             if (parentNode.classList.contains("node")) {
@@ -142,18 +142,16 @@ export class Workflow {
         }
     }
 
+    findParentNode(el: Element): SVGGElement | undefined {
+        return Workflow.findParentNode(el);
+    }
+
     /**
      * Retrieves a plugin instance
      * @param {{new(...args: any[]) => T}} plugin
      * @returns {T}
      */
-    getPlugin<T extends SVGPlugin>(plugin: { new(...args: any[]): T }): T | undefined;
-    getPlugin<T extends SVGPlugin>(plugin: string): T | undefined;
-    getPlugin<T extends SVGPlugin>(plugin: any): T | undefined {
-        if (typeof plugin === "string") {
-            return this.plugins.find(p => p.getName() === plugin) as T;
-        }
-
+    getPlugin<T extends SVGPlugin>(plugin: { new(...args: any[]): T }): T | undefined {
         return this.plugins.find(p => p instanceof plugin) as T;
     }
 
@@ -402,7 +400,7 @@ export class Workflow {
     enableGraphManipulations() {
         this.disableManipulations = false;
         this.attachNodeDragBehavior();
-        this.attachPortDragBehavior();
+        // this.attachPortDragBehavior();
         this.attachSelectionDeletionBehavior();
     }
 
@@ -546,17 +544,6 @@ export class Workflow {
             this.eventHub.emit("afterChange", changeEventData);
         });
 
-        /**
-         * @name connection.create
-         */
-        this.eventHub.on("connection.create", (connection: Edge) => {
-
-            // this.workflow.innerHTML += GraphEdge.makeTemplate(connection, this.paper);
-        });
-
-        /**
-         * @name connection.create
-         */
         this.model.on("connections.updated", (input: WorkflowStepInputModel) => {
             this.redrawEdges();
         });
@@ -634,7 +621,7 @@ export class Workflow {
         if (!this.disableManipulations) {
             this.attachNodeDragBehavior();
 
-            this.attachPortDragBehavior();
+            // this.attachPortDragBehavior();
 
             this.attachSelectionDeletionBehavior();
         }
@@ -643,7 +630,7 @@ export class Workflow {
     /**
      * Move nodes and edges on drag
      * @deprecated Removed, use plugin
-     * @
+     *
      */
     private attachNodeDragBehavior() {
 

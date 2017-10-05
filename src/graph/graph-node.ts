@@ -180,6 +180,10 @@ export class GraphNode {
         return matrix.rotate(rotationAngle).translate(radius, 0).rotate(-rotationAngle);
     }
 
+    /**
+     * @deprecated Used by plugin, {@link SVGPortDragPlugin.createGhostNode}
+     * @returns {Element}
+     */
     public static createGhostIO() {
 
         const ns   = "http://www.w3.org/2000/svg";

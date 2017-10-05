@@ -1,5 +1,7 @@
 node_modules
 dist
-compiled
 .idea
+
+*.e2e.js
+*.e2e.js.map
 

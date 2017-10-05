@@ -3,6 +3,8 @@ import {WorkflowFactory}   from "cwlts/models";
 import {Workflow}          from "./graph/workflow";
 import {SVGArrangePlugin}  from "./plugins/arrange/arrange";
 import {SVGNodeMovePlugin} from "./plugins/node-move/node-move";
+import {SVGPortDragPlugin} from "./plugins/port-drag/port-drag";
+
 
 declare const samples: {
     fastQC: any,
@@ -10,8 +12,8 @@ declare const samples: {
     rnaSeqAlignment: any
 };
 
-const wf = WorkflowFactory.from(samples.bcBio);
-console.log("Model", wf);
+const wf = WorkflowFactory.from(samples.rnaSeqAlignment);
+
 const svgRoot = document.getElementById("svg") as any;
 
 const workflow = new Workflow({
@@ -20,13 +22,11 @@ const workflow = new Workflow({
     plugins: [
         new SVGArrangePlugin(),
         new SVGNodeMovePlugin({
-            movementSpeed: 20
-        })
+            movementSpeed: 10
+        }),
+        new SVGPortDragPlugin()
     ]
 });
 
-
 workflow.getPlugin(SVGArrangePlugin).arrange();
 
-
-window["workflow"] = workflow;

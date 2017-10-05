@@ -19,7 +19,5 @@ export abstract class SVGPluginBase implements SVGPlugin {
         this.onAfterChange = fn;
     }
 
-    abstract getName(): string;
-
     abstract afterRender(): void;
 }

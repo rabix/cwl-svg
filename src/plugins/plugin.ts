@@ -13,7 +13,5 @@ export interface SVGPlugin {
 
     registerOnAfterChange?(fn: (change: GraphChange) => void): void;
 
-    getName(): string;
-
     afterRender?(): void;
 }

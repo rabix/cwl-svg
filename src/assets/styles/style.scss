@@ -1,37 +1,4 @@
-// Color Scheme
-$color-background: rgb(48, 48, 48);
-$color-primary: #5c8db6;
-$color-primary-alt: #2e556f;
-$color-secondary: #886653;
-$color-tertiary: #538881;
-
-$color-success: #76ed21;
-$color-highlight: #5196ce;
-//$color-neutral: rgb(121, 121, 121);
-$color-neutral: #c3c3c3;
-$color-warning: #f89406;
-$color-danger: #dd4a38;
-
-// Color Application
-$background: $color-background;
-
-$node-background-color: $color-primary;
-$node-outer-color: $color-neutral;
-$port-background-color: $color-neutral;
-$port-highlight-color: $color-highlight;
-$port-label-color: white;
-
-$port-candidate-color: white;
-
-$label-highlight-color: lighten($color-highlight, 30%);
-
-$edge-inner-color: $color-neutral;
-$edge-inner-width: 2px;
-$edge-outer-color: $color-background;
-$edge-outer-width: 7px;
-
-$font-family: sans-serif;
-$font-color: white;
+@import "variables";
 
 svg.cwl-workflow {
 
@@ -59,30 +26,6 @@ svg.cwl-workflow {
 
   .workflow {
     @extend .noselect;
-
-    &.edge-dragging {
-      cursor: pointer;
-    }
-
-    &.has-suggestion {
-      .node:not(.highlighted) {
-        &.step {
-          .outer {
-            stroke: darken($edge-inner-color, 30%);
-          }
-        }
-
-        .label {
-          fill: darken($font-color, 15%);
-        }
-      }
-
-      .edge:not(.highlighted):not(.dragged) {
-        .inner {
-          stroke: darken($edge-inner-color, 50%);
-        }
-      }
-    }
 
     &.has-selection {
       .node:not(.highlighted):not(.selected) {
@@ -121,7 +64,7 @@ svg.cwl-workflow {
         }
       }
 
-      .edge:not(.highlighted):not(.dragged) {
+      .edge:not(.highlighted){
         .inner {
           stroke: darken($edge-inner-color, 50%);
         }
@@ -155,14 +98,6 @@ svg.cwl-workflow {
       .outer {
         stroke: $color-highlight !important;
       }
-    }
-
-    &.ghost {
-      stroke: $color-neutral;
-      stroke-width: 2px;
-
-      stroke-dasharray: 5 3;
-      fill: $color-background;
     }
 
     .icon {
@@ -230,23 +165,14 @@ svg.cwl-workflow {
       cursor: pointer;
       position: relative;
 
-      &.connection-suggestion {
-        fill: $color-success
-      }
-
-      //&:hover, &.highlighted {
-      //  fill: $port-highlight-color;
-      //}
       &:hover,
-      &.highlighted,
-      &.preferred-port {
+      &.highlightedt {
         stroke: white;
         stroke-width: 2px;
       }
 
       &.highlighted,
-      &.visible,
-      &.connection-suggestion {
+      &.visible {
         .label {
           opacity: 1;
         }

@@ -1,0 +1,3843 @@
+{
+  "label": "RNA-Seq Alignment - HISAT2",
+  "sbg:id": "admin/sbg-public-data/rna-seq-alignment-hisat2-2-0-1/6",
+  "cwlVersion": "sbg:draft-2",
+  "hints": [],
+  "sbg:sbgMaintained": false,
+  "outputs": [
+    {
+      "required": true,
+      "type": [
+        "File"
+      ],
+      "sbg:includeInPorts": true,
+      "sbg:y": -28.333281119662406,
+      "label": "summary_metrics",
+      "sbg:x": 1198.3335845338063,
+      "source": [
+        "#Picard_CollectAlignmentSummaryMetrics.summary_metrics"
+      ],
+      "id": "#summary_metrics"
+    },
+    {
+      "required": true,
+      "type": [
+        "File"
+      ],
+      "sbg:includeInPorts": true,
+      "sbg:y": 228.3333525790114,
+      "label": "alignment_file",
+      "sbg:x": 1203.3336255550487,
+      "source": [
+        "#HISAT2.out_align"
+      ],
+      "id": "#alignment_file"
+    },
+    {
+      "required": false,
+      "type": [
+        "null",
+        "File"
+      ],
+      "sbg:includeInPorts": true,
+      "sbg:y": 364.99422567397556,
+      "label": "novel_ss_out",
+      "sbg:x": 1208.333579169388,
+      "source": [
+        "#HISAT2.novel_ss_out"
+      ],
+      "id": "#novel_ss_out"
+    },
+    {
+      "required": false,
+      "type": [
+        "null",
+        "File"
+      ],
+      "sbg:includeInPorts": true,
+      "sbg:y": 501.66093912366733,
+      "label": "metrics_file",
+      "sbg:x": 1211.666755570308,
+      "source": [
+        "#HISAT2.metrics_file"
+      ],
+      "id": "#metrics_file"
+    },
+    {
+      "required": false,
+      "type": [
+        "null",
+        "File"
+      ],
+      "sbg:includeInPorts": true,
+      "sbg:y": 103.32757216006794,
+      "label": "sorted_bam",
+      "sbg:x": 1200.0004140933506,
+      "source": [
+        "#Picard_SortSam.sorted_bam"
+      ],
+      "id": "#sorted_bam"
+    }
+  ],
+  "id": "https://api.sbgenomics.com/v2/apps/admin/sbg-public-data/rna-seq-alignment-hisat2-2-0-1/6/raw/",
+  "sbg:revision": 6,
+  "steps": [
+    {
+      "run": {
+        "sbg:revisionNotes": "[].concat(input_bam)[0].path",
+        "outputs": [
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#input_bam",
+              "secondaryFiles": [
+                ""
+              ],
+              "sbg:metadata": {},
+              "glob": "*.summary_metrics.txt"
+            },
+            "sbg:fileTypes": "TXT",
+            "type": [
+              "File"
+            ],
+            "label": "Summary metrics",
+            "description": "File to which the output will be written.",
+            "id": "#summary_metrics"
+          }
+        ],
+        "sbg:toolkit": "Picard",
+        "label": "Picard CollectAlignmentSummaryMetrics",
+        "sbg:id": "admin/sbg-public-data/picard-collectalignmentsummarymetrics-1-140/3",
+        "sbg:toolkitVersion": "1.140",
+        "cwlVersion": "sbg:draft-2",
+        "x": 871.6666666666672,
+        "successCodes": [],
+        "hints": [
+          {
+            "class": "DockerRequirement",
+            "dockerPull": "images.sbgenomics.com/mladenlsbg/picard:1.140",
+            "dockerImageId": "eab0e70b6629"
+          },
+          {
+            "value": 1,
+            "class": "sbg:CPURequirement"
+          },
+          {
+            "value": {
+              "script": "{\n  if($job.inputs.memory_per_job){\n  \treturn $job.inputs.memory_per_job\n  }\n  \treturn 2048\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "class": "sbg:MemRequirement"
+          }
+        ],
+        "sbg:links": [
+          {
+            "label": "Homepage",
+            "id": "http://broadinstitute.github.io/picard/index.html"
+          },
+          {
+            "label": "Source Code",
+            "id": "https://github.com/broadinstitute/picard/releases/tag/1.140"
+          },
+          {
+            "label": "Wiki",
+            "id": "http://broadinstitute.github.io/picard/"
+          },
+          {
+            "label": "Download",
+            "id": "https://github.com/broadinstitute/picard/zipball/master"
+          },
+          {
+            "label": "Publication",
+            "id": "http://broadinstitute.github.io/picard/"
+          }
+        ],
+        "sbg:cmdPreview": "java -Xmx2048M -jar /opt/picard-tools-1.140/picard.jar CollectAlignmentSummaryMetrics INPUT=/root/folder/example.bam OUTPUT=example.summary_metrics.txt",
+        "temporaryFailCodes": [],
+        "id": "bix-demo/picard-1-140-demo/picard-collectalignmentsummarymetrics-1-140/3",
+        "sbg:license": "MIT License, Apache 2.0 Licence",
+        "requirements": [
+          {
+            "class": "ExpressionEngineRequirement",
+            "requirements": [
+              {
+                "class": "DockerRequirement",
+                "dockerPull": "rabix/js-engine"
+              }
+            ],
+            "id": "#cwl-js-engine"
+          }
+        ],
+        "sbg:modifiedOn": 1472811193,
+        "arguments": [
+          {
+            "valueFrom": {
+              "script": "{\n  if ($job.inputs.input_bam)\n  {\n    filename = [].concat($job.inputs.input_bam)[0].path\n    filebase = filename.split('.').slice(0, -1)\n\n    return filebase.concat(\"summary_metrics.txt\").join(\".\").replace(/^.*[\\\\\\/]/, '')\n  }\n}\n",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "prefix": "OUTPUT=",
+            "separate": false,
+            "position": 3
+          }
+        ],
+        "sbg:contributors": [
+          "bix-demo"
+        ],
+        "sbg:image_url": null,
+        "class": "CommandLineTool",
+        "stdout": "",
+        "sbg:revisionsInfo": [
+          {
+            "sbg:modifiedOn": 1450911255,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 0
+          },
+          {
+            "sbg:modifiedOn": 1450911256,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 1
+          },
+          {
+            "sbg:modifiedOn": 1450911257,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 2
+          },
+          {
+            "sbg:modifiedOn": 1472811193,
+            "sbg:revisionNotes": "[].concat(input_bam)[0].path",
+            "sbg:revision": 3
+          }
+        ],
+        "sbg:latestRevision": 3,
+        "sbg:createdBy": "bix-demo",
+        "stdin": "",
+        "sbg:toolAuthor": "Broad Institute",
+        "inputs": [
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "VERBOSITY=",
+              "position": 6,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "ERROR",
+                  "WARNING",
+                  "INFO",
+                  "DEBUG"
+                ],
+                "type": "enum",
+                "name": "verbosity"
+              }
+            ],
+            "label": "Verbosity",
+            "sbg:toolDefaultValue": "INFO",
+            "description": "Control verbosity of logging. Default value: INFO. This option can be set to 'null' to clear the default value. Possible values: {ERROR, WARNING, INFO, DEBUG}.",
+            "id": "#verbosity",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  if ($job.inputs.validation_stringency)\n  {\n    return $job.inputs.validation_stringency\n  }\n  else\n  {\n    return \"SILENT\"\n  }\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "VALIDATION_STRINGENCY=",
+              "position": 4,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "STRICT",
+                  "LENIENT",
+                  "SILENT"
+                ],
+                "type": "enum",
+                "name": "validation_stringency"
+              }
+            ],
+            "label": "Validation stringency",
+            "sbg:toolDefaultValue": "SILENT",
+            "description": "Validation stringency for all SAM files read by this program. Setting stringency to SILENT can improve performance when processing a BAM file in which variable-length data (read, qualities, tags) do not otherwise need to be decoded. Default value: STRICT. This option can be set to 'null' to clear the default value. Possible values: {STRICT, LENIENT, SILENT}.",
+            "id": "#validation_stringency"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "STOP_AFTER=",
+              "position": 9,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Stop after",
+            "sbg:toolDefaultValue": "0",
+            "description": "Stop after processing N reads, mainly for debugging. Default value: 0. This option can be set to 'null' to clear the default value.",
+            "id": "#stop_after",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "sbg:fileTypes": "FASTA",
+            "inputBinding": {
+              "prefix": "REFERENCE_SEQUENCE=",
+              "position": 3,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Reference sequence",
+            "sbg:altPrefix": "R",
+            "description": "Reference sequence file. Note that while this argument is not required, without it only a small subset of the metrics will be calculated.  Default value: null.",
+            "id": "#reference",
+            "sbg:category": "File inputs"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "QUIET=",
+              "position": 4,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "true",
+                  "false"
+                ],
+                "type": "enum",
+                "name": "quiet"
+              }
+            ],
+            "label": "Quiet",
+            "sbg:toolDefaultValue": "false",
+            "description": "This parameter indicates whether to suppress job-summary info on System.err. Default value: false. This option can be set to 'null' to clear the default value. Possible values: {true, false}.",
+            "id": "#quiet",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "sbg:altPrefix": "LEVEL",
+            "inputBinding": {
+              "sbg:cmdInclude": true,
+              "prefix": "METRIC_ACCUMULATION_LEVEL=",
+              "itemSeparator": null,
+              "separate": false,
+              "position": 8
+            },
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "symbols": [
+                    "ALL_READS",
+                    "SAMPLE",
+                    "LIBRARY",
+                    "READ_GROUP"
+                  ],
+                  "type": "enum",
+                  "name": "metric_accumulation_level"
+                }
+              }
+            ],
+            "label": "Metric accumulation level",
+            "sbg:toolDefaultValue": "ALL_READS",
+            "description": "This parameter indicates the level(s) at which to accumulate metrics. Default value: [ALL_READS]. This option can be set to 'null' to clear the default value. Possible values: {ALL_READS, SAMPLE, LIBRARY, READ_GROUP}. This option may be specified 0 or more times. This option can be set to 'null' to clear the default list.",
+            "id": "#metric_accumulation_level",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Memory per job",
+            "sbg:toolDefaultValue": "2048",
+            "description": "Amount of RAM memory to be used per job. Defaults to 2048 MB for single threaded jobs.",
+            "id": "#memory_per_job"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "MAX_RECORDS_IN_RAM=",
+              "position": 4,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Max records in RAM",
+            "sbg:toolDefaultValue": "500000",
+            "description": "When writing SAM files that need to be sorted, this parameter will specify the number of records stored in RAM before spilling to disk. Increasing this number reduces the number of file handles needed to sort a SAM file, and increases the amount of RAM needed. Default value: 500000. This option can be set to 'null' to clear the default value.",
+            "id": "#max_records_in_ram",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "MAX_INSERT_SIZE=",
+              "position": 9,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Max insert size",
+            "sbg:toolDefaultValue": "100000",
+            "description": "Paired end reads above this insert size will be considered chimeric along with inter-chromosomal pairs. Default value: 100000. This option can be set to 'null' to clear the default value.",
+            "id": "#max_insert_size",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "sbg:altPrefix": "BS",
+            "inputBinding": {
+              "prefix": "BS=",
+              "position": 8,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "true",
+                  "false"
+                ],
+                "type": "enum",
+                "name": "is_bisulfite_sequenced"
+              }
+            ],
+            "label": "Is bisulfite sequenced",
+            "sbg:toolDefaultValue": "false",
+            "description": "This parameter indicates whether the SAM or BAM file consists of bisulfite sequenced reads. Default value: false. This option can be set to 'null' to clear the default value. Possible values: {true, false}.",
+            "id": "#is_bisulfite_sequenced",
+            "sbg:category": ""
+          },
+          {
+            "required": true,
+            "sbg:fileTypes": "BAM, SAM",
+            "inputBinding": {
+              "prefix": "INPUT=",
+              "position": 0,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "File"
+            ],
+            "label": "Input file",
+            "sbg:altPrefix": "I",
+            "description": "Input SAM or BAM file.  Required.",
+            "id": "#input_bam",
+            "sbg:category": "File inputs"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "COMPRESSION_LEVEL=",
+              "position": 4,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Compression level",
+            "sbg:toolDefaultValue": "5",
+            "description": "Compression level for all compressed files created (e.g. BAM and GELI). Default value: 5. This option can be set to 'null' to clear the default value.",
+            "id": "#compression_level",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "sbg:altPrefix": "AS",
+            "inputBinding": {
+              "prefix": "ASSUME_SORTED=",
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "true",
+                  "false"
+                ],
+                "type": "enum",
+                "name": "assume_sorted"
+              }
+            ],
+            "label": "Assume sorted",
+            "sbg:toolDefaultValue": "true",
+            "description": "If this parameter is set to true, the sort order in the header file will be ignored. Default value: true. This option can be set to 'null' to clear the default value. Possible values: {true, false}.",
+            "id": "#assume_sorted",
+            "sbg:category": ""
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "sbg:cmdInclude": true,
+              "prefix": "ADAPTER_SEQUENCE=",
+              "itemSeparator": null,
+              "separate": false,
+              "position": 8
+            },
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": "string"
+              }
+            ],
+            "label": "Adapter sequence",
+            "sbg:toolDefaultValue": "AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT",
+            "description": "List of adapter sequences to use when processing the alignment metrics. Default value: [AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT, AGATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG, AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT, AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTG, AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT, AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNNNATCTCGTATGCCGTCTTCTGCTTG]. This option can be set to 'null' to clear the default value. This option may be specified 0 or more times. This option can be set to 'null' to clear the default list.",
+            "id": "#adapter_sequence",
+            "sbg:category": ""
+          }
+        ],
+        "baseCommand": [
+          "java",
+          {
+            "script": "{   \n  if($job.inputs.memory_per_job){\n    return '-Xmx'.concat($job.inputs.memory_per_job, 'M')\n  }   \n  \treturn '-Xmx2048M'\n}",
+            "class": "Expression",
+            "engine": "#cwl-js-engine"
+          },
+          "-jar",
+          "/opt/picard-tools-1.140/picard.jar",
+          "CollectAlignmentSummaryMetrics"
+        ],
+        "sbg:validationErrors": [],
+        "sbg:categories": [
+          "SAM/BAM-Processing",
+          "Quality-Control",
+          "Quantification"
+        ],
+        "sbg:project": "bix-demo/picard-1-140-demo",
+        "description": "Picard CollectAlignmentSummaryMetrics assesses the quality of alignment by analyzing a SAM or BAM file. It compares it with the reference file (FASTA) and provides alignment statistics, such as the number of input reads and the percent of reads that are mapped. It produces a file which contains summary alignment metrics from a SAM or BAM file.\n\nNote: This tool requires the exact same FASTA file as the one to which raw reads were aligned.",
+        "sbg:revision": 3,
+        "sbg:sbgMaintained": false,
+        "appUrl": "/u/bix-demo/picard-1-140-demo/apps/#bix-demo/picard-1-140-demo/picard-collectalignmentsummarymetrics-1-140/3",
+        "sbg:job": {
+          "allocatedResources": {
+            "cpu": 1,
+            "mem": 2048
+          },
+          "inputs": {
+            "input_bam": {
+              "path": "/root/folder/example.bam"
+            },
+            "memory_per_job": 0,
+            "reference": {
+              "path": "/root/directory/example.fasta"
+            },
+            "metric_accumulation_level": [
+              "ALL_READS"
+            ]
+          }
+        },
+        "y": -27.887751261393245
+      },
+      "outputs": [
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.summary_metrics"
+        }
+      ],
+      "sbg:y": -27.887751261393245,
+      "sbg:x": 871.6666666666672,
+      "inputs": [
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.verbosity"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.validation_stringency"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.stop_after"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.reference",
+          "source": [
+            "#reference"
+          ]
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.quiet"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.metric_accumulation_level"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.memory_per_job"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.max_records_in_ram"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.max_insert_size"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.is_bisulfite_sequenced"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.input_bam",
+          "source": [
+            "#Picard_SortSam.sorted_bam"
+          ]
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.compression_level"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.assume_sorted"
+        },
+        {
+          "id": "#Picard_CollectAlignmentSummaryMetrics.adapter_sequence"
+        }
+      ],
+      "id": "#Picard_CollectAlignmentSummaryMetrics"
+    },
+    {
+      "run": {
+        "stdin": "",
+        "outputs": [
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#reads",
+              "glob": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".unpairedUnaligned.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".unpairedUnaligned.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              }
+            },
+            "sbg:fileTypes": "FA, FASTA, FASTQ, FQ",
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Unpaired unaligned reads",
+            "description": "Unpaired reads that fail to align.",
+            "id": "#unpaired_unal"
+          },
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#reads",
+              "glob": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".unpairedAligned.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".unpairedAligned.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              }
+            },
+            "sbg:fileTypes": "FA, FASTA, FQ, FASTQ",
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Unpaired aligned reads",
+            "description": "Unpaired reads that align at least once.",
+            "id": "#unpaired_align"
+          },
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#reads",
+              "glob": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".unalignedConcordantly_*.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".unalignedConcordantly_*.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              }
+            },
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": "File",
+                "name": "unal_conc"
+              }
+            ],
+            "id": "#unal_conc"
+          },
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#reads",
+              "glob": "*aligned.sam"
+            },
+            "sbg:fileTypes": "SAM",
+            "type": [
+              "File"
+            ],
+            "label": "Output alignment",
+            "description": "Alignment SAM file.",
+            "id": "#out_align"
+          },
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#reads",
+              "glob": "novel_splice_sites.txt"
+            },
+            "sbg:fileTypes": "TXT",
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Novel splice sites",
+            "description": "HISAT2 reports a list of splice sites in the file : chromosome name `` genomic position of the flanking base on the left side of an intron `` genomic position of the flanking base on the right `` strand.",
+            "id": "#novel_ss_out"
+          },
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#reads",
+              "glob": "metrics.txt"
+            },
+            "sbg:fileTypes": "TXT",
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Metrics file",
+            "description": "HISAT2 alignment metrics.",
+            "id": "#metrics_file"
+          },
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#reads",
+              "glob": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".alignedConcordantly_*.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".alignedConcordantly_*.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              }
+            },
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": "File",
+                "name": "align_conc"
+              }
+            ],
+            "id": "#align_conc"
+          }
+        ],
+        "sbg:toolkit": "HISAT2",
+        "label": "HISAT2",
+        "sbg:id": "admin/sbg-public-data/hisat2-2-0-1/2",
+        "sbg:toolkitVersion": "2.0.1",
+        "cwlVersion": "sbg:draft-2",
+        "x": 510.0000218550367,
+        "successCodes": [],
+        "hints": [
+          {
+            "value": 31000,
+            "class": "sbg:MemRequirement"
+          },
+          {
+            "class": "DockerRequirement",
+            "dockerPull": "images.sbgenomics.com/jexnaex/hisat2:2.0.1",
+            "dockerImageId": ""
+          },
+          {
+            "value": 8,
+            "class": "sbg:CPURequirement"
+          }
+        ],
+        "sbg:links": [
+          {
+            "label": "Homepage",
+            "id": "https://ccb.jhu.edu/software/hisat2/manual.shtml#the-hisat2-build-indexer"
+          },
+          {
+            "label": "Source code",
+            "id": "ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.0.4-source.zip"
+          },
+          {
+            "label": "Wiki",
+            "id": "https://wiki.rc.ufl.edu/doc/HISAT2"
+          },
+          {
+            "label": "Download",
+            "id": "ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.0.4-source.zip"
+          },
+          {
+            "label": "Publication",
+            "id": "http://www.nature.com/nmeth/journal/vaop/ncurrent/full/nmeth.3317.html"
+          }
+        ],
+        "sbg:modifiedOn": 1475234066,
+        "temporaryFailCodes": [],
+        "id": "jexnaex/hisat2-2-0-1-demo/hisat2-2-0-1/2",
+        "sbg:license": "GPLv3 license",
+        "requirements": [
+          {
+            "class": "ExpressionEngineRequirement",
+            "requirements": [
+              {
+                "class": "DockerRequirement",
+                "dockerPull": "rabix/js-engine"
+              }
+            ],
+            "id": "#cwl-js-engine"
+          }
+        ],
+        "description": "__HISAT2__ is a fast and sensitive alignment program for mapping next-generation sequencing reads (whole-genome, transcriptome, and exome sequencing data) against the general human population (as well as against a single reference genome). Based on GCSA (an extension of BWT for a graph), we designed and implemented a graph FM index (GFM), an original approach and its first implementation to the best of our knowledge. In addition to using one global GFM index that represents the general population, HISAT2 uses a large set of small GFM indexes that collectively cover the whole genome (each index representing a genomic region of 56 Kbp, with 55,000 indexes needed to cover human population). These small indexes (called local indexes) combined with several alignment strategies enable effective alignment of sequencing reads. This new indexing scheme is called Hierarchical Graph FM index (HGFM). We have developed HISAT2 based on the HISAT and Bowtie2 implementations. HISAT2 outputs alignments in SAM format, enabling interoperation with a large number of other tools (e.g. SAMtools, GATK) that use SAM. If BAM output is preferred, it is suggested to use one of the SAMtools/BAMtools/Picard tools to convert SAM file to BAM. \n\n__Common issues__\n\n- Paired-end metadata fields have to be set to 1/2 for paired end alignment.\n- HISAT2 can have problems when working with large index files.",
+        "sbg:cmdPreview": "tar -xf /path/to/hg38.tar && /opt/hisat2/hisat2  -f -p 8 -x index/hg38 -1 /path/to/reads-1.fa.gz -2 /path/to/reads-2.fa.gz -S reads-1.HISAT-2.0.1.aligned.sam",
+        "sbg:contributors": [
+          "jexnaex"
+        ],
+        "sbg:image_url": null,
+        "class": "CommandLineTool",
+        "stdout": "",
+        "sbg:revisionsInfo": [
+          {
+            "sbg:modifiedOn": 1473013887,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 0
+          },
+          {
+            "sbg:modifiedOn": 1473013975,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 1
+          },
+          {
+            "sbg:modifiedOn": 1475234066,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 2
+          }
+        ],
+        "sbg:latestRevision": 2,
+        "sbg:createdBy": "jexnaex",
+        "sbg:toolAuthor": "Johns Hopkins University",
+        "inputs": [
+          {
+            "type": [
+              "null",
+              "int"
+            ],
+            "inputBinding": {
+              "prefix": "--upto",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "label": "Align first <n> reads",
+            "sbg:altPrefix": "-u",
+            "sbg:toolDefaultValue": "no limit",
+            "description": "Stop after first <int> reads/pairs.",
+            "id": "#upto",
+            "sbg:category": "Input options"
+          },
+          {
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".unpairedUnaligned.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".unpairedUnaligned.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "--un",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Write unpaired unaligned",
+            "sbg:toolDefaultValue": "false",
+            "description": "Write unpaired reads that fail to align to a file. These reads correspond to the SAM records with the FLAGS `0x4` bit set and neither the `0x40` nor `0x80` bits set.",
+            "id": "#unpaired_unaligned",
+            "sbg:category": "Output options"
+          },
+          {
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".unpairedAligned.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".unpairedAligned.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "--al",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Write unpaired aligned",
+            "sbg:toolDefaultValue": "false",
+            "description": "Write unpaired reads that align at least once to a file. These reads correspond to the SAM records with the FLAGS `0x4`, `0x40`, and `0x80` bits unset.",
+            "id": "#unpaired_aligned",
+            "sbg:category": "Output options"
+          },
+          {
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".unalignedConcordantly_%.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".unalignedConcordantly_%.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "--un-conc",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Write unaligned concordantly",
+            "sbg:toolDefaultValue": "false",
+            "description": "Write paired-end reads that fail to align concordantly to file(s). These reads correspond to the SAM records with the FLAGS `0x4` bit set and either the `0x40` or `0x80` bit set (depending on whether it's mate #1 or #2).",
+            "id": "#unaligned_concordantly",
+            "sbg:category": "Output options"
+          },
+          {
+            "type": [
+              "null",
+              "int"
+            ],
+            "inputBinding": {
+              "prefix": "--trim5",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "label": "Trim 5'",
+            "sbg:altPrefix": "-5",
+            "sbg:toolDefaultValue": "0",
+            "description": "Trim <int> bases from 5'/left end of reads.",
+            "id": "#trim5",
+            "sbg:category": "Input options"
+          },
+          {
+            "type": [
+              "null",
+              "int"
+            ],
+            "inputBinding": {
+              "prefix": "--trim3",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "label": "Trim 3'",
+            "sbg:altPrefix": "-3",
+            "sbg:toolDefaultValue": "0",
+            "description": "Trim <int> bases from 3'/right end of reads.",
+            "id": "#trim3",
+            "sbg:category": "Input options"
+          },
+          {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--tmo",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "label": "Align only to transcriptome",
+            "sbg:altPrefix": "--transcriptome-mapping-only",
+            "sbg:toolDefaultValue": "false",
+            "description": "Report only those alignments within known transcripts.",
+            "id": "#transcriptome_only",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "label": "Soft-clipping penalties",
+            "id": "#sp",
+            "description": "Sets the maximum (`MX`) and minimum (`MN`) penalties for soft-clipping per base, both integers. A number less than or equal to `MX` and greater than or equal to `MN` is subtracted from the alignment score for each position. The number subtracted is `MN + floor( (MX-MN)(MIN(Q, 40.0)/40.0) )` where Q is the Phred quality value. Default: `MX` = 2, `MN` = 1.",
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "sp",
+                "fields": [
+                  {
+                    "sbg:stageInput": null,
+                    "inputBinding": {
+                      "valueFrom": {
+                        "script": "{\n\treturn $job.inputs.sp.sp_max + \",\" + $job.inputs.sp.sp_min\n}",
+                        "class": "Expression",
+                        "engine": "#cwl-js-engine"
+                      },
+                      "prefix": "--sp",
+                      "separate": true,
+                      "sbg:cmdInclude": "true"
+                    },
+                    "type": [
+                      "null",
+                      "int"
+                    ],
+                    "label": "MIN",
+                    "sbg:toolDefaultValue": "1",
+                    "name": "sp_min"
+                  },
+                  {
+                    "label": "MAX",
+                    "sbg:toolDefaultValue": "2",
+                    "sbg:stageInput": null,
+                    "name": "sp_max",
+                    "type": [
+                      "null",
+                      "int"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "sbg:category": "Scoring options"
+          },
+          {
+            "inputBinding": {
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Solexa quals",
+            "sbg:toolDefaultValue": "false",
+            "description": "Convert input qualities from [Solexa][Phred quality] (which can be negative) to [Phred][Phred quality] (which can't). This scheme was used in older Illumina GA Pipeline versions (prior to 1.3).",
+            "id": "#solexa_quals",
+            "sbg:category": "Input options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--skip",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Skip first <n> reads",
+            "sbg:toolDefaultValue": "0",
+            "description": "Skip the first <int> reads/pairs in the input.",
+            "id": "#skip",
+            "sbg:category": "Input options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--seed",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Seed",
+            "sbg:toolDefaultValue": "0",
+            "description": "Use `` as the seed for pseudo-random number generator.",
+            "id": "#seed",
+            "sbg:category": "Other options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--secondary",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Report secondary",
+            "sbg:toolDefaultValue": "false",
+            "description": "Report secondary alignments.",
+            "id": "#secondary",
+            "sbg:category": "Reporting options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--score-min",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "string"
+            ],
+            "label": "Minimum alignment score",
+            "sbg:toolDefaultValue": "L,0,-0.2",
+            "description": "Sets a function governing the minimum alignment score needed for an alignment to be considered \"valid\" (i.e. good enough to report). This is a function of read length. For instance, specifying `L,0,-0.6` sets the minimum-score function `f` to `f(x) = 0 + -0.6 * x`, where `x` is the read length. See also: [setting function options].",
+            "id": "#score_min",
+            "sbg:category": "Scoring options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--rna-strandness",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "F",
+                  "R",
+                  "FR",
+                  "RF"
+                ],
+                "type": "enum",
+                "name": "rna_strandness"
+              }
+            ],
+            "label": "RNA strandedness",
+            "description": "Specify strand-specific information: the default is unstranded. For single-end reads, use F or R. 'F' means a read corresponds to a transcript. 'R' means a read corresponds to the reverse complemented counterpart of a transcript. For paired-end reads, use either FR or RF. With this option being used, every read alignment will have an XS attribute tag: '+' means a read belongs to a transcript on '+' strand of genome. '-' means a read belongs to a transcript on '-' strand of genome. (TopHat has a similar option, --library-type option, where fr-firststrand corresponds to R and RF; fr-secondstrand corresponds to F and FR).",
+            "id": "#rna_strandness",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--rg-id",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "string"
+            ],
+            "label": "Read group ID",
+            "description": "Set the read group ID to ``. This causes the SAM `@RG` header line to be printed, with `` as the value associated with the `ID:` tag. It also causes the `RG:Z:` extra field to be attached to each SAM output record, with value set to ``.",
+            "id": "#rg_id",
+            "sbg:category": "SAM options"
+          },
+          {
+            "inputBinding": {
+              "sbg:cmdInclude": true,
+              "prefix": "--rg",
+              "itemSeparator": null,
+              "separate": true,
+              "position": 0
+            },
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": "string",
+                "name": "rg"
+              }
+            ],
+            "label": "Read group",
+            "description": "Add `` (usually of the form `TAG:VAL`, e.g. `SM:Pool1`) as a field on the `@RG` header line. Note: in order for the `@RG` line to appear, [`--rg-id`] must also be specified. This is because the `ID` tag is required by the SAM specification. Specify this multiple times to set multiple fields. See the SAM file specification for details about what fields are legal.",
+            "id": "#rg",
+            "sbg:category": "SAM options"
+          },
+          {
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "rfg",
+                "fields": [
+                  {
+                    "sbg:stageInput": null,
+                    "inputBinding": {
+                      "valueFrom": {
+                        "script": "{\n  return $job.inputs.rfg.rfg_open + \",\" + $job.inputs.rfg.rfg_extend\n}",
+                        "class": "Expression",
+                        "engine": "#cwl-js-engine"
+                      },
+                      "prefix": "--rfg",
+                      "separate": true,
+                      "sbg:cmdInclude": "true"
+                    },
+                    "type": [
+                      "null",
+                      "int"
+                    ],
+                    "label": "Open penalty",
+                    "sbg:toolDefaultValue": "5",
+                    "name": "rfg_open"
+                  },
+                  {
+                    "label": "Extend penalty",
+                    "sbg:toolDefaultValue": "3",
+                    "sbg:stageInput": null,
+                    "name": "rfg_extend",
+                    "type": [
+                      "null",
+                      "int"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "label": "Reference gap penalties",
+            "sbg:toolDefaultValue": "5,3",
+            "description": "Sets the reference gap open (``) and extend (``) penalties. A reference gap of length N gets a penalty of `` + N * ``.",
+            "id": "#rfg",
+            "sbg:category": "Scoring options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--reorder",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Reorder reads",
+            "sbg:toolDefaultValue": "false",
+            "description": "Guarantees that output SAM records are printed in an order corresponding to the order of the reads in the original input file. Causes HISAT2 to run somewhat slower and use somewhat more memory.",
+            "id": "#reorder",
+            "sbg:category": "Performance options"
+          },
+          {
+            "required": true,
+            "sbg:fileTypes": "BZ2, GZ, FQ, FASTQ, FASTA, FA, MFA",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  cmd = \"\"\n  reads = [].concat($job.inputs.reads)\n  reads1 = [];\n  reads2 = [];\n  u_reads = [];\n  for (var i = 0; i < reads.length; i++){\n      if (reads[i].metadata.paired_end == 1){\n        reads1.push(reads[i].path);\n      }\n      else if (reads[i].metadata.paired_end == 2){\n        reads2.push(reads[i].path);\n      }\n    else {\n      u_reads.push(reads[i].path);\n     }\n    }\n  if (reads1.length > 0 & reads1.length == reads2.length){\n      cmd = \"-1 \" + reads1.join(\",\") + \" -2 \" + reads2.join(\",\");\n  }\n  if (u_reads.length > 0){\n      cmd = \" -U \" + u_reads.join(\",\");\n  }\n  return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "itemSeparator": " ",
+              "separate": false,
+              "position": 2,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              {
+                "type": "array",
+                "items": "File",
+                "name": "reads"
+              }
+            ],
+            "label": "Reads",
+            "description": "Paired or unpaired reads, __for paired reads paired_end metadata field has to be set for 1/2. Paired only or unpaired only reads can be set in one run. If reads are paired corresponding mate1s and mate2s have to be completely matched__.",
+            "id": "#reads",
+            "sbg:category": "Input files"
+          },
+          {
+            "sbg:stageInput": null,
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "rdg",
+                "fields": [
+                  {
+                    "sbg:stageInput": null,
+                    "inputBinding": {
+                      "valueFrom": {
+                        "script": "{\n\treturn $job.inputs.rdg.rdg_open + \",\" + $job.inputs.rdg.rdg_extend\n}",
+                        "class": "Expression",
+                        "engine": "#cwl-js-engine"
+                      },
+                      "prefix": "--rdg",
+                      "separate": true,
+                      "sbg:cmdInclude": "true"
+                    },
+                    "type": [
+                      "null",
+                      "int"
+                    ],
+                    "label": "Gap open penalty",
+                    "sbg:toolDefaultValue": "5",
+                    "name": "rdg_open"
+                  },
+                  {
+                    "label": "Gap extend penalty",
+                    "sbg:toolDefaultValue": "3",
+                    "sbg:stageInput": null,
+                    "name": "rdg_extend",
+                    "type": [
+                      "null",
+                      "int"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "label": "Gap penalty",
+            "description": "Sets the read gap open (``) and extend (``) penalties. A read gap of length N gets a penalty of `` + N * ``.",
+            "id": "#rdg",
+            "sbg:category": "Scoring options"
+          },
+          {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Raw sequences",
+            "sbg:toolDefaultValue": "false",
+            "description": "Query input files are raw one-sequence-per-line.",
+            "id": "#raw",
+            "sbg:category": "Input options"
+          },
+          {
+            "sbg:stageInput": null,
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Qseq reads",
+            "sbg:toolDefaultValue": "false",
+            "description": "Query input files are in Illumina's qseq format.",
+            "id": "#qseq",
+            "sbg:category": "Input options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--qc-filter",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "QC filter",
+            "sbg:toolDefaultValue": "false",
+            "description": "Filter out reads for which the QSEQ filter field is non-zero.  Only has an effect when read format is `--qseq`.  Default: off.",
+            "id": "#qc_filter",
+            "sbg:category": "Other options"
+          },
+          {
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n\tcmd=\"\"\n    reads = [].concat($job.inputs.reads)\n    if ($job.inputs.phred64 | reads[0].metadata.quality_scale == 'illumina13'){\n    \tcmd=\"--phred64\"\n    }\n  \tif ($job.inputs.intquals){\n  \t\tcmd =\"--int-quals\"\n  \t}\n\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "position": 0,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Phred 64 quality scale",
+            "sbg:toolDefaultValue": "false",
+            "description": "Qualities are Phred+64.",
+            "id": "#phred64",
+            "sbg:category": "Input options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--pen-noncansplice",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Non canonical splice site penalty",
+            "sbg:toolDefaultValue": "12",
+            "description": "Sets the penalty for each pair of non-canonical splice sites (e.g. non-GT/AG).",
+            "id": "#pen_noncansplice",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--pen-noncanintronlen",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "string"
+            ],
+            "label": "Long introns w/ noncanonical splice sites penalty",
+            "sbg:toolDefaultValue": "G,-8,1",
+            "description": "Sets the penalty for long introns with noncanonical splice sites so that alignments with shorter introns are preferred to those with longer ones.",
+            "id": "#pen_noncanintronlen",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--pen-cansplice",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Canonical splice site penalty",
+            "sbg:toolDefaultValue": "0",
+            "description": "Sets the penalty for each pair of canonical splice sites (e.g. GT/AG).",
+            "id": "#pen_cansplice",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--pen-canintronlen",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "string"
+            ],
+            "label": "Long introns w/ canonical splice site penalty",
+            "sbg:toolDefaultValue": "G,-8,1",
+            "description": "Sets the penalty for long introns with canonical splice sites so that alignments with shorter introns are preferred to those with longer ones.",
+            "id": "#pen_canintronlen",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--omit-sec-seq",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Omit secondary sequence",
+            "sbg:toolDefaultValue": "false",
+            "description": "When printing secondary alignments, HISAT2 by default will write out the `SEQ` and `QUAL` strings. Specifying this option causes HISAT2 to print an asterix in those fields instead.",
+            "id": "#omit_sec_seq",
+            "sbg:category": "SAM options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--np",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "'N' penalty",
+            "sbg:toolDefaultValue": "1",
+            "description": "Sets penalty for positions where the read, reference, or both, contain an ambiguous character such as `N`. Default: 1.",
+            "id": "#np",
+            "sbg:category": "Scoring options"
+          },
+          {
+            "required": false,
+            "sbg:fileTypes": "TXT",
+            "inputBinding": {
+              "prefix": "--novel-splicesite-infile",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Novel splice sites",
+            "description": "With this mode, you can provide a list of novel splice sites that were generated from the option \"--novel-splicesite-outfile\".",
+            "id": "#novel_ss_in",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n\treturn \"novel_splice_sites.txt\"\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "--novel-splicesite-outfile",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Novel splice sites out",
+            "sbg:toolDefaultValue": "false",
+            "description": "In this mode, HISAT2 reports a list of splice sites in the file : chromosome name `` genomic position of the flanking base on the left side of an intron `` genomic position of the flanking base on the right `` strand.",
+            "id": "#novel_ss",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--norc",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No reverse complement",
+            "sbg:toolDefaultValue": "false",
+            "description": "If `--norc` is specified, `hisat2` will not attempt to align unpaired reads against the reverse-complement (Crick) reference strand. In paired-end mode, `--norc` pertain to the fragments.",
+            "id": "#norc",
+            "sbg:category": "Alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--non-deterministic",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Non deterministic",
+            "sbg:toolDefaultValue": "false",
+            "description": "Normally, HISAT2 re-initializes its pseudo-random generator for each read. It seeds the generator with a number derived from (a) the read name, (b) the nucleotide sequence, (c) the quality sequence, (d) the value of the [`--seed`] option. This means that if two reads are identical (same name, same nucleotides, same qualities) HISAT2 will find and report the same alignment(s) for both, even if there was ambiguity. When `--non-deterministic` is specified, HISAT2 re-initializes its pseudo-random generator for each read using the current time. This means that HISAT2 will not necessarily report the same alignment for two identical reads. This is counter-intuitive for some users, but might be more appropriate in situations where the input consists of many identical reads.",
+            "id": "#non_deterministic",
+            "sbg:category": "Other options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--nofw",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No forward",
+            "sbg:toolDefaultValue": "false",
+            "description": "If `--nofw` is specified, `hisat2` will not attempt to align unpaired reads to the forward (Watson) reference strand.",
+            "id": "#nofw",
+            "sbg:category": "Alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--no-unal",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Dismiss unaligned reads",
+            "sbg:toolDefaultValue": "false",
+            "description": "Suppress SAM records for reads that failed to align.",
+            "id": "#no_unal",
+            "sbg:category": "SAM options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--no-temp-splicesite",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No temp splice sites",
+            "sbg:toolDefaultValue": "false",
+            "description": "HISAT2, by default, makes use of splice sites found by earlier reads to align later reads in the same run, in particular, reads with small anchors (<= 15 bp). The option disables this default alignment strategy.",
+            "id": "#no_temp_splicesite",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--no-sq",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No @SQ lines",
+            "sbg:toolDefaultValue": "false",
+            "description": "Suppress `@SQ` SAM header lines.",
+            "id": "#no_sq",
+            "sbg:category": "SAM options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--no-spliced-alignment",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No spliced alignment",
+            "sbg:toolDefaultValue": "false",
+            "description": "Disable spliced alignment.",
+            "id": "#no_spliced_alignment",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--no-overlap",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No overlap",
+            "sbg:toolDefaultValue": "false",
+            "description": "If one mate alignment overlaps the other at all, consider that to be non-concordant.  See also: [Mates can overlap, contain or dovetail each other].  Default: mates can overlap in a concordant alignment.",
+            "id": "#no_overlap",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--no-mixed",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No individual alignment",
+            "sbg:toolDefaultValue": "false",
+            "description": "By default, when `hisat2` cannot find a concordant or discordant alignment for a pair, it then tries to find alignments for the individual mates. This option disables that behavior.",
+            "id": "#no_mixed",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--no-hd",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No header",
+            "sbg:toolDefaultValue": "false",
+            "description": "Suppress SAM header lines (starting with `@`).",
+            "id": "#no_hd",
+            "sbg:category": "SAM options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--no-discordant",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Disable dicordant alinments",
+            "sbg:toolDefaultValue": "false",
+            "description": "By default, `hisat2` looks for discordant alignments if it cannot find any concordant alignments. A discordant alignment is an alignment where both mates align uniquely, but that does not satisfy the paired-end constraints ([`--fr`/`--rf`/`--ff`], [`-I`], [`-X`]). This option disables that behavior.",
+            "id": "#no_discordant",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--no-contain",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No contain",
+            "description": "If one mate alignment contains the other, consider that to be non-concordant. See also: [Mates can overlap, contain or dovetail each other].  Default: a mate can contain the other in a concordant alignment.",
+            "id": "#no_contain",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--n-ceil",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "string"
+            ],
+            "label": "N ceil",
+            "sbg:toolDefaultValue": "L,0,0.15",
+            "description": "Sets a function governing the maximum number of ambiguous characters (usually `N`s and/or `.`s) allowed in a read as a function of read length. For instance, specifying `-L,0,0.15` sets the N-ceiling function `f` to `f(x) = 0 + 0.15 * x`, where x is the read length. See also: [setting function options]. Reads exceeding this ceiling are [filtered out].",
+            "id": "#n_ceil",
+            "sbg:category": "Alignment options"
+          },
+          {
+            "label": "Missmatch penalties",
+            "id": "#mp",
+            "description": "Sets the maximum (`MX`) and minimum (`MN`) mismatch penalties, both integers. A number less than or equal to `MX` and greater than or equal to `MN` is subtracted from the alignment score for each position where a read character aligns to a reference character, the characters do not match, and neither is an `N`. If [`--ignore-quals`] is specified, the number subtracted quals `MX`. Otherwise, the number subtracted is `MN + floor( (MX-MN)(MIN(Q, 40.0)/40.0) )` where Q is the Phred quality value. Default: `MX` = 6, `MN` = 2.",
+            "type": [
+              "null",
+              {
+                "type": "record",
+                "name": "mp",
+                "fields": [
+                  {
+                    "label": "MIN",
+                    "sbg:toolDefaultValue": "2",
+                    "name": "mp_min",
+                    "inputBinding": {
+                      "valueFrom": {
+                        "script": "{\n\treturn $job.inputs.mp.mp_max + \",\" + $job.inputs.mp.mp_min\n}",
+                        "class": "Expression",
+                        "engine": "#cwl-js-engine"
+                      },
+                      "prefix": "--mp",
+                      "separate": true,
+                      "sbg:cmdInclude": "true"
+                    },
+                    "type": [
+                      "null",
+                      "int"
+                    ]
+                  },
+                  {
+                    "label": "MAX",
+                    "sbg:toolDefaultValue": "6",
+                    "name": "mp_max",
+                    "type": [
+                      "null",
+                      "int"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "sbg:category": "Scoring options"
+          },
+          {
+            "type": [
+              "null",
+              "int"
+            ],
+            "inputBinding": {
+              "prefix": "--minins",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "label": "Min fragment length",
+            "sbg:altPrefix": "-I",
+            "sbg:toolDefaultValue": "0",
+            "description": "The minimum fragment length for valid paired-end alignments. E.g. if `-I 60` is specified and a paired-end alignment consists of two 20-bp alignments in the appropriate orientation with a 20-bp gap between them, that alignment is considered valid (as long as [`-X`] is also satisfied). A 19-bp gap would not be valid in that case. If trimming options [`-3`] or [`-5`] are also used, the [`-I`] constraint is applied with respect to the untrimmed mates. The larger the difference between [`-I`] and [`-X`], the slower HISAT2 will run. This is because larger differences bewteen [`-I`] and [`-X`] require that HISAT2 scan a larger window to determine if a concordant alignment exists. For typical fragment length ranges (200 to 400 nucleotides), HISAT2 is very efficient. Default: 0 (essentially imposing no minimum).",
+            "id": "#minins",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--min-intronlen",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Minimum intron length",
+            "sbg:toolDefaultValue": "20",
+            "description": "Sets minimum intron length.",
+            "id": "#min_intronlen",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n\treturn \"metrics.txt\"\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "--met-file",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Output metrics file",
+            "sbg:toolDefaultValue": "false",
+            "description": "Write `hisat2` metrics to file ``. Having alignment metric can be useful for debugging certain problems, especially performance issues.",
+            "id": "#met_file",
+            "sbg:category": "Output options"
+          },
+          {
+            "type": [
+              "null",
+              "int"
+            ],
+            "inputBinding": {
+              "prefix": "--maxins",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "label": "Maximum fragment length",
+            "sbg:altPrefix": "-X",
+            "sbg:toolDefaultValue": "500",
+            "description": "The maximum fragment length for valid paired-end alignments. E.g. if `-X 100` is specified and a paired-end alignment consists of two 20-bp alignments in the proper orientation with a 60-bp gap between them, that alignment is considered valid (as long as [`-I`] is also satisfied). A 61-bp gap would not be valid in that case. If trimming options [`-3`] or [`-5`] are also used, the `-X` constraint is applied with respect to the untrimmed mates, not the trimmed mates. The larger the difference between [`-I`] and [`-X`], the slower HISAT2 will run. This is because larger differences bewteen [`-I`] and [`-X`] require that HISAT2 scan a larger window to determine if a concordant alignment exists. For typical fragment length ranges (200 to 400 nucleotides), HISAT2 is very efficient. Default: 500.",
+            "id": "#maxins",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--max-intronlen",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Maximum intron length",
+            "sbg:toolDefaultValue": "500000",
+            "description": "Sets maximum intron length.",
+            "id": "#max_intronlen",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n\tcmd=\"\"\n    if ($job.inputs.mate_orientations == 'Forward-reverse'){\n    \tcmd=\"--fr\"\n    }\n  \telse if ($job.inputs.mate_orientations == 'Forward-forward'){\n  \t\tcmd=\"--ff\"\n  \t}\n  \telse if ($job.inputs.mate_orientations == 'Refeverse-forward'){\n  \t\tcmd=\"--rf\"\n  \t}\n\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "Forward-reverse",
+                  "Reverse-forward",
+                  "Forward-forward"
+                ],
+                "type": "enum",
+                "name": "mate_orientations"
+              }
+            ],
+            "label": "Mate orientations",
+            "sbg:toolDefaultValue": "Forward-reverse",
+            "description": "The upstream/downstream mate orientations for a valid paired-end alignment against the forward reference strand. E.g., if `--fr` is specified and there is a candidate paired-end alignment where mate 1 appears upstream of the reverse complement of mate 2 and the fragment length constraints ([`-I`] and [`-X`]) are met, that alignment is valid. Also, if mate 2 appears upstream of the reverse complement of mate 1 and all other constraints are met, that too is valid. `--rf` likewise requires that an upstream mate1 be reverse-complemented and a downstream mate2 be forward-oriented. ` --ff` requires both an upstream mate 1 and a downstream mate 2 to be forward-oriented. Default: `--fr` (appropriate for Illumina's Paired-end Sequencing Assay).",
+            "id": "#mate_orientations",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "required": false,
+            "sbg:fileTypes": "TXT",
+            "inputBinding": {
+              "prefix": "--known-splicesite-infile",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Know splice sites",
+            "description": "With this mode, you can provide a list of known splice sites, which HISAT2 makes use of to align reads with small anchors. You can create such a list using `HISAT2 Extract Splice Sites genes.gtf > splicesites.txt`, where  `genes.gtf` is a gene annotation file, and `splicesites.txt` is a list of splice sites with which you provide HISAT2 in this mode. Note that it is better to use indexes built using annotated transcripts (such asgenome_tran or genome_snp_tran), which works better than using this option. It has no effect to provide splice sites that are already included in the indexes.",
+            "id": "#known_ss",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Ingteger qualities",
+            "sbg:toolDefaultValue": "false",
+            "description": "Qualities encoded as space-delimited integers.",
+            "id": "#intquals",
+            "sbg:category": "Input options"
+          },
+          {
+            "required": true,
+            "sbg:fileTypes": "TAR",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n    var a = '22_20-21M_snp144Common_HISAT2-2.0.1.tar'\n    \n    var ref = $job.inputs.indexed_reference.path.split(\"/\").slice(-1)[0].split(\"_\")\n    if (ref[0] == \"\"){\n      ref = ref.slice(2,ref.length).join(\".\").split(\".\").slice(0,-1).join(\".\")\n    \t\n    }\n  \telse {\n      ref = ref.join(\"_\").split(\".\").slice(0,-1).join(\".\")\t\n    }\n\treturn \"index/\" + ref\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "-x",
+              "position": 1,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "File"
+            ],
+            "label": "Indexed reference",
+            "description": "TAR containing index files as providid by HISAT2 Build 2.0.4.",
+            "id": "#indexed_reference",
+            "sbg:category": "Input files"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--ignore-quals",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Ignore qualities",
+            "sbg:toolDefaultValue": "false",
+            "description": "When calculating a mismatch penalty, always consider the quality value at the mismatched position to be the highest possible, regardless of the actual value. I.e. input is treated as though all quality values are high. This is also the default behavior when the input doesn't specify quality values.",
+            "id": "#ignore_quals",
+            "sbg:category": "Alignment options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--end-to-end",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "End-to-end",
+            "sbg:toolDefaultValue": "false",
+            "description": "In this mode, HISAT2 requires that the entire read align from one end to the other, without any trimming (or \"soft clipping\") of characters from either end. The match bonus `--ma` always equals 0 in this mode, so all alignment scores are less than or equal to 0, and the greatest possible alignment score is 0. This is mutually exclusive with `--local`.  `end_to_end` is the default mode.",
+            "id": "#end_to_end",
+            "sbg:category": "Alignment options"
+          },
+          {
+            "inputBinding": {
+              "prefix": "--dta-cufflinks",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Alignment tailored for cufflinks",
+            "sbg:toolDefaultValue": "false",
+            "description": "Report alignments tailored specifically for Cufflinks. In addition to what HISAT2 does with the above option (--dta), With this option, HISAT2 looks for novel splice sites with three signals (GT/AG, GC/AG, AT/AC), but all user-provided splice sites are used irrespective of their signals. HISAT2 produces an optional field, XS:A:[+-], for every spliced alignment.",
+            "id": "#dta_cufflinks",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--dta",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "label": "Alignments for transcriptome assembly",
+            "sbg:altPrefix": "--downstream-transcriptome-assembly",
+            "sbg:toolDefaultValue": "false",
+            "description": "Report alignments tailored for transcript assemblers including StringTie. With this option, HISAT2 requires longer anchor lengths for de novo discovery of splice sites. This leads to fewer alignments with short-anchors, which helps transcript assemblers improve significantly in computationa and memory usage.",
+            "id": "#downstream_assembly",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "--dovetail",
+              "position": 0,
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Dovetail",
+            "sbg:toolDefaultValue": "false",
+            "description": "If the mates \"dovetail\", that is if one mate alignment extends past the beginning of the other such that the wrong mate begins upstream, consider that to be concordant.  See also: [Mates can overlap, contain or dovetail each other].  Default: mates cannot dovetail in a concordant alignment.",
+            "id": "#dovetail",
+            "sbg:category": "Paired-end options"
+          },
+          {
+            "sbg:stageInput": null,
+            "inputBinding": {
+              "prefix": "-k",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Max distinct alignments",
+            "sbg:toolDefaultValue": "5(HFM)/10(HGFM)",
+            "description": "It searches for at most `` distinct, primary alignments for each read. Primary alignments mean alignments whose alignment score is equal or higher than any other alignments. The search terminates when it can't find more distinct valid alignments, or when it finds ``, whichever happens first. The alignment score for a paired-end alignment equals the sum of the alignment scores of the individual mates. Each reported read or pair alignment beyond the first has the SAM 'secondary' bit (which equals 256) set in its FLAGS field. For reads that have more than `` distinct, valid alignments, `hisat2` does not gaurantee that the `` alignments reported are the best possible in terms of alignment score. Default: 5 (HFM) or 10 (HGFM) Note: HISAT2 is not designed with large values for `-k` in mind, and when aligning reads to long, repetitive genomes large `-k` can be very, very slow.",
+            "id": "#distinct_align",
+            "sbg:category": "Spliced alignment options"
+          },
+          {
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n     \text2 = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".alignedConcordantly_%.\"+ext2\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".alignedConcordantly_%.\"+ext\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "--al-conc",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Write concordantly aligned",
+            "sbg:toolDefaultValue": "false",
+            "description": "Write paired-end reads that align concordantly at least once to file(s). These reads correspond to the SAM records with the FLAGS `0x4` bit unset and either the `0x40` or `0x80` bit set (depending on whether it's mate #1 or #2).",
+            "id": "#aligned_concordantly",
+            "sbg:category": "Output options"
+          }
+        ],
+        "baseCommand": [
+          {
+            "script": "{\n\treturn \"tar -xf \" + $job.inputs.indexed_reference.path + \" && /opt/hisat2/hisat2\"\n}",
+            "class": "Expression",
+            "engine": "#cwl-js-engine"
+          }
+        ],
+        "sbg:validationErrors": [],
+        "sbg:categories": [
+          "Indexing",
+          "Alignment"
+        ],
+        "sbg:project": "jexnaex/hisat2-2-0-1-demo",
+        "sbg:revision": 2,
+        "sbg:sbgMaintained": false,
+        "arguments": [
+          {
+            "valueFrom": {
+              "script": "{\n  \text = $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'gz' | ext == 'bz2'){\n    \treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".HISAT-2.0.1.aligned.sam\"\n    }\n\treturn $job.inputs.reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".HISAT-2.0.1.aligned.sam\"\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "prefix": "-S",
+            "separate": true,
+            "position": 3
+          },
+          {
+            "valueFrom": {
+              "script": "{\t\n  \tcmd=\"\"\n\tvar reads = [].concat($job.inputs.reads)\n    ext = reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext == 'bz2' | ext == 'gz'){\n    \text = reads[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-2)[0]\n    }\n  \tif (ext == 'txt' & $job.inputs.qseq){\n  \t\tcmd = '--qseq'\n  \t}\n  \telse if (ext == 'fa' | ext == 'fasta' | ext == 'mfa'){\n  \t\tcmd = '-f'\n  \t}\n  \telse if (ext == 'txt' & $job.inputs.raw){\n  \t\tcmd = '-r'\n  \t}\t\n  \treturn cmd\n\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "prefix": "",
+            "separate": true,
+            "position": 0
+          },
+          {
+            "valueFrom": {
+              "script": "{\n\treturn $job.allocatedResources.cpu\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "prefix": "-p",
+            "separate": true
+          }
+        ],
+        "sbg:job": {
+          "allocatedResources": {
+            "cpu": 8,
+            "mem": 31000
+          },
+          "inputs": {
+            "end_to_end": false,
+            "raw": false,
+            "secondary": true,
+            "non_deterministic": false,
+            "score_min": "",
+            "nofw": false,
+            "pen_canintronlen": "",
+            "no_contain": false,
+            "phred64": false,
+            "pen_noncansplice": null,
+            "unpaired_aligned": true,
+            "maxins": null,
+            "trim3": null,
+            "norc": false,
+            "seed": false,
+            "mate_orientations": "Forward-reverse",
+            "indexed_reference": {
+              "secondaryFiles": [],
+              "path": "/path/to/hg38.tar",
+              "class": "File",
+              "size": 0
+            },
+            "rna_strandness": "F",
+            "skip": null,
+            "solexa_quals": false,
+            "minins": null,
+            "sp": {
+              "fields": {
+                "sp_min": null,
+                "sp_max": null
+              }
+            },
+            "unpaired_unaligned": true,
+            "ignore_quals": false,
+            "dovetail": false,
+            "no_temp_splicesite": false,
+            "np": 3,
+            "omit_sec_seq": false,
+            "no_sq": false,
+            "trim5": null,
+            "reads": [
+              {
+                "secondaryFiles": [],
+                "metadata": {
+                  "paired_end": "1"
+                },
+                "class": "File",
+                "size": 0,
+                "path": "/path/to/reads-1.fa.gz"
+              },
+              {
+                "secondaryFiles": [],
+                "metadata": {
+                  "paired_end": "2"
+                },
+                "class": "File",
+                "size": 0,
+                "path": "/path/to/reads-2.fa.gz"
+              }
+            ],
+            "rg": null,
+            "pen_cansplice": null,
+            "intquals": false,
+            "n_ceil": "",
+            "rg_id": "",
+            "pen_noncanintronlen": "",
+            "no_unal": false,
+            "min_intronlen": null,
+            "unaligned_concordantly": true,
+            "met_file": false,
+            "max_intronlen": null,
+            "mp": {
+              "fields": {
+                "mp_max": null,
+                "mp_min": null
+              }
+            },
+            "novel_ss": true,
+            "no_hd": false,
+            "rfg": {
+              "fields": {
+                "rfg_extend": null,
+                "rfg_open": null
+              }
+            },
+            "distinct_align": 10,
+            "qc_filter": false,
+            "qseq": false,
+            "rdg": {
+              "fields": {
+                "rdg_extend": null,
+                "rdg_open": null
+              }
+            },
+            "reorder": false,
+            "dta_cufflinks": false,
+            "no_spliced_alignment": false,
+            "aligned_concordantly": true,
+            "upto": null,
+            "no_mixed": false,
+            "transcriptome_only": false,
+            "no_overlap": false,
+            "downstream_assembly": false,
+            "no_discordant": false
+          }
+        },
+        "y": 178.77892093309748
+      },
+      "outputs": [
+        {
+          "id": "#HISAT2.unpaired_unal"
+        },
+        {
+          "id": "#HISAT2.unpaired_align"
+        },
+        {
+          "id": "#HISAT2.unal_conc"
+        },
+        {
+          "id": "#HISAT2.out_align"
+        },
+        {
+          "id": "#HISAT2.novel_ss_out"
+        },
+        {
+          "id": "#HISAT2.metrics_file"
+        },
+        {
+          "id": "#HISAT2.align_conc"
+        }
+      ],
+      "sbg:y": 178.77892093309748,
+      "sbg:x": 510.0000218550367,
+      "inputs": [
+        {
+          "id": "#HISAT2.upto"
+        },
+        {
+          "id": "#HISAT2.unpaired_unaligned"
+        },
+        {
+          "id": "#HISAT2.unpaired_aligned"
+        },
+        {
+          "id": "#HISAT2.unaligned_concordantly"
+        },
+        {
+          "id": "#HISAT2.trim5"
+        },
+        {
+          "id": "#HISAT2.trim3"
+        },
+        {
+          "id": "#HISAT2.transcriptome_only"
+        },
+        {
+          "id": "#HISAT2.sp"
+        },
+        {
+          "id": "#HISAT2.solexa_quals"
+        },
+        {
+          "id": "#HISAT2.skip"
+        },
+        {
+          "id": "#HISAT2.seed"
+        },
+        {
+          "id": "#HISAT2.secondary"
+        },
+        {
+          "id": "#HISAT2.score_min"
+        },
+        {
+          "id": "#HISAT2.rna_strandness"
+        },
+        {
+          "id": "#HISAT2.rg_id"
+        },
+        {
+          "id": "#HISAT2.rg"
+        },
+        {
+          "id": "#HISAT2.rfg"
+        },
+        {
+          "id": "#HISAT2.reorder"
+        },
+        {
+          "id": "#HISAT2.reads",
+          "source": [
+            "#SBG_FASTQ_Quality_Detector.result"
+          ]
+        },
+        {
+          "id": "#HISAT2.rdg"
+        },
+        {
+          "id": "#HISAT2.raw"
+        },
+        {
+          "id": "#HISAT2.qseq"
+        },
+        {
+          "id": "#HISAT2.qc_filter"
+        },
+        {
+          "id": "#HISAT2.phred64"
+        },
+        {
+          "id": "#HISAT2.pen_noncansplice"
+        },
+        {
+          "id": "#HISAT2.pen_noncanintronlen"
+        },
+        {
+          "id": "#HISAT2.pen_cansplice"
+        },
+        {
+          "id": "#HISAT2.pen_canintronlen"
+        },
+        {
+          "id": "#HISAT2.omit_sec_seq"
+        },
+        {
+          "id": "#HISAT2.np"
+        },
+        {
+          "id": "#HISAT2.novel_ss_in"
+        },
+        {
+          "id": "#HISAT2.novel_ss"
+        },
+        {
+          "id": "#HISAT2.norc"
+        },
+        {
+          "id": "#HISAT2.non_deterministic"
+        },
+        {
+          "id": "#HISAT2.nofw"
+        },
+        {
+          "id": "#HISAT2.no_unal"
+        },
+        {
+          "id": "#HISAT2.no_temp_splicesite"
+        },
+        {
+          "id": "#HISAT2.no_sq"
+        },
+        {
+          "id": "#HISAT2.no_spliced_alignment"
+        },
+        {
+          "id": "#HISAT2.no_overlap"
+        },
+        {
+          "id": "#HISAT2.no_mixed"
+        },
+        {
+          "id": "#HISAT2.no_hd"
+        },
+        {
+          "id": "#HISAT2.no_discordant"
+        },
+        {
+          "id": "#HISAT2.no_contain"
+        },
+        {
+          "id": "#HISAT2.n_ceil"
+        },
+        {
+          "id": "#HISAT2.mp"
+        },
+        {
+          "id": "#HISAT2.minins"
+        },
+        {
+          "id": "#HISAT2.min_intronlen"
+        },
+        {
+          "id": "#HISAT2.met_file"
+        },
+        {
+          "id": "#HISAT2.maxins"
+        },
+        {
+          "id": "#HISAT2.max_intronlen"
+        },
+        {
+          "id": "#HISAT2.mate_orientations"
+        },
+        {
+          "id": "#HISAT2.known_ss"
+        },
+        {
+          "id": "#HISAT2.intquals"
+        },
+        {
+          "id": "#HISAT2.indexed_reference",
+          "source": [
+            "#HISAT2_Build.tar_out"
+          ]
+        },
+        {
+          "id": "#HISAT2.ignore_quals"
+        },
+        {
+          "id": "#HISAT2.end_to_end"
+        },
+        {
+          "id": "#HISAT2.dta_cufflinks"
+        },
+        {
+          "id": "#HISAT2.downstream_assembly"
+        },
+        {
+          "id": "#HISAT2.dovetail"
+        },
+        {
+          "id": "#HISAT2.distinct_align"
+        },
+        {
+          "id": "#HISAT2.aligned_concordantly"
+        }
+      ],
+      "id": "#HISAT2"
+    },
+    {
+      "run": {
+        "stdin": "",
+        "outputs": [
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#references",
+              "glob": "*HISAT2-2.0.1.tar"
+            },
+            "sbg:fileTypes": "TAR",
+            "type": [
+              "File"
+            ],
+            "label": "Index",
+            "description": "Compressed reference and index files.",
+            "id": "#tar_out"
+          }
+        ],
+        "sbg:toolkit": "HISAT2",
+        "label": "HISAT2 Build",
+        "sbg:id": "admin/sbg-public-data/hisat2-build-2-0-1/3",
+        "sbg:toolkitVersion": "2.0.1",
+        "cwlVersion": "sbg:draft-2",
+        "x": 218.33333333333346,
+        "successCodes": [],
+        "hints": [
+          {
+            "value": {
+              "script": "{\n\tcmd = 31000\n    var i =0;\n    if ($job.inputs.snp){\n    \ti++\n    }\n  \tif ($job.inputs.ss){\n  \t\ti++\n  \t}\n  \tif ($job.inputs.exon){\n  \t\ti++\n    }\n  \tif ($job.inputs.haplotype){\n  \t\ti++\n  \t}\n    if ($job.inputs.large_index){\n  \t\ti++\n    }\n  \tif (i > 1) {\n    \tcmd = 240000\n    }\n    return cmd\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "class": "sbg:MemRequirement"
+          },
+          {
+            "class": "DockerRequirement",
+            "dockerPull": "images.sbgenomics.com/jexnaex/hisat2:2.0.1",
+            "dockerImageId": ""
+          },
+          {
+            "value": {
+              "script": "{\n\tcmd = 8\n    var i =0;\n    if ($job.inputs.snp){\n    \ti++\n    }\n  \tif ($job.inputs.ss){\n  \t\ti++\n  \t}\n  \tif ($job.inputs.exon){\n  \t\ti++\n    }\n  \tif ($job.inputs.haplotype){\n  \t\ti++\n  \t}\n  \tif (i > 1) {\n    \tcmd = 32\n    }\n    return cmd\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "class": "sbg:CPURequirement"
+          }
+        ],
+        "sbg:links": [
+          {
+            "label": "Homepage",
+            "id": "https://ccb.jhu.edu/software/hisat2/manual.shtml#the-hisat2-build-indexer"
+          },
+          {
+            "label": "Source code",
+            "id": "ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.0.4-source.zip"
+          },
+          {
+            "label": "Wiki",
+            "id": "https://wiki.rc.ufl.edu/doc/HISAT2"
+          },
+          {
+            "label": "Download",
+            "id": "ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.0.4-source.zip"
+          },
+          {
+            "label": "Publication",
+            "id": "http://www.nature.com/nmeth/journal/vaop/ncurrent/full/nmeth.3317.html"
+          }
+        ],
+        "sbg:modifiedOn": 1475502253,
+        "temporaryFailCodes": [],
+        "id": "jexnaex/hisat2-2-0-1-demo/hisat2-build-2-0-1/3",
+        "sbg:license": "GPLv3 license",
+        "requirements": [
+          {
+            "class": "ExpressionEngineRequirement",
+            "requirements": [
+              {
+                "class": "DockerRequirement",
+                "dockerPull": "rabix/js-engine"
+              }
+            ],
+            "id": "#cwl-js-engine"
+          }
+        ],
+        "description": "__HISAT2 Build__ builds a HISAT2 index from a set of DNA sequences. hisat2-build outputs a set of 8 files with suffixes .1.ht2, .2.ht2, .3.ht2, .4.ht2, .5.ht2, .6.ht2, .7.ht2, and .8.ht2. In the case of a large index these suffixes will have a ht2l termination. These files together constitute the index: they are all that is needed to align reads to that reference. The original sequence FASTA files are no longer used by HISAT2 once the index is built.\n\nUse of Karkkainen's blockwise algorithm allows hisat2-build to trade off between running time and memory usage. hisat2-build has three options governing how it makes this trade: [-p/--packed], --bmax/--bmaxdivn, and --dcv. By default, hisat2-build will automatically search for the settings that yield the best running time without exhausting memory. This behavior can be disabled using the -a/--noauto option.\n\nThe indexer provides options pertaining to the \"shape\" of the index, e.g. --offrate governs the fraction of Burrows-Wheeler rows that are \"marked\" (i.e., the density of the suffix-array sample; see the original FM Index paper for details). All of these options are potentially profitable trade-offs depending on the application. They have been set to defaults that are reasonable for most cases according to our experiments. See Performance tuning for details.\n\nhisat2-build can generate either small or large indexes. The wrapper will decide which based on the length of the input genome. If the reference does not exceed 4 billion characters but a large index is preferred, the user can specify --large-index to force hisat2-build to build a large index instead.\n\nThe HISAT2 index is based on the FM Index of Ferragina and Manzini, which in turn is based on the Burrows-Wheeler transform. The algorithm used to build the index is based on the blockwise algorithm of Karkkainen.\n\n__Hints__\n\n- Exon and splice sites files should be specified together. Input files for these two options can be generated from  HISAT2 ExtractExons  and HISAT2 ExtractSpliceSites apps.\n- Options --bmax, --bmaxdivn, and --dcv should only be set by advanced users.  HISAT automatically sets these parameters to their optimal values.\n- We suggest to use --justref for large genomes, or when a large SNP file is used. The tool will generate an index without using this option. But the alignment will probably fail.\n\n\n__Common issues__\n\nIf the reference is to big, or when building the index with --snp, --ss, --exon or their combination, large index might have to be forced using the 'Force large index' option.",
+        "arguments": [
+          {
+            "valueFrom": {
+              "script": "{\n    references = [].concat($job.inputs.references)\n\text = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext === 'tar'){\n    \tcmd = \"\"\n    \n    }\n  \telse {\n    \tcmd = $job.allocatedResources.cpu\n    }\n\treturn cmd\n\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "prefix": "-p",
+            "separate": false
+          },
+          {
+            "valueFrom": {
+              "script": "{\n  references = [].concat($job.inputs.references)\n\text = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext === 'tar'){\n    \tcmd = \"\"\n    \n    }\n    else {\n      references = [].concat($job.inputs.references)\n      var base = \"\"\n      ref_path = \"\"\n      for (var i =0; i < references.length-1; i++){\n        var ext = references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n        if (ext === 'bz2' || ext === 'gz') {\n          base = base.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".\")\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\"* \")\n        }\n        else {\n          base = base.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".\")\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\"* \")\n        }\n      }\n      ext = references[references.length-1].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n        if (ext === 'bz2' || ext === 'gz') {\n          base = base.concat(references[references.length-1].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\"))\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\"* \")\n        }\n        else {\n          base = base.concat(references[references.length-1].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\"))\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\"* \")\n        }\n      var snp = \"\"\n      if ($job.inputs.snp){\n        snp = \"_\" + $job.inputs.snp.path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")\n      }\n      var ss = \"\"\n      if ($job.inputs.ss){\n      \tss = \"_\" + $job.inputs.ss.path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")\n      }\n      var exon = \"\"\n      if ($job.inputs.exon){\n      \texon = \"_\" + $job.inputs.exon.path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")\n      }\n      base = base + snp + ss + exon\n      cmd =\"index/\" + base + \"_HISAT2-2.0.1\"\n    }\n  return cmd\n\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "separate": true,
+            "position": 2
+          },
+          {
+            "valueFrom": {
+              "script": "{\n  references = [].concat($job.inputs.references)\n\text = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext === 'tar'){\n    \tcmd = \"\"\n    \n    }\n    else {\n      references = [].concat($job.inputs.references)\n      var base = \"\"\n      ref_path = \"\"\n      for (var i =0; i < references.length-1; i++){\n        var ext = references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n        if (ext === 'bz2' || ext === 'gz') {\n          base = base.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\".\")\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\"* \")\n        }\n        else {\n          base = base.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\".\")\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\"* \")\n        }\n      }\n      ext = references[references.length-1].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n        if (ext === 'bz2' || ext === 'gz') {\n          base = base.concat(references[references.length-1].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\"))\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-2).join(\".\")+\"* \")\n        }\n        else {\n          base = base.concat(references[references.length-1].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\"))\n          ref_path = ref_path.concat(references[i].path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")+\"* \")\n        }\n      var snp = \"\"\n      if ($job.inputs.snp){\n        snp = \"_\" + $job.inputs.snp.path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")\n      }\n      var ss = \"\"\n      if ($job.inputs.ss){\n      \tss = \"_\" + $job.inputs.ss.path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")\n      }\n      var exon = \"\"\n      if ($job.inputs.exon){\n      \texon = \"_\" + $job.inputs.exon.path.split(\"/\").slice(-1)[0].split(\".\").slice(0,-1).join(\".\")\n      }\n      base = base + snp + ss + exon\n      cmd =\"&& tar -vcf \" + base + \"_HISAT2-2.0.1.tar index/\"\n    }\n  return cmd\n\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "separate": false,
+            "position": 3
+          }
+        ],
+        "sbg:contributors": [
+          "jexnaex"
+        ],
+        "sbg:image_url": null,
+        "class": "CommandLineTool",
+        "stdout": "",
+        "sbg:cmdPreview": "mkdir index && /opt/hisat2/hisat2-build -p32 /path/to/references-1.fa,/path/to/references-2.ext  index/references-1.references-2_bla_bla1_bla2_HISAT2-2.0.1 && tar -vcf references-1.references-2_bla_bla1_bla2_HISAT2-2.0.1.tar index/",
+        "sbg:revisionsInfo": [
+          {
+            "sbg:modifiedOn": 1473014334,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 0
+          },
+          {
+            "sbg:modifiedOn": 1473014358,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 1
+          },
+          {
+            "sbg:modifiedOn": 1475241933,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 2
+          },
+          {
+            "sbg:modifiedOn": 1475502253,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 3
+          }
+        ],
+        "sbg:latestRevision": 3,
+        "sbg:createdBy": "jexnaex",
+        "sbg:toolAuthor": "Johns Hopkins University",
+        "inputs": [
+          {
+            "required": false,
+            "sbg:fileTypes": "TXT",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \tcmd = \"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if ($job.inputs.ss != undefined)\n        cmd = \"--ss \" + $job.inputs.ss.path\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Splice sites file",
+            "description": "Splice site file produced by HISAT2 Extract Splice Sites.",
+            "id": "#ss",
+            "sbg:category": "Input files"
+          },
+          {
+            "required": false,
+            "sbg:fileTypes": "SNP",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n    cmd =\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if ($job.inputs.snp != undefined)\n        cmd = \"--snp \" + $job.inputs.snp.path\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "SNP file",
+            "description": "SNP file produced by HISAT2 Extract SNPs-Haplotypes UCSC/VCF.",
+            "id": "#snp",
+            "sbg:category": "Input files"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \tcmd=\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if ($job.inputs.seed)\n        cmd = \"--seed \" + $job.inputs.seed\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Seed",
+            "description": "Seed for rundom number generator.",
+            "id": "#seed",
+            "sbg:category": "Options"
+          },
+          {
+            "required": true,
+            "sbg:stageInput": "link",
+            "sbg:fileTypes": "FA, FASTA, FA.GZ, FASTA.GZ",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n    references = [].concat($job.inputs.references)\n    var cmd = \"\"\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        for (var i=0;i < references.length-1;i++){\n         cmd = cmd.concat(references[i].path+\",\")\n        \n        }\n        cmd = cmd.concat(references[references.length-1].path)\n      }\n  \treturn cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "itemSeparator": " ",
+              "separate": false,
+              "position": 1,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              {
+                "type": "array",
+                "items": "File",
+                "name": "references"
+              }
+            ],
+            "label": "References",
+            "description": "List of files with ref sequences.",
+            "id": "#references",
+            "sbg:category": "Input files"
+          },
+          {
+            "required": false,
+            "sbg:altPrefix": "-o",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \tcmd=\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if($job.inputs.offrate)\n        cmd = \"--offrate \" + $job.inputs.offrate\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Sampling rate",
+            "sbg:toolDefaultValue": "5",
+            "description": "SA is sampled every 2^offRate BWT chars (default: 5).",
+            "id": "#offrate",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "sbg:altPrefix": "-r",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\t\n  \tcmd =\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if($job.inputs.noref)\n        cmd = \"--noref\"\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Disable building packed reference",
+            "sbg:toolDefaultValue": "false",
+            "description": "Don't build .3/.4.bt2 (packed reference) portion.",
+            "id": "#noref",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\t\n  \tcmd =\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if($job.inputs.nodc) \n        cmd = \"--nodc\"\n      }\n \treturn cmd     \n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "No diff-cover",
+            "sbg:toolDefaultValue": "false",
+            "description": "Disable diff-cover (algorithm becomes quadratic).",
+            "id": "#nodc",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "sbg:altPrefix": "-a",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n    cmd =\"\"\n\treferences = [].concat($job.inputs.references)\n\text = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext === 'tar'){\n    \tcmd = \"\"\n    \n    }\n    else {\n      if ($job.inputs.no_auto)\n      cmd = \"--noauto\"\n    }\n\treturn cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Disable automatic memory fitting",
+            "sbg:toolDefaultValue": "false",
+            "description": "Disable automatic -p/--bmax/--dcv memory-fitting.",
+            "id": "#no_auto",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \tcmd = \"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if ($job.inputs.localoffrate)\n        cmd = \"--localoffrate \" + $job.inputs.localoffrate\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Local sample rate",
+            "sbg:toolDefaultValue": "3",
+            "description": "SA (local) is sampled every 2^offRate BWT chars (default: 3).",
+            "id": "#localoffrate",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\t\n  \tcmd = \"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if ($job.inputs.localftabchars)\n        cmd = \"--localftabchars \" + $job.inputs.localftabchars\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Number of chars in lookup (local)",
+            "sbg:toolDefaultValue": "6",
+            "description": "# of chars consumed in initial lookup in a local index (default: 6).",
+            "id": "#localftabchars",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n    cmd =\"\"\n\treferences = [].concat($job.inputs.references)\n\text = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext === 'tar'){\n    \tcmd = \"\"\n    \n    }\n    else {\n      if ($job.inputs.large_index)\n      cmd = \"--large-index\"\n    }\n\treturn cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Force large index",
+            "sbg:toolDefaultValue": "false",
+            "description": "Force generated index to be 'large', even if ref has fewer than 4 billion nucleotides.",
+            "id": "#large_index",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\t\n  \tcmd=\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if($job.inputs.justref)\n        cmd = \"--justref\"\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "label": "Build only packed portion",
+            "sbg:toolDefaultValue": "false",
+            "description": "Just build .3/.4.bt2 (packed reference) portion.",
+            "id": "#justref",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "sbg:altPrefix": "-t",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \tcmd=\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if($job.inputs.ftabchars)\n        cmd = \"--ftabchars \" + $job.inputs.ftabchars\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Number of chars in lookup",
+            "sbg:toolDefaultValue": "10",
+            "description": "# of chars consumed in initial lookup (default: 10).",
+            "id": "#ftabchars",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "sbg:fileTypes": "TXT",
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n    cmd = \"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if ($job.inputs.exon != undefined)\n        cmd = \"--exon \" + $job.inputs.exon.path\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Exon file",
+            "description": "Exon file produced by HISAT2 Extract Exons.",
+            "id": "#exon",
+            "sbg:category": "Input files"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  \tcmd=\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if($job.inputs.dcv)\n        cmd = \"--dcv \" + $job.inputs.dcv\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Diff-cover period",
+            "sbg:toolDefaultValue": "1024",
+            "description": "Diff-cover period for blockwise (default: 1024).",
+            "id": "#dcv",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\t\n  \tcmd =\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if($job.inputs.bmaxdivn)\n        cmd = \"--bmaxdivn \" + $job.inputs.bmaxdivn\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Max bucket size (as divisior)",
+            "sbg:toolDefaultValue": "4",
+            "description": "Max bucket size as divisor of reference length (default: 4).",
+            "id": "#bmaxdivn",
+            "sbg:category": "Options"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{   \n  \tcmd =\"\"\n    references = [].concat($job.inputs.references)\n    ext = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n      if (ext === 'tar'){\n          cmd = \"\"\n\n      }\n      else {\n        if ($job.inputs.bmax)\n        cmd = \"--bmax \" + $job.inputs.bmax\n      }\n      return cmd\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Max bucket size",
+            "description": "Max bucket size for blockwise suffix-array builder.",
+            "id": "#bmax",
+            "sbg:category": "Options"
+          }
+        ],
+        "baseCommand": [
+          {
+            "script": "{\n  \treferences = [].concat($job.inputs.references)\n\text = references[0].path.split(\"/\").slice(-1)[0].split(\".\").slice(-1)[0]\n    if (ext === 'tar'){\n    \tcmd = \"echo No indexing required, tar provided, assuming it is indexed reference.\"\n    \n    }\n  \telse {\n  \t\tcmd = 'mkdir index && /opt/hisat2/hisat2-build'\n  \t}\n    return cmd\n\n}",
+            "class": "Expression",
+            "engine": "#cwl-js-engine"
+          }
+        ],
+        "sbg:validationErrors": [],
+        "sbg:categories": [
+          "Indexing",
+          "Alignment"
+        ],
+        "sbg:project": "jexnaex/hisat2-2-0-1-demo",
+        "sbg:revision": 3,
+        "sbg:sbgMaintained": false,
+        "appUrl": "/u/jexnaex/hisat2-2-0-1-demo/apps/#jexnaex/hisat2-2-0-1-demo/hisat2-build-2-0-1/3",
+        "sbg:job": {
+          "allocatedResources": {
+            "cpu": 32,
+            "mem": 240000
+          },
+          "inputs": {
+            "exon": {
+              "secondaryFiles": [],
+              "path": "/path/bla2.bla",
+              "class": "File",
+              "size": 0
+            },
+            "seed": null,
+            "localftabchars": null,
+            "bmaxdivn": null,
+            "nodc": false,
+            "offrate": null,
+            "no_auto": true,
+            "bmax": null,
+            "localoffrate": null,
+            "noref": false,
+            "snp": {
+              "secondaryFiles": [],
+              "path": "/path/bla.bla",
+              "class": "File",
+              "size": 0
+            },
+            "ss": {
+              "secondaryFiles": [],
+              "path": "/path/bla1.bla",
+              "class": "File",
+              "size": 0
+            },
+            "justref": false,
+            "large_index": true,
+            "ftabchars": null,
+            "references": [
+              {
+                "secondaryFiles": [],
+                "path": "/path/to/references-1.fa",
+                "class": "File",
+                "size": 0
+              },
+              {
+                "secondaryFiles": [],
+                "path": "/path/to/references-2.ext",
+                "class": "File",
+                "size": 0
+              }
+            ],
+            "dcv": null
+          }
+        },
+        "y": 345.4455820719403
+      },
+      "outputs": [
+        {
+          "id": "#HISAT2_Build.tar_out"
+        }
+      ],
+      "sbg:y": 345.4455820719403,
+      "sbg:x": 218.33333333333346,
+      "inputs": [
+        {
+          "id": "#HISAT2_Build.ss",
+          "source": [
+            "#ss"
+          ]
+        },
+        {
+          "id": "#HISAT2_Build.snp",
+          "source": [
+            "#snp"
+          ]
+        },
+        {
+          "id": "#HISAT2_Build.seed"
+        },
+        {
+          "id": "#HISAT2_Build.references",
+          "source": [
+            "#reference_files"
+          ]
+        },
+        {
+          "id": "#HISAT2_Build.offrate"
+        },
+        {
+          "id": "#HISAT2_Build.noref"
+        },
+        {
+          "id": "#HISAT2_Build.nodc"
+        },
+        {
+          "id": "#HISAT2_Build.no_auto"
+        },
+        {
+          "id": "#HISAT2_Build.localoffrate"
+        },
+        {
+          "id": "#HISAT2_Build.localftabchars"
+        },
+        {
+          "id": "#HISAT2_Build.large_index"
+        },
+        {
+          "id": "#HISAT2_Build.justref"
+        },
+        {
+          "id": "#HISAT2_Build.ftabchars"
+        },
+        {
+          "id": "#HISAT2_Build.exon",
+          "source": [
+            "#exon"
+          ]
+        },
+        {
+          "id": "#HISAT2_Build.dcv"
+        },
+        {
+          "id": "#HISAT2_Build.bmaxdivn"
+        },
+        {
+          "id": "#HISAT2_Build.bmax"
+        }
+      ],
+      "id": "#HISAT2_Build"
+    },
+    {
+      "run": {
+        "sbg:revisionNotes": "Modified \"sort_order\" default value.",
+        "outputs": [
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#input_bam",
+              "secondaryFiles": [
+                "^.bai",
+                ".bai"
+              ],
+              "sbg:metadata": {
+                "__inherit__": "input_bam"
+              },
+              "glob": "*.sorted.?am"
+            },
+            "sbg:fileTypes": "BAM, SAM",
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Sorted BAM/SAM",
+            "description": "Sorted BAM or SAM file.",
+            "id": "#sorted_bam"
+          }
+        ],
+        "sbg:toolkit": "Picard",
+        "label": "Picard SortSam",
+        "sbg:id": "admin/sbg-public-data/picard-sortsam-1-140/3",
+        "sbg:toolkitVersion": "1.140",
+        "cwlVersion": "sbg:draft-2",
+        "x": 693.3333333333337,
+        "successCodes": [],
+        "hints": [
+          {
+            "class": "DockerRequirement",
+            "dockerPull": "images.sbgenomics.com/mladenlsbg/picard:1.140",
+            "dockerImageId": "eab0e70b6629"
+          },
+          {
+            "value": 1,
+            "class": "sbg:CPURequirement"
+          },
+          {
+            "value": {
+              "script": "{\n  if($job.inputs.memory_per_job){\n  \treturn $job.inputs.memory_per_job\n  }\n  \treturn 2048\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "class": "sbg:MemRequirement"
+          }
+        ],
+        "sbg:links": [
+          {
+            "label": "Homepage",
+            "id": "http://broadinstitute.github.io/picard/index.html"
+          },
+          {
+            "label": "Source Code",
+            "id": "https://github.com/broadinstitute/picard/releases/tag/1.138"
+          },
+          {
+            "label": "Wiki",
+            "id": "http://broadinstitute.github.io/picard/"
+          },
+          {
+            "label": "Download",
+            "id": "https://github.com/broadinstitute/picard/zipball/master"
+          },
+          {
+            "label": "Publication",
+            "id": "http://broadinstitute.github.io/picard/"
+          }
+        ],
+        "sbg:cmdPreview": "java -Xmx2048M -jar /opt/picard-tools-1.140/picard.jar SortSam OUTPUT=example.tested.sorted.bam INPUT=/root/dir/example.tested.bam SORT_ORDER=coordinate",
+        "temporaryFailCodes": [],
+        "id": "bix-demo/picard-1-140-demo/picard-sortsam-1-140/3",
+        "sbg:license": "MIT License, Apache 2.0 Licence",
+        "requirements": [
+          {
+            "requirements": [
+              {
+                "class": "DockerRequirement",
+                "dockerPull": "rabix/js-engine"
+              }
+            ],
+            "class": "ExpressionEngineRequirement",
+            "engineCommand": "cwl-engine.js",
+            "id": "#cwl-js-engine"
+          }
+        ],
+        "sbg:modifiedOn": 1476869720,
+        "arguments": [
+          {
+            "valueFrom": {
+              "script": "{\n  filename = $job.inputs.input_bam.path\n  ext = $job.inputs.output_type\n\nif (ext === \"BAM\")\n{\n    return filename.split('.').slice(0, -1).concat(\"sorted.bam\").join(\".\").replace(/^.*[\\\\\\/]/, '')\n    }\n\nelse if (ext === \"SAM\")\n{\n    return filename.split('.').slice(0, -1).concat(\"sorted.sam\").join('.').replace(/^.*[\\\\\\/]/, '')\n}\n\nelse \n{\n\treturn filename.split('.').slice(0, -1).concat(\"sorted.\"+filename.split('.').slice(-1)[0]).join(\".\").replace(/^.*[\\\\\\/]/, '')\n}\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "prefix": "OUTPUT=",
+            "separate": false,
+            "position": 0
+          },
+          {
+            "valueFrom": {
+              "script": "{\n  filename = $job.inputs.input_bam.path\n  \n  /* figuring out output file type */\n  ext = $job.inputs.output_type\n  if (ext === \"BAM\")\n  {\n    out_extension = \"BAM\"\n  }\n  else if (ext === \"SAM\")\n  {\n    out_extension = \"SAM\"\n  }\n  else \n  {\n\tout_extension = filename.split('.').slice(-1)[0].toUpperCase()\n  }  \n  \n  /* if exist moving .bai in bam.bai */\n  if ($job.inputs.create_index === 'True' && $job.inputs.sort_order === 'Coordinate' && out_extension == \"BAM\")\n  {\n    \n    old_name = filename.split('.').slice(0, -1).concat('sorted.bai').join('.').replace(/^.*[\\\\\\/]/, '')\n    new_name = filename.split('.').slice(0, -1).concat('sorted.bam.bai').join('.').replace(/^.*[\\\\\\/]/, '')\n    return \"; mv \" + \" \" + old_name + \" \" + new_name\n  }\n\n}",
+              "class": "Expression",
+              "engine": "#cwl-js-engine"
+            },
+            "separate": true,
+            "position": 1000
+          }
+        ],
+        "sbg:contributors": [
+          "bix-demo",
+          "mladenlSBG"
+        ],
+        "sbg:image_url": null,
+        "class": "CommandLineTool",
+        "stdout": "",
+        "sbg:revisionsInfo": [
+          {
+            "sbg:modifiedOn": 1450911168,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 0
+          },
+          {
+            "sbg:modifiedOn": 1450911169,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 1
+          },
+          {
+            "sbg:modifiedOn": 1450911170,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 2
+          },
+          {
+            "sbg:modifiedOn": 1476869720,
+            "sbg:revisionNotes": "Modified \"sort_order\" default value.",
+            "sbg:revision": 3
+          }
+        ],
+        "sbg:latestRevision": 3,
+        "sbg:createdBy": "bix-demo",
+        "stdin": "",
+        "sbg:toolAuthor": "Broad Institute",
+        "inputs": [
+          {
+            "required": false,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  if ($job.inputs.validation_stringency)\n  {\n    return $job.inputs.validation_stringency\n  }\n  else\n  {\n    return \"SILENT\"\n  }\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "VALIDATION_STRINGENCY=",
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "STRICT",
+                  "LENIENT",
+                  "SILENT"
+                ],
+                "type": "enum",
+                "name": "validation_stringency"
+              }
+            ],
+            "label": "Validation stringency",
+            "sbg:toolDefaultValue": "SILENT",
+            "description": "Validation stringency for all SAM files read by this program. Setting stringency to SILENT can improve performance when processing a BAM file in which variable-length data (read, qualities, tags) do not otherwise need to be decoded. This option can be set to 'null' to clear the default value. Possible values: {STRICT, LENIENT, SILENT}.",
+            "id": "#validation_stringency",
+            "sbg:category": "Other input types"
+          },
+          {
+            "required": true,
+            "inputBinding": {
+              "valueFrom": {
+                "script": "{\n  p = $job.inputs.sort_order.toLowerCase()\n  return p\n}",
+                "class": "Expression",
+                "engine": "#cwl-js-engine"
+              },
+              "prefix": "SORT_ORDER=",
+              "position": 3,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              {
+                "symbols": [
+                  "Unsorted",
+                  "Queryname",
+                  "Coordinate"
+                ],
+                "type": "enum",
+                "name": "sort_order"
+              }
+            ],
+            "label": "Sort order",
+            "sbg:altPrefix": "SO",
+            "description": "Sort order of the output file. Possible values: {unsorted, queryname, coordinate}.",
+            "id": "#sort_order",
+            "sbg:category": "Other input types"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "QUIET=",
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "True",
+                  "False"
+                ],
+                "type": "enum",
+                "name": "quiet"
+              }
+            ],
+            "label": "Quiet",
+            "sbg:toolDefaultValue": "False",
+            "description": "This parameter indicates whether to suppress job-summary info on System.err. This option can be set to 'null' to clear the default value. Possible values: {true, false}.",
+            "id": "#quiet",
+            "sbg:category": "Other input types"
+          },
+          {
+            "required": false,
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "BAM",
+                  "SAM",
+                  "SAME AS INPUT"
+                ],
+                "type": "enum",
+                "name": "output_type"
+              }
+            ],
+            "label": "Output format",
+            "sbg:toolDefaultValue": "SAME AS INPUT",
+            "description": "Since Picard tools can output both SAM and BAM files, user can choose the format of the output file.",
+            "id": "#output_type",
+            "sbg:category": "Other input types"
+          },
+          {
+            "required": false,
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Memory per job",
+            "sbg:toolDefaultValue": "2048",
+            "description": "Amount of RAM memory to be used per job. Defaults to 2048 MB for single threaded jobs.",
+            "id": "#memory_per_job"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "MAX_RECORDS_IN_RAM=",
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Max records in RAM",
+            "sbg:toolDefaultValue": "500000",
+            "description": "When writing SAM files that need to be sorted, this parameter will specify the number of records stored in RAM before spilling to disk. Increasing this number reduces the number of file handles needed to sort a SAM file, and increases the amount of RAM needed. This option can be set to 'null' to clear the default value.",
+            "id": "#max_records_in_ram",
+            "sbg:category": "Other input types"
+          },
+          {
+            "required": true,
+            "sbg:fileTypes": "BAM, SAM",
+            "inputBinding": {
+              "prefix": "INPUT=",
+              "position": 1,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "File"
+            ],
+            "label": "Input BAM",
+            "sbg:altPrefix": "I",
+            "description": "The BAM or SAM file to sort.",
+            "id": "#input_bam",
+            "sbg:category": "File inputs"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "CREATE_INDEX=",
+              "position": 5,
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              {
+                "symbols": [
+                  "True",
+                  "False"
+                ],
+                "type": "enum",
+                "name": "create_index"
+              }
+            ],
+            "label": "Create index",
+            "sbg:toolDefaultValue": "False",
+            "description": "This parameter indicates whether to create a BAM index when writing a coordinate-sorted BAM file. This option can be set to 'null' to clear the default value. Possible values: {true, false}.",
+            "id": "#create_index",
+            "sbg:category": "Other input types"
+          },
+          {
+            "required": false,
+            "inputBinding": {
+              "prefix": "COMPRESSION_LEVEL=",
+              "separate": false,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "null",
+              "int"
+            ],
+            "label": "Compression level",
+            "sbg:toolDefaultValue": "5",
+            "description": "Compression level for all compressed files created (e.g. BAM and GELI). This option can be set to 'null' to clear the default value.",
+            "id": "#compression_level",
+            "sbg:category": "Other input types"
+          }
+        ],
+        "baseCommand": [
+          "java",
+          {
+            "script": "{   \n  if($job.inputs.memory_per_job){\n    return '-Xmx'.concat($job.inputs.memory_per_job, 'M')\n  }   \n  \treturn '-Xmx2048M'\n}",
+            "class": "Expression",
+            "engine": "#cwl-js-engine"
+          },
+          "-jar",
+          "/opt/picard-tools-1.140/picard.jar",
+          "SortSam"
+        ],
+        "sbg:validationErrors": [],
+        "sbg:categories": [
+          "SAM/BAM-Processing"
+        ],
+        "sbg:project": "bix-demo/picard-1-140-demo",
+        "description": "Picard SortSam sorts the input SAM or BAM. Input and output formats are determined by the file extension.",
+        "sbg:revision": 3,
+        "sbg:sbgMaintained": false,
+        "appUrl": "/u/bix-demo/picard-1-140-demo/apps/#bix-demo/picard-1-140-demo/picard-sortsam-1-140/3",
+        "sbg:job": {
+          "allocatedResources": {
+            "cpu": 1,
+            "mem": 2048
+          },
+          "inputs": {
+            "input_bam": {
+              "path": "/root/dir/example.tested.bam"
+            },
+            "memory_per_job": 2048,
+            "create_index": null,
+            "output_type": null,
+            "sort_order": "Coordinate"
+          }
+        },
+        "y": 47.1122487386068
+      },
+      "outputs": [
+        {
+          "id": "#Picard_SortSam.sorted_bam"
+        }
+      ],
+      "sbg:y": 47.1122487386068,
+      "sbg:x": 693.3333333333337,
+      "inputs": [
+        {
+          "id": "#Picard_SortSam.validation_stringency"
+        },
+        {
+          "default": "Coordinate",
+          "id": "#Picard_SortSam.sort_order"
+        },
+        {
+          "id": "#Picard_SortSam.quiet"
+        },
+        {
+          "default": "BAM",
+          "id": "#Picard_SortSam.output_type"
+        },
+        {
+          "id": "#Picard_SortSam.memory_per_job"
+        },
+        {
+          "id": "#Picard_SortSam.max_records_in_ram"
+        },
+        {
+          "id": "#Picard_SortSam.input_bam",
+          "source": [
+            "#HISAT2.out_align"
+          ]
+        },
+        {
+          "default": "True",
+          "id": "#Picard_SortSam.create_index"
+        },
+        {
+          "id": "#Picard_SortSam.compression_level"
+        }
+      ],
+      "id": "#Picard_SortSam"
+    },
+    {
+      "run": {
+        "sbg:revisionNotes": "Reverted Sanger scale to (33,126), until we find a better range.",
+        "outputs": [
+          {
+            "outputBinding": {
+              "sbg:inheritMetadataFrom": "#fastq",
+              "glob": "*.fastq"
+            },
+            "sbg:fileTypes": "FASTQ",
+            "type": [
+              "null",
+              "File"
+            ],
+            "label": "Result",
+            "description": "Source FASTQ file with updated metadata.",
+            "id": "#result"
+          }
+        ],
+        "sbg:toolkit": "SBGTools",
+        "label": "SBG FASTQ Quality Detector",
+        "sbg:id": "admin/sbg-public-data/sbg-fastq-quality-detector/12",
+        "stdin": "",
+        "cwlVersion": "sbg:draft-2",
+        "x": 235.00000933806115,
+        "successCodes": [],
+        "hints": [
+          {
+            "class": "DockerRequirement",
+            "dockerPull": "images.sbgenomics.com/tziotas/sbg_fastq_quality_scale_detector:1.0",
+            "dockerImageId": ""
+          },
+          {
+            "value": 1,
+            "class": "sbg:CPURequirement"
+          },
+          {
+            "value": 1000,
+            "class": "sbg:MemRequirement"
+          }
+        ],
+        "sbg:cmdPreview": "python sbg_fastq_quality_scale_detector.py --fastq /path/to/fastq.ext",
+        "temporaryFailCodes": [],
+        "id": "bix-demo/sbgtools-demo/sbg-fastq-quality-detector/8",
+        "sbg:license": "Apache License 2.0",
+        "requirements": [
+          {
+            "class": "CreateFileRequirement",
+            "fileDef": [
+              {
+                "filename": "sbg_fastq_quality_scale_detector.py",
+                "fileContent": "\"\"\"\nUsage:\n    sbg_fastq_sniff.py --fastq FILE\n\nOptions:\n    -h, --help          Show this message.\n\n    -f, --fastq FILE    Input FASTQ file.\n\n\"\"\"\n\nfrom docopt import docopt\nimport os\nimport gzip\nimport itertools as it\nimport shutil\n\nfrom sdkcwl import *\n\nargs = docopt(__doc__, version='1.0')\n\n\nclass myGzipFile(gzip.GzipFile):\n    def __enter__(self, *args, **kwargs):\n        if self.fileobj is None:\n            raise Exception(\"I/O operation on closed GzipFile object\")\n        return self\n\n    def __exit__(self, *args, **kwargs):\n        self.close()\n\n\ndef extremes(a, b):\n    if a is False:\n        return b, b\n    return min(a[0], b), max(a[1], b)\n\n\ndef walk_qualities(f, sample_size=1000):\n    for i in xrange(sample_size * 4):\n        try:\n            line = f.next()\n        except StopIteration:\n            return\n        if i % 4 == 3:\n            yield line.rstrip(\"\\n\\r\")\n\n\ndef sniff(path):\n    with open(path, 'rb') as f:\n        gz = f.read(2) == '\\x1f\\x8b'\n    opn = myGzipFile if gz else open\n    with opn(path) as f:\n        return get_scale(*map(ord, reduce(extremes, it.chain(*walk_qualities(f)), False)))\n\n\ndef get_scale(ord_min, ord_max):\n    options = {\n        'illumina13': (64, 105),\n        'illumina15': (66, 105),\n        'sanger': (33, 126),\n        'solexa': (59, 105),\n    }\n    fits = [(k, v) for k, v in options.iteritems() if v[0] <= ord_min and v[1] >= ord_max]\n    if not fits:\n        message = 'Quality scale for range (%s, %s) not found.' % (ord_min, ord_max)\n        raise Exception(message)\n        # Return narrowest range\n    return reduce(lambda a, b: a if a[1][1] - a[1][0] < b[1][1] - b[1][0] else b, fits)[0]\n\ncwl_input(args, '--fastq', 'fastq')\ncwl_output('result')\n\nfq = self.inputs.fastq\n\nquality_scale = sniff(fq)\n\noutput_file = fq[fq.rfind('/')+1:]\nshutil.copyfile(fq, output_file)\n\nself.outputs.result = output_file\nself.outputs.result.meta = fq.make_metadata(quality_scale=quality_scale)\n\ncwl_finish()"
+              },
+              {
+                "filename": "sdkcwl.py",
+                "fileContent": "import json\nimport os\n\ndef _get_meta(fpath, reload_job=False):\n    def get_files(o):\n        if isinstance(o, dict) and o.get('class') == 'File':\n            return [o]\n        if isinstance(o, dict):\n            return sum(map(get_files, o.itervalues()), [])\n        if isinstance(o, list):\n            return sum(map(get_files, o), [])\n        return []\n\n    files = getattr(_get_meta, '_files', None)\n    if reload_job or files is None:\n        with open('job.json') as fp:\n            job = json.load(fp)\n        files = {f['path']: f for f in get_files(job['inputs'])}\n    return files[fpath].get('metadata', {})\n\n\nclass _DotDict(dict):\n    def _map(self, attr):\n        key_map = {\n            \"file_type\": \"file_extension\",\n            \"seq_tech\": \"platform\",\n            \"sample\": \"sample_id\",\n            \"library\": \"library_id\",\n            \"platform_unit\": \"platform_unit_id\",\n            \"chunk\": \"file_segment_number\",\n            \"qual_scale\": \"quality_scale\"\n        }\n        if attr in key_map:\n            attr = key_map[attr]\n        return attr\n\n    def __init__(self, *args, **kwargs):\n        super(_DotDict, self).__init__(*args, **kwargs)\n        for arg in args:\n            if isinstance(arg, dict) or isinstance(arg, _DotDict):\n                for k, v in arg.iteritems():\n                    nk = self._map(k)\n                    if k != nk and k in self:\n                        self.pop(k)\n                    self[nk] = v\n        if kwargs:\n            for k, v in kwargs.iteritems():\n                self[self._map(k)] = v\n\n    def __getattr__(self, attr):\n        return self.get(self._map(attr))\n\n    def __setattr__(self, key, value):\n        self.__setitem__(self._map(key), value)\n\n    def __setitem__(self, key, value):\n        super(_DotDict, self).__setitem__(self._map(key), value)\n        self.__dict__.update({self._map(key): value})\n\n    def __delattr__(self, item):\n        self.__delitem__(self._map(item))\n\n    def __delitem__(self, key):\n        super(_DotDict, self).__delitem__(self._map(key))\n        del self.__dict__[self._map(key)]\n\nclass _OldInput(str):\n\n    _meta = None\n\n    @property\n    def meta(self):\n        if self._meta is None:\n            self._meta = _DotDict(_get_meta(self))\n        return self._meta\n    \n    def make_metadata(self, **kwargs):\n        new_meta = _DotDict(self.meta)\n        if kwargs is not None:\n            for key, value in kwargs.iteritems():\n                new_meta[key] = value\n        return new_meta\n\n\nclass _OldOutputBucket(_DotDict):\n    \n    def __setitem__(self, key, value):\n        if isinstance(value, list):\n            super(_OldOutputBucket, self).__setitem__(key, _OldOutputList(value))\n        else:\n            super(_DotDict, self).__setitem__(key, _OldOutput(value))\n\nclass _OldOutput(str):\n\n    _meta = None\n\n    @property\n    def meta(self):\n        if self._meta is None:\n            self._meta = _DotDict()\n        return self._meta\n\n    @meta.setter\n    def meta(self, value):\n        self._meta = _DotDict(value)\n\n\nclass _OldOutputList(list):\n\n    def add_file(self, name):\n        new_file = _OldOutput(name)\n        self.append(new_file)\n        return new_file\ndef cwl_input(_args, _new, _old, list=False):\n    _new = _args[_new]\n    if isinstance(_new, str):\n        _new = [_new]\n    if list==False and len(_new) > 1:\n        raise Exception('Number of items provided to a non-list type input.')\n    if len(_new) == 1 and list == False:\n        self.inputs[_old] =  _OldInput(_new[0])\n    else:\n        self.inputs[_old] = map(_OldInput, _new)\n\ndef cwl_param(_args, _new, _old):\n    self.params[_old] = _args[_new]\n\ndef cwl_output(_old, list=False):\n    if list is False:\n        self.outputs[_old] = _OldOutput()\n    else:\n        self.outputs[_old] = _OldOutputList()\n\n\ndef cwl_finish():\n    if not self['outputs']:\n        return\n    if 'cwl_secondary' not in self:\n        self['cwl_secondary'] = {}\n    data = {}\n    for output in self['outputs']:\n        o = self['outputs'][output]\n        sf = self['cwl_secondary'].get(output, None)\n        if isinstance(o, _OldOutputList):\n            file_data = []\n            for f in o:\n                f_dict = {'name': os.path.split(f)[1], \\\n                          'class': 'File', \\\n                          'metadata': f.meta, \\\n                          'path': os.path.join(os.getcwd(), f)}\n                if sf:\n                    f_dict['secondaryFiles'] = [{'path': os.path.join(os.getcwd(), x), \"class\": \"File\"} for x in sf]\n                file_data.append(f_dict)\n        else:\n            file_data = {\n                'name': os.path.split(o)[1],\n                'class': 'File',\n                'metadata': o.meta,\n                'path': os.path.join(os.getcwd(), o)\n            }\n            if sf:\n                file_data['secondaryFiles'] = [{'path': os.path.join(os.getcwd(), x), \"class\": \"File\"} for x in sf]\n        data[output] = file_data\n    with open('cwl.output.json', 'w') as w:\n        json.dump(data, w)\n\ndef cwl_set_secondary(output, secondary_files):\n    if 'cwl_secondary' not in self:\n        self['cwl_secondary'] = {}\n    if not isinstance(secondary_files, list):\n        secondary_files = [secondary_files]\n    self['cwl_secondary'][output] = secondary_files\n\n################################################################################\n\nglobal self\nself = _DotDict(globals())\nif 'inputs' not in self:\n    self['inputs'] = _DotDict()\nif 'outputs' not in self:\n    self['outputs'] =  _OldOutputBucket()\nif 'params' not in self:\n    self['params'] = _DotDict()"
+              }
+            ]
+          }
+        ],
+        "sbg:modifiedOn": 1475246089,
+        "arguments": [],
+        "sbg:contributors": [
+          "vladimirk",
+          "milan.domazet.sudo",
+          "bix-demo"
+        ],
+        "sbg:image_url": null,
+        "class": "CommandLineTool",
+        "stdout": "",
+        "sbg:revisionsInfo": [
+          {
+            "sbg:modifiedOn": 1450911312,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 0
+          },
+          {
+            "sbg:modifiedOn": 1450911313,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 1
+          },
+          {
+            "sbg:modifiedOn": 1450911313,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 2
+          },
+          {
+            "sbg:modifiedOn": 1450911314,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 3
+          },
+          {
+            "sbg:modifiedOn": 1472045214,
+            "sbg:revisionNotes": null,
+            "sbg:revision": 4
+          },
+          {
+            "sbg:modifiedOn": 1473774177,
+            "sbg:revisionNotes": "Changed input type to FASTQ and FQ.",
+            "sbg:revision": 5
+          },
+          {
+            "sbg:modifiedOn": 1473775728,
+            "sbg:revisionNotes": "Added Category.",
+            "sbg:revision": 6
+          },
+          {
+            "sbg:modifiedOn": 1475083591,
+            "sbg:revisionNotes": "Fixed Sanger range and moved script to crate files.",
+            "sbg:revision": 7
+          },
+          {
+            "sbg:modifiedOn": 1475246089,
+            "sbg:revisionNotes": "Reverted Sanger scale to (33,126), until we find a better range.",
+            "sbg:revision": 8
+          }
+        ],
+        "sbg:latestRevision": 8,
+        "sbg:createdBy": "bix-demo",
+        "sbg:toolAuthor": "Seven Bridges Genomics",
+        "inputs": [
+          {
+            "required": true,
+            "sbg:fileTypes": "FASTQ,FQ",
+            "inputBinding": {
+              "prefix": "--fastq",
+              "separate": true,
+              "sbg:cmdInclude": true
+            },
+            "type": [
+              "File"
+            ],
+            "label": "Fastq",
+            "description": "FASTQ file.",
+            "id": "#fastq",
+            "sbg:category": "Input"
+          }
+        ],
+        "baseCommand": [
+          "python",
+          "sbg_fastq_quality_scale_detector.py"
+        ],
+        "sbg:validationErrors": [],
+        "sbg:categories": [
+          "FASTQ-Processing"
+        ],
+        "sbg:project": "bix-demo/sbgtools-demo",
+        "description": "FASTQ Quality Scale Detector detects which quality encoding scheme was used in your reads and automatically enters the proper value in the \"Quality Scale\" metadata field.",
+        "sbg:revision": 8,
+        "sbg:sbgMaintained": false,
+        "appUrl": "/u/bix-demo/sbgtools-demo/apps/#bix-demo/sbgtools-demo/sbg-fastq-quality-detector/8",
+        "sbg:job": {
+          "allocatedResources": {
+            "cpu": 1,
+            "mem": 1000
+          },
+          "inputs": {
+            "fastq": {
+              "secondaryFiles": [],
+              "path": "/path/to/fastq.ext",
+              "class": "File",
+              "size": 0
+            }
+          }
+        },
+        "y": 85.44558748055508
+      },
+      "outputs": [
+        {
+          "id": "#SBG_FASTQ_Quality_Detector.result"
+        }
+      ],
+      "scatter": "#SBG_FASTQ_Quality_Detector.fastq",
+      "sbg:y": 85.44558748055508,
+      "sbg:x": 235.00000933806115,
+      "inputs": [
+        {
+          "id": "#SBG_FASTQ_Quality_Detector.fastq",
+          "source": [
+            "#fastq"
+          ]
+        }
+      ],
+      "id": "#SBG_FASTQ_Quality_Detector"
+    }
+  ],
+  "description": "This pipeline performs the first step of RNA-Seq analysis - alignment to a reference genome and transcriptome. HISAT2 is a fast and sensitive alignment program for mapping next-generation sequencing reads (whole-genome, transcriptome, and exome sequencing data) against the general human population (as well as against a single reference genome). Based on GCSA (an extension of BWT for a graph), we designed and implemented a graph FM index (GFM), an original approach and its first implementation to the best of our knowledge. In addition to using one global GFM index that represents general population, HISAT2 uses a large set of small GFM indexes that collectively cover the whole genome (each index representing a genomic region of 56 Kbp, with 55,000 indexes needed to cover human population). These small indexes (called local indexes) combined with several alignment strategies enable effective alignment of sequencing reads. This new indexing scheme is called Hierarchical Graph FM index (HGFM). We have developed HISAT 2 based on the HISAT and Bowtie2 implementations. HISAT2 outputs alignments in SAM format, enabling interoperation with a large number of other tools (e.g. SAMtools, GATK) that use SAM.\n\n__Required inputs__\n\nThis workflow has two required inputs:\n\nInput fastq reads (ID: reads) - HISAT2 accepts one fastq file per sample for single-end data, or two files per sample for paired-end data. NOTE: For paired-end reads it is crucial to set the metadata 'paired-end' field as 1 for one input file, as 2 for the other input file.\n\nGenome fasta files (ID: reference_files) - reference sequence to which to align the reads.\n\n__Optional inputs__\n\nSplice sites file (generated by HISAT2 ExtractSpliceSites),\nExons file (generated by HISAT2 ExtractExons),\nSNP file (generated by HISAT2 ExtractSNPs).\n\n__Outputs__\n\nThis workflow generates six output files:\n\nIndex files (ID: output_indexed),\nAligned reads in SAM format (ID: alignment_file),\nAligned reads in sorted BAM format (ID: sorted_bam),\nNovel splice sited detected by HISAT2 (ID: novel_ss_out),\nHISAT2 metrics file (ID: metrics_file), \nAlignment summary metrics reported by Picard CollectAlignmentSummaryMetrics (ID: summary_metrics).\n\n__Common issues__\n\nFor paired-end alignments it is crucial to set the metadata 'paired-end' field as 1 and 2 respectively for the two input fastq files, otherwise the task will fail.",
+  "sbg:contributors": [
+    "admin"
+  ],
+  "sbg:validationErrors": [],
+  "sbg:image_url": "https://brood.sbgenomics.com/static/admin/sbg-public-data/rna-seq-alignment-hisat2-2-0-1/6.png",
+  "class": "Workflow",
+  "requirements": [],
+  "sbg:canvas_x": 253,
+  "sbg:latestRevision": 6,
+  "sbg:createdBy": "admin",
+  "inputs": [
+    {
+      "type": [
+        {
+          "type": "array",
+          "items": "File",
+          "name": "reference_files"
+        }
+      ],
+      "sbg:y": 471.66093793157444,
+      "sbg:x": -68.33337713612617,
+      "label": "HISAT2 reference or TAR",
+      "sbg:suggestedValue": [
+        {
+          "path": "581a018d507c1732b5ac1fdd",
+          "class": "File",
+          "name": "human_g1k_v37_decoy.phiX174_Homo_sapiens.GRCh37.75.spliceSites_HISAT2-2.0.1.tar"
+        }
+      ],
+      "id": "#reference_files"
+    },
+    {
+      "type": [
+        "null",
+        "File"
+      ],
+      "sbg:y": -51.67252307491257,
+      "sbg:x": -68.33341260751395,
+      "label": "Reference file",
+      "sbg:suggestedValue": {
+        "path": "5772b6da507c1752674486e8",
+        "class": "File",
+        "name": "human_g1k_v37_decoy.phiX174.fasta"
+      },
+      "id": "#reference",
+      "sbg:fileTypes": "FASTA"
+    },
+    {
+      "sbg:fileTypes": "TXT",
+      "sbg:y": 214.9942209056039,
+      "sbg:x": -71.66668490568863,
+      "label": "ss",
+      "type": [
+        "null",
+        "File"
+      ],
+      "id": "#ss"
+    },
+    {
+      "sbg:fileTypes": "SNP",
+      "sbg:y": 343.32755880862675,
+      "sbg:x": -71.666687581275,
+      "label": "snp",
+      "type": [
+        "null",
+        "File"
+      ],
+      "id": "#snp"
+    },
+    {
+      "sbg:fileTypes": "TXT",
+      "sbg:y": 609.994266721709,
+      "sbg:x": -65.00001556343557,
+      "label": "exon",
+      "type": [
+        "null",
+        "File"
+      ],
+      "id": "#exon"
+    },
+    {
+      "sbg:fileTypes": "FASTQ,FQ",
+      "sbg:y": 84.99424309177816,
+      "sbg:x": -70.00001556343557,
+      "label": "reads",
+      "sbg:includeInPorts": true,
+      "type": [
+        {
+          "type": "array",
+          "items": "File"
+        }
+      ],
+      "id": "#fastq"
+    }
+  ],
+  "sbg:revisionsInfo": [
+    {
+      "sbg:revisionNotes": null,
+      "sbg:modifiedOn": 1478268628,
+      "sbg:revision": 0
+    },
+    {
+      "sbg:revisionNotes": null,
+      "sbg:modifiedOn": 1478268628,
+      "sbg:revision": 1
+    },
+    {
+      "sbg:revisionNotes": null,
+      "sbg:modifiedOn": 1478268628,
+      "sbg:revision": 2
+    },
+    {
+      "sbg:revisionNotes": "create index, bam output",
+      "sbg:modifiedOn": 1478268628,
+      "sbg:revision": 3
+    },
+    {
+      "sbg:revisionNotes": null,
+      "sbg:modifiedOn": 1478268628,
+      "sbg:revision": 4
+    },
+    {
+      "sbg:revisionNotes": null,
+      "sbg:modifiedOn": 1478269456,
+      "sbg:revision": 5
+    },
+    {
+      "sbg:revisionNotes": null,
+      "sbg:revision": 6
+    }
+  ],
+  "sbg:categories": [
+    "Indexing",
+    "Alignment"
+  ],
+  "sbg:canvas_zoom": 0.5999999999999996,
+  "sbg:project": "admin/sbg-public-data",
+  "sbg:toolkit": "",
+  "sbg:canvas_y": 146
+}
