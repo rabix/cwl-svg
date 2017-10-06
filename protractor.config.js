@@ -1,3 +1,4 @@
+
 exports.config = {
 
     capabilities: {
@@ -13,8 +14,8 @@ exports.config = {
 
     onPrepare() {
 
-
-        jasmine.getEnv().beforeEach(function () {
+        jasmine.getEnv().beforeEach(async function () {
+            await browser.driver.navigate().refresh();
             browser.waitForAngularEnabled(false);
         });
 

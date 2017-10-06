@@ -18,10 +18,9 @@ describe("Drag and drop", () => {
     it("move a node", async function (done) {
 
         const movement = 100;
-
         const actions = browser.actions();
 
-        const hisatLocator = await element(by.css("[data-id='HISAT2'] .inner"));
+        const hisatLocator = await element(by.css("[data-id='print'] .inner"));
         const location     = await hisatLocator.getLocation();
 
         await actions

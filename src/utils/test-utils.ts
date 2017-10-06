@@ -1,7 +1,7 @@
-import * as Webpack          from "webpack"
-import * as WebpackDevServer from "webpack-dev-server";
-import {browser}             from "protractor";
-import * as path             from "path";
+import * as Webpack             from "webpack"
+import * as WebpackDevServer    from "webpack-dev-server";
+import {browser, ElementFinder} from "protractor";
+import * as path                from "path";
 
 const webpackConfig = require("../../webpack.config");
 
@@ -21,12 +21,15 @@ export function serveCompiled(entryPath = "", port = 9567) {
         const config = {
             ...webpackConfig,
             watch: false,
-            entry: initFile
+            entry: initFile,
         };
 
         const compiler = Webpack(config, async () => {
+
+            await browser.restart();
             await browser.waitForAngularEnabled(false);
             await browser.get(`http://localhost:${port}`);
+
             resolve(listener);
         });
 
@@ -34,6 +37,13 @@ export function serveCompiled(entryPath = "", port = 9567) {
         const listener = server.listen(port);
     });
 
+}
+
+export function hasClass(element: ElementFinder, cls: string): Promise<boolean> {
+
+    return element.getAttribute("class").then(classes => {
+        return classes.split(" ").indexOf(cls) !== -1;
+    }) as any;
 }
 
 /**

@@ -1,5 +1,5 @@
 const webpack = require("webpack");
-
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 /**
  * @type {{entry: string, output: {filename: string}, module: {rules: *[]}, resolve: {extensions: string[]}, plugins: *[], devtool: string}}
  */
@@ -45,13 +45,5 @@ module.exports = {
     resolve: {
         extensions: [".tsx", ".ts", ".js", ".scss"]
     },
-
-    plugins: [
-        new webpack.ProvidePlugin({
-            "samples.rnaSeqAlignment": "./../cwl-samples/rna-seq-alignment.json",
-            "samples.bcBio": "./../cwl-samples/bcbio.json",
-            "samples.fastQC": "./../cwl-samples/fastqc.json",
-        })
-    ],
     devtool: 'inline-source-map',
 };
