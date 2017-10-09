@@ -457,7 +457,13 @@ export class Workflow {
     private redrawEdges() {
 
         const edgeEls          = this.model.connections.filter(el => el.isVisible);
+        const selectedEdge     = this.workflow.querySelector(".edge.selected");
         const highlightedEdges = new Set();
+        let selectedEdgeId;
+
+        if (selectedEdge) {
+            selectedEdgeId = selectedEdge.attributes["data-source-connection"].value + selectedEdge.attributes["data-destination-connection"].value;
+        }
 
         Array.from(this.workflow.querySelectorAll(".edge")).forEach((el) => {
             if (el.classList.contains("highlighted")) {
@@ -471,7 +477,8 @@ export class Workflow {
         const edgesTpl = this.model.connections
             .map(c => {
                 const edgeId     = c.source.id + c.destination.id;
-                const edgeStates = highlightedEdges.has(edgeId) ? "highlighted" : "";
+                let edgeStates   = highlightedEdges.has(edgeId) ? "highlighted" : "";
+                edgeStates       = (edgeId === selectedEdgeId ? "selected " : "") + edgeStates;
                 return GraphEdge.makeTemplate(c, this.workflow, edgeStates);
             })
             .reduce((acc, tpl) => acc + tpl, "");
