@@ -5,23 +5,21 @@ import * as path                from "path";
 
 const webpackConfig = require("../../webpack.config");
 
-export function serveCompiled(entryPath = "", port = 9567) {
+function getDefaultInitPath() {
+    const caller   = getCallerFile();
+    const dirname  = path.dirname(caller);
+    const basename = path.basename(caller, ".js");
+    return dirname + "/" + basename + ".init.js";
+}
 
-    let initFile = entryPath;
-
-    if (!entryPath) {
-        const caller   = getCallerFile();
-        const dirname  = path.dirname(caller);
-        const basename = path.basename(caller, ".js");
-        initFile       = dirname + "/" + basename + ".init.js";
-    }
+export function serveCompiled(entryPath = getDefaultInitPath(), port = 9567) {
 
     return new Promise(resolve => {
 
         const config = {
             ...webpackConfig,
             watch: false,
-            entry: initFile,
+            entry: entryPath,
         };
 
         const compiler = Webpack(config, async () => {

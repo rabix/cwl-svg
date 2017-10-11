@@ -7,7 +7,6 @@ describe("Drag and drop", () => {
 
     beforeAll(async function (done) {
         server = await serveCompiled();
-        browser.takeScreenshot();
         done();
     });
 
@@ -15,7 +14,7 @@ describe("Drag and drop", () => {
         server.close();
     });
 
-    it("move a node", async function (done) {
+    it("move a node", async function () {
 
         const movement = 100;
         const actions = browser.actions();
@@ -33,7 +32,5 @@ describe("Drag and drop", () => {
 
         expect(newLocation.x).toBeCloseTo(location.x + movement, 1);
         expect(newLocation.y).toBeCloseTo(location.y + movement, 1);
-
-        done();
     });
 });

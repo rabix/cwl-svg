@@ -1,4 +1,5 @@
 import "./assets/styles/style.scss";
+
 import {WorkflowFactory}   from "cwlts/models";
 import {Workflow}          from "./graph/workflow";
 import {SVGArrangePlugin}  from "./plugins/arrange/arrange";
@@ -29,4 +30,3 @@ const workflow = new Workflow({
 });
 
 workflow.getPlugin(SVGArrangePlugin).arrange();
-

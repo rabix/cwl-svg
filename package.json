@@ -12,9 +12,10 @@
     "webpack:watch": "node_modules/.bin/webpack --watch",
     "webdriver:update": "./node_modules/.bin/webdriver-manager update",
     "webdriver:start": "./node_modules/.bin/webdriver-manager start",
-    "pretest": "npx tsc  -p tsconfig.test.json",
+    "pretest": "npx tsc -p tsconfig.test.json",
     "watch:tests": "tsc -p tsconfig.test.json --watch",
-    "start": "npx webpack-dev-server"
+    "test": "npx protractor protractor.config.js",
+    "start": "npx webpack-dev-server --no-watch"
   },
   "dependencies": {
     "core-js": "^2.5.1"
@@ -25,9 +26,9 @@
   "devDependencies": {
     "@types/core-js": "^0.9.43",
     "@types/jasmine": "^2.6.0",
-    "@types/node": "^8.0.32",
+    "@types/node": "^8.0.34",
     "@types/webpack": "^3.0.13",
-    "@types/webpack-dev-server": "^2.4.2",
+    "@types/webpack-dev-server": "^2.9.0",
     "css-loader": "^0.28.7",
     "cwlts": "^1.13.39",
     "extract-text-webpack-plugin": "^3.0.1",
@@ -39,7 +40,7 @@
     "protractor-webpack": "^1.1.0",
     "sass-loader": "^6.0.6",
     "source-map-loader": "^0.2.2",
-    "style-loader": "^0.18.2",
+    "style-loader": "^0.19.0",
     "ts-loader": "^2.3.7",
     "typescript": "^2.5.3",
     "webpack": "^3.6.0",

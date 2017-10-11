@@ -8,7 +8,6 @@ describe("Dragging from port", () => {
 
     beforeAll(async function (done) {
         server = await serveCompiled();
-        browser.takeScreenshot();
         done();
     });
 
@@ -108,6 +107,8 @@ describe("Dragging from port", () => {
 
         done();
     });
+
+    xit("shows edge information when hovering over newly created edges");
 
 
 });

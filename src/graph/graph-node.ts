@@ -62,13 +62,21 @@ export class GraphNode {
         return iconStr;
     }
 
-    static makeTemplate(x: number, y: number, dataModel: {
+    static makeTemplate(dataModel: {
         id: string,
         connectionId: string,
         label?: string,
         in?: any[],
-        out?: any[]
-    }): string {
+        out?: any[],
+        customProps?: Object
+    }, x?: number, y?: number): string {
+
+        if(x === undefined){
+            x = ~~ (dataModel.customProps && dataModel.customProps["sbg:x"]);
+        }
+        if(y === undefined){
+            y = ~~ (dataModel.customProps && dataModel.customProps["sbg:y"]);
+        }
 
         let nodeTypeClass = "step";
         if (dataModel instanceof WorkflowInputParameterModel) {

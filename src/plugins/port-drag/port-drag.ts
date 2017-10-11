@@ -4,6 +4,10 @@ import {GraphNode}     from "../../graph/graph-node";
 import {Geometry}      from "../../utils/geometry";
 import {Edge}          from "../../graph/edge";
 
+/**
+ * @FIXME: ensure that labels of newly created nodes are properly upscaled/downscaled
+ * @FIXME: ensure that new edges have hover behaviour
+ */
 export class SVGPortDragPlugin extends SVGPluginBase {
 
     /** Stored on drag start to detect collision with viewport edges */
@@ -60,12 +64,11 @@ export class SVGPortDragPlugin extends SVGPluginBase {
             this.onMove.bind(this),
             this.onMoveStart.bind(this),
             this.onMoveEnd.bind(this)
-        )
+        );
+
     }
 
     onMove(dx: number, dy: number, ev: MouseEvent, portElement: SVGGElement): void {
-        ev.preventDefault();
-        ev.stopPropagation();
 
         const ctm    = portElement.getScreenCTM();
         const coords = this.workflow.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
@@ -95,8 +98,8 @@ export class SVGPortDragPlugin extends SVGPluginBase {
      */
     onMoveStart(ev: MouseEvent, portEl: SVGGElement): void {
 
+        this.originPort = portEl;
 
-        this.originPort         = portEl;
         // Needed for collision detection
         this.boundingClientRect = this.workflow.svgRoot.getBoundingClientRect();
 
@@ -124,7 +127,7 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         this.highlightSuggestedPorts(portEl.getAttribute("data-connection-id"));
     }
 
-    onMoveEnd(): void {
+    onMoveEnd(ev: MouseEvent): void {
 
         const ghostType      = this.ghostNode.getAttribute("data-type");
         const ghostIsVisible = !this.ghostNode.classList.contains("hidden");
@@ -132,18 +135,22 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         const shouldSnap         = this.snapPort !== undefined;
         const shouldCreateInput  = ghostIsVisible && ghostType === "input";
         const shouldCreateOutput = ghostIsVisible && ghostType === "output";
+        const portID             = this.originPort.getAttribute("data-connection-id");
 
         if (shouldSnap) {
-
             this.createEdgeBetweenPorts(this.originPort, this.snapPort);
+        } else if (shouldCreateInput || shouldCreateOutput) {
 
-            console.log("Snap");
-        } else if (shouldCreateInput) {
-            console.log("Create input");
-        } else if (shouldCreateOutput) {
-            console.log('Create output');
+            const svgCoordsUnderMouse = this.workflow.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
+            const {x, y}              = svgCoordsUnderMouse;
+            const customProps         = {"sbg:x": x, "sbg:y": y};
+
+            if (shouldCreateInput) {
+                this.workflow.model.createInputFromPort(portID, {customProps});
+            } else {
+                this.workflow.model.createOutputFromPort(portID, {customProps});
+            }
         }
-
 
         this.cleanMemory();
         this.cleanStyles();
@@ -267,7 +274,6 @@ export class SVGPortDragPlugin extends SVGPluginBase {
     /**
      * @FIXME: GraphNode.radius should somehow come through Workflow,
      * @returns {SVGGElement}
-     * @
      */
     private createGhostNode(type: "input" | "output"): SVGGElement {
         const namespace = "http://www.w3.org/2000/svg";
@@ -282,6 +288,9 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         return node;
     }
 
+    /**
+     * Finds a port closest to given SVG coordinates.
+     */
     private findClosestPort(x: number, y: number): { portEl: SVGGElement | undefined, distance: number } {
         let closestPort     = undefined;
         let closestDistance = Infinity;
@@ -331,7 +340,13 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         }
     }
 
-    private createEdgeBetweenPorts(source: SVGGElement, destination: SVGGElement) {
+
+    /**
+     * Creates an edge (connection) between two elements determined by their connection IDs
+     * This edge is created on the model, and not rendered directly on graph, as main workflow
+     * is supposed to catch the creation event and draw it.
+     */
+    private createEdgeBetweenPorts(source: SVGGElement, destination: SVGGElement): void {
 
         // Find the connection ids of origin port and the highlighted port
         let sourceID      = source.getAttribute("data-connection-id");
@@ -344,7 +359,7 @@ export class SVGPortDragPlugin extends SVGPluginBase {
             destinationID = tmp;
         }
 
-        // Maybe this edge already exists. In that case, we should just do nothing.
+        this.workflow.model.connect(sourceID, destinationID);
     }
 
     private findEdge(sourceID: string, destinationID: string): SVGGElement | undefined {

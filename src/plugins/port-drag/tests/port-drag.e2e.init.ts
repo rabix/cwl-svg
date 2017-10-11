@@ -1,9 +1,10 @@
 import "../../../assets/styles/style.scss";
 import "../port-drag.scss"
 
-import {WorkflowFactory}   from "cwlts/models";
-import {Workflow}          from "../../../";
-import {SVGPortDragPlugin} from "../port-drag";
+import {WorkflowFactory}    from "cwlts/models";
+import {Workflow}           from "../../../";
+import {SVGPortDragPlugin}  from "../port-drag";
+import {SVGEdgeHoverPlugin} from "../../edge-hover/edge-hover";
 
 const model = WorkflowFactory.from(require(__dirname + "/app.json"));
 
@@ -14,7 +15,8 @@ const wf = new Workflow({
     model: model,
     svgRoot: svgRoot,
     plugins: [
-        new SVGPortDragPlugin()
+        new SVGPortDragPlugin(),
+        new SVGEdgeHoverPlugin()
     ]
 });
 

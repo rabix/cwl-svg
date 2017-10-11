@@ -1,13 +1,19 @@
-import {Edge, StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
-import {DomEvents}                                                                       from "../utils/dom-events";
-import {EventHub}                                                                        from "../utils/event-hub";
-import {Geometry}                                                                        from "../utils/geometry";
-import {Edge as GraphEdge}                                                               from "./edge";
-import {GraphNode}                                                                       from "./graph-node";
-import {IOPort}                                                                          from "./io-port";
-import {TemplateParser}                                                                  from "./template-parser";
-import {SVGPlugin}                                                                       from "../plugins/plugin";
+import {StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
+import {DomEvents}                                                                 from "../utils/dom-events";
+import {EventHub}                                                                  from "../utils/event-hub";
+import {Geometry}                                                                  from "../utils/geometry";
+import {Edge as GraphEdge}                                                         from "./edge";
+import {GraphNode}                                                                 from "./graph-node";
+import {IOPort}                                                                    from "./io-port";
+import {TemplateParser}                                                            from "./template-parser";
+import {SVGPlugin}                                                                 from "../plugins/plugin";
+import {Connectable}                                                               from "./connectable";
+import {WorkflowInputParameterModel}                                               from "cwlts/models/generic/WorkflowInputParameterModel";
+import {WorkflowOutputParameterModel}                                              from "cwlts/models/generic/WorkflowOutputParameterModel";
 
+/**
+ * @FIXME validation states of old and newly created edges
+ */
 export class Workflow {
 
     public static readonly minScale      = 0.2;
@@ -232,10 +238,6 @@ export class Workflow {
             .reduce((acc, tpl) => acc + tpl, "");
 
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
-
-        Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
-            this.attachEdgeHoverBehavior(el);
-        });
     }
 
     redraw(model?: WorkflowModel) {
@@ -399,12 +401,12 @@ export class Workflow {
 
     enableGraphManipulations() {
         this.disableManipulations = false;
-        this.attachNodeDragBehavior();
-        // this.attachPortDragBehavior();
         this.attachSelectionDeletionBehavior();
     }
 
     destroy() {
+        this.model.off("connection.create", this.onConnectionCreate);
+
         this.clearCanvas();
         this.eventHub.empty();
     }
@@ -452,7 +454,7 @@ export class Workflow {
                     arrangeNecessary = true;
                 }
 
-                return tpl + GraphNode.makeTemplate(x, y, nodeModel);
+                return tpl + GraphNode.makeTemplate(nodeModel, x, y);
             }, "");
 
         this.workflow.innerHTML += nodesTpl;
@@ -486,6 +488,13 @@ export class Workflow {
         }
 
         this.invokePlugins("afterRender");
+
+
+        // -- Newly added events for v0.1.0
+        this.model.on("input.create", this.onInputCreate.bind(this));
+        this.model.on("output.create", this.onOutputCreate.bind(this));
+        this.model.on("connection.create", this.onConnectionCreate.bind(this));
+
     }
 
     private attachEvents() {
@@ -533,7 +542,7 @@ export class Workflow {
 
             const x   = step.customProps["sbg:x"] || Math.random() * 1000;
             const y   = step.customProps["sbg:y"] || Math.random() * 1000;
-            const tpl = GraphNode.makeTemplate(x, y, step);
+            const tpl = GraphNode.makeTemplate(step, x, y);
             const el  = TemplateParser.parse(tpl);
             this.workflow.appendChild(el);
 
@@ -600,15 +609,6 @@ export class Workflow {
         });
 
         /**
-         * Manually wire up hovering on edges because mouseenters don't propagate
-         */
-        {
-            Array.from(this.workflow.querySelectorAll(".edge")).forEach((el: SVGGElement) => {
-                this.attachEdgeHoverBehavior(el);
-            });
-        }
-
-        /**
          * On mouse over node, bring it to the front
          */
         this.domEvents.on("mouseover", ".node", (ev, target, root) => {
@@ -619,21 +619,8 @@ export class Workflow {
         });
 
         if (!this.disableManipulations) {
-            this.attachNodeDragBehavior();
-
-            // this.attachPortDragBehavior();
-
             this.attachSelectionDeletionBehavior();
         }
-    }
-
-    /**
-     * Move nodes and edges on drag
-     * @deprecated Removed, use plugin
-     *
-     */
-    private attachNodeDragBehavior() {
-
     }
 
     /**
@@ -861,50 +848,6 @@ export class Workflow {
         this.eventHub.emit("selectionChange", el);
     }
 
-    private attachEdgeHoverBehavior(el: SVGGElement) {
-        let tipEl;
-
-        this.domEvents.hover(el, (ev, target) => {
-
-            if (!tipEl) {
-                return;
-            }
-            const coords = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
-            tipEl.setAttribute("x", coords.x);
-            tipEl.setAttribute("y", coords.y - 16);
-
-        }, (ev, target, root) => {
-            if (root.querySelector(".dragged")) {
-                return;
-            }
-
-            const sourceNode = target.getAttribute("data-source-node");
-            const destNode   = target.getAttribute("data-destination-node");
-            const sourcePort = target.getAttribute("data-source-port");
-            const destPort   = target.getAttribute("data-destination-port");
-
-            const sourceLabel = sourceNode === sourcePort ? sourceNode : `${sourceNode} (${sourcePort})`;
-            const destLabel   = destNode === destPort ? destNode : `${destNode} (${destPort})`;
-
-            const coords = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
-
-            const ns = "http://www.w3.org/2000/svg";
-            tipEl    = document.createElementNS(ns, "text");
-            tipEl.classList.add("label");
-            tipEl.classList.add("label-edge");
-            tipEl.setAttribute("x", coords.x);
-            tipEl.setAttribute("y", coords.x - 16);
-            tipEl.innerHTML = sourceLabel + " → " + destLabel;
-
-            this.workflow.appendChild(tipEl);
-
-        }, () => {
-            if (tipEl) {
-                tipEl.remove();
-                tipEl = undefined;
-            }
-        });
-    }
 
     private attachSelectionDeletionBehavior() {
         this.handlersThatCanBeDisabled.push(this.domEvents.on("keyup", (ev: KeyboardEvent) => {
@@ -920,267 +863,6 @@ export class Workflow {
             this.deleteSelection();
             // Only input elements can be focused, but we added tabindex to the svg so this works
         }, window));
-    }
-
-    private attachPortDragBehavior() {
-        let edge: SVGPathElement;
-        let preferredConnectionPorts: SVGGElement[];
-        let allOppositeConnectionPorts: SVGGElement[];
-        let highlightedPort: SVGGElement;
-        let edgeDirection: "left" | "right";
-        let ghostIONode: SVGGElement;
-        let originNodeCoords: { x: number, y: number };
-        let portToOriginTransformation: WeakMap<SVGGElement, SVGMatrix>;
-
-        this.handlersThatCanBeDisabled.push(this.domEvents.drag(".port", (dx: number, dy: number, ev, target: SVGGElement) => {
-            // Gather the necessary positions that we need in order to draw a path
-            const ctm                 = target.getScreenCTM();
-            const coords              = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
-            const origin              = this.transformScreenCTMtoCanvas(ctm.e, ctm.f);
-            const nodeToMouseDistance = Geometry.distance(originNodeCoords.x, originNodeCoords.y, coords.x, coords.y);
-
-            const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
-
-            if (boundary.x || boundary.y) {
-                this.setDragBoundaryIntervalIfNecessary(
-                    ghostIONode,
-                    {
-                        x: boundary.x,
-                        y: boundary.y
-                    },
-                    null,
-                    {
-                        edge,
-                        nodeToMouseDistance,
-                        connectionPorts: allOppositeConnectionPorts,
-                        highlightedPort,
-                        origin,
-                        coords,
-                        portToOriginTransformation,
-                        edgeDirection
-                    }
-                );
-            }
-
-            const scaledDeltas = this.getScaledDeltaXYForDrag(boundary, ev, origin.x, origin.y, dx, dy);
-
-            // Draw a path from the origin port to the cursor
-            Array.from(edge.children).forEach((el: SVGPathElement) => {
-                el.setAttribute("d",
-                    IOPort.makeConnectionPath(
-                        origin.x,
-                        origin.y,
-                        origin.x + scaledDeltas.x,
-                        origin.y + scaledDeltas.y,
-                        edgeDirection
-                    )
-                );
-            });
-
-            const sorted    = this.getSortedConnectionPorts(allOppositeConnectionPorts, coords, portToOriginTransformation);
-            highlightedPort = this.dragBoundaryInterval.highlightedPort || highlightedPort;
-
-            this.removeHighlightedPort(highlightedPort, edgeDirection);
-            highlightedPort = this.setHighlightedPort(sorted, edgeDirection);
-
-            this.translateGhostNodeAndShowIfNecessary(
-                ghostIONode,
-                nodeToMouseDistance,
-                highlightedPort !== undefined,
-                {
-                    x: origin.x + scaledDeltas.x,
-                    y: origin.y + scaledDeltas.y
-                }
-            );
-
-        }, (ev, origin, root) => {
-            this.isDragging = true;
-
-            portToOriginTransformation = new WeakMap<SVGGElement, SVGMatrix>()
-
-            this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
-
-            const originNode    = Workflow.findParentNode(origin);
-            const originNodeCTM = originNode.getScreenCTM();
-
-            originNodeCoords = this.transformScreenCTMtoCanvas(originNodeCTM.e, originNodeCTM.f);
-
-            const isInputPort = origin.classList.contains("input-port");
-
-            ghostIONode = GraphNode.createGhostIO();
-            this.workflow.appendChild(ghostIONode);
-
-
-            // Based on the type of our origin port, determine the direction of the path to draw
-            edgeDirection = isInputPort ? "left" : "right";
-
-            // Draw the edge to the cursor and store the element's reference
-            edge = <SVGPathElement>GraphEdge.spawn();
-            edge.classList.add("dragged");
-            this.workflow.appendChild(edge);
-
-            // We need the origin connection ID so we can ask CWLTS for connection recommendations
-            const targetConnectionId = origin.getAttribute("data-connection-id");
-
-            // Have a set of all ports of the opposite type, they are all possible destinations.
-            // Except the same node that we are dragging from.
-            allOppositeConnectionPorts = Array.from(
-                this.workflow.querySelectorAll(`.port.${isInputPort ? "output-port" : "input-port"}`)
-            ).filter((el: SVGGElement) => Workflow.findParentNode(el) !== originNode) as SVGGElement[];
-
-
-            allOppositeConnectionPorts.forEach((el: SVGGElement) => {
-                // Find the position of the port relative to the canvas origin
-                portToOriginTransformation.set(el, Geometry.getTransformToElement(el, this.workflow));
-            });
-
-            // Get all valid and visible connection destinations
-            // Find them in the dom and mark them as connection candidates
-            preferredConnectionPorts = (this.model.gatherValidConnectionPoints(targetConnectionId) || [])
-                .filter(point => point.isVisible)
-                .map(p => {
-                    const el = this.workflow.querySelector(`.port[data-connection-id="${p.connectionId}"]`) as SVGGElement;
-                    portToOriginTransformation.set(el, Geometry.getTransformToElement(el, this.workflow));
-                    el.classList.add("connection-suggestion");
-                    return el;
-                });
-
-            // For all of the valid connection destinations, find their parent node element
-            // and mark it as a highlighted and a connection candidate
-            preferredConnectionPorts.forEach(el => {
-                const parentNode = Workflow.findParentNode(el);
-                parentNode.classList.add("highlighted", "connection-suggestion");
-            });
-
-            // Then mark the workflow itself, so it knows to fade out other stuff
-            this.workflow.classList.add("has-suggestion", "edge-dragging");
-
-        }, (ev, origin) => {
-            highlightedPort = this.dragBoundaryInterval.highlightedPort || highlightedPort;
-            this.isDragging = false;
-            this.setDragBoundaryIntervalToDefault();
-
-            /**
-             * If a port is highlighted, that means that we are supposed to snap the connection to that port
-             */
-            if (highlightedPort) {
-                /**
-                 * Find the connection ids of origin port and the highlighted port
-                 */
-                let sourceID      = origin.getAttribute("data-connection-id");
-                let destinationID = highlightedPort.getAttribute("data-connection-id");
-
-                /**
-                 * Swap their places in case you dragged out from input to output
-                 */
-                if (sourceID.startsWith("in")) {
-                    const tmp     = sourceID;
-                    sourceID      = destinationID;
-                    destinationID = tmp;
-                }
-
-                /**
-                 * Maybe you tried to connect ports that are already connected.
-                 * If an edge with these connection IDs doesn't already exist, create it.
-                 * Otherwise, prevent creation.
-                 */
-
-                if (!GraphEdge.findEdge(this.workflow, sourceID, destinationID)) {
-
-                    const changeEventData = {type: "connect"};
-                    this.eventHub.emit("beforeChange", changeEventData);
-
-                    const newEdge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
-                    this.attachEdgeHoverBehavior(newEdge);
-                    const isValid = <any>this.model.connect(sourceID, destinationID);
-                    if (isValid === false) {
-                        newEdge.classList.add("not-valid");
-                    }
-
-                    this.eventHub.emit("afterChange", changeEventData);
-                }
-
-                // Deselect and cleanup
-                highlightedPort.classList.remove("highlighted");
-                highlightedPort = undefined;
-            } else if (!ghostIONode.classList.contains("hidden")) {
-                // If the ghost io node is not hidden, then we should create an input or an output
-
-
-                // Take the port connection id, check if it's an input or an output and,
-                // based on that, determine if we should create an input or an output.
-                // Then create the i/o node.
-                const portID    = origin.getAttribute("data-connection-id");
-                const ioIsInput = portID.startsWith("in");
-
-                const changeEventData = {
-                    type: `${ioIsInput ? 'input' : 'output'}.create`
-                };
-                this.eventHub.emit("beforeChange", changeEventData);
-
-                const newIO = GraphNode.patchModelPorts(ioIsInput
-                    ? this.model.createInputFromPort(portID)
-                    : this.model.createOutputFromPort(portID));
-
-
-                // Check to see if cursor is on boundary (or boundaries)
-                const boundary = this.getBoundaryZonesXYAxes(ev.clientX, ev.clientY);
-
-                const mouseCoords = this.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
-                let newX          = mouseCoords.x;
-                let newY          = mouseCoords.y;
-                if (boundary.x) {
-                    newX = this.transformScreenCTMtoCanvas(boundary.x === -1 ? this.workflowBoundingClientRect.left + this.dragBoundary :
-                        this.workflowBoundingClientRect.right - this.dragBoundary, 0).x;
-                }
-                if (boundary.y) {
-                    newY = this.transformScreenCTMtoCanvas(0, boundary.y === -1 ? this.workflowBoundingClientRect.top + this.dragBoundary :
-                        this.workflowBoundingClientRect.bottom - this.dragBoundary).y;
-                }
-
-                // Translate mouse coordinates to the canvas coordinates,
-                // make a template for the graph node, create an element out of that,
-                // and add that element to the dom
-                const tpl = GraphNode.makeTemplate(newX, newY, newIO);
-                const el  = TemplateParser.parse(tpl);
-                this.workflow.appendChild(el);
-
-                // Update the cwlts model with the new x and y coords for this node
-                this.setModelPosition(newIO, mouseCoords.x, mouseCoords.y, false);
-
-                // Spawn an edge between origin and destination ports
-                const edge = GraphEdge.spawnBetweenConnectionIDs(this.workflow, portID, newIO.connectionId);
-
-                // This edge still has no events bound to it, so fix that
-                this.attachEdgeHoverBehavior(edge);
-
-                // Re-scale the workflow so the label gets upscaled or downscaled properly
-
-                this.scaleWorkflow(this.scale);
-
-                this.eventHub.emit("afterChange", changeEventData);
-            }
-
-            this.workflow.classList.remove("has-suggestion", "edge-dragging");
-            Array.from(this.workflow.querySelectorAll(".connection-suggestion, .preferred-node, .preferred-port")).forEach(el => {
-                el.classList.remove("connection-suggestion", "highlighted", "preferred-node", "preferred-port", edgeDirection);
-            });
-
-            const selection = this.workflow.querySelector(".selected") as SVGGElement;
-            if (selection) {
-                this.activateSelection(selection);
-            }
-
-            edge.remove();
-            ghostIONode.remove();
-
-            edge                       = undefined;
-            ghostIONode                = undefined;
-            edgeDirection              = undefined;
-            originNodeCoords           = undefined;
-            preferredConnectionPorts   = undefined;
-            portToOriginTransformation = undefined;
-        }));
     }
 
     /**
@@ -1366,7 +1048,43 @@ export class Workflow {
 
             return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
         }
+    }
 
+    /**
+     * Listener for “connection.create” event on model that renders new edges on canvas
+     */
+    private onConnectionCreate(source: Connectable, destination: Connectable): void {
+
+        const sourceID      = source.connectionId;
+        const destinationID = destination.connectionId;
+
+        GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
 
     }
+
+    /**
+     * Listener for “input.create” event on model that renders workflow inputs
+     */
+    private onInputCreate(input: WorkflowInputParameterModel): void {
+
+        const patched       = GraphNode.patchModelPorts(input);
+        const graphTemplate = GraphNode.makeTemplate(patched);
+
+        const el = TemplateParser.parse(graphTemplate);
+        this.workflow.appendChild(el);
+
+    }
+
+    /**
+     * Listener for “output.create” event on model that renders workflow outputs
+     */
+    private onOutputCreate(output: WorkflowOutputParameterModel): void {
+
+        const patched       = GraphNode.patchModelPorts(output);
+        const graphTemplate = GraphNode.makeTemplate(patched);
+
+        const el = TemplateParser.parse(graphTemplate);
+        this.workflow.appendChild(el);
+    }
+
 }
