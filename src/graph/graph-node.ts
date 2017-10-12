@@ -1,7 +1,7 @@
 import {StepModel, WorkflowInputParameterModel, WorkflowOutputParameterModel} from "cwlts/models";
-import {SVGUtils} from "../utils/svg-utils";
-import {IOPort} from "./io-port";
-import {HtmlUtils} from "../utils/html-utils";
+import {SVGUtils}                                                             from "../utils/svg-utils";
+import {IOPort}                                                               from "./io-port";
+import {HtmlUtils}                                                            from "../utils/html-utils";
 
 export type NodePosition = { x: number, y: number };
 export type NodeDataModel = WorkflowInputParameterModel | WorkflowOutputParameterModel | StepModel;
@@ -68,15 +68,14 @@ export class GraphNode {
         label?: string,
         in?: any[],
         out?: any[],
-        customProps?: Object
-    }, x?: number, y?: number): string {
+        customProps?: {
+            "sbg:x"?: number
+            "sbg:y"?: number
+        }
+    }, labelScale = 1): string {
 
-        if(x === undefined){
-            x = ~~ (dataModel.customProps && dataModel.customProps["sbg:x"]);
-        }
-        if(y === undefined){
-            y = ~~ (dataModel.customProps && dataModel.customProps["sbg:y"]);
-        }
+        const x = ~~(dataModel.customProps && dataModel.customProps["sbg:x"]);
+        const y = ~~(dataModel.customProps && dataModel.customProps["sbg:y"]);
 
         let nodeTypeClass = "step";
         if (dataModel instanceof WorkflowInputParameterModel) {
@@ -128,7 +127,7 @@ export class GraphNode {
                     ${GraphNode.makeIconFragment(dataModel)}
                 </g>
                 
-                <text transform="matrix(1,0,0,1,0,${radius + 30})" class="title label">${HtmlUtils.escapeHTML(dataModel.label || dataModel.id)}</text>
+                <text transform="matrix(${labelScale},0,0,${labelScale},0,${radius + 30})" class="title label">${HtmlUtils.escapeHTML(dataModel.label || dataModel.id)}</text>
                 ${inputPortTemplates}
                 ${outputPortTemplates}
             </g>

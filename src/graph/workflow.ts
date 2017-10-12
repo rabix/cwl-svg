@@ -1,10 +1,8 @@
 import {StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
 import {DomEvents}                                                                 from "../utils/dom-events";
 import {EventHub}                                                                  from "../utils/event-hub";
-import {Geometry}                                                                  from "../utils/geometry";
 import {Edge as GraphEdge}                                                         from "./edge";
 import {GraphNode}                                                                 from "./graph-node";
-import {IOPort}                                                                    from "./io-port";
 import {TemplateParser}                                                            from "./template-parser";
 import {SVGPlugin}                                                                 from "../plugins/plugin";
 import {Connectable}                                                               from "./connectable";
@@ -16,52 +14,27 @@ import {WorkflowOutputParameterModel}                                           
  */
 export class Workflow {
 
-    public static readonly minScale      = 0.2;
-    public static readonly maxScale      = 2;
-    public readonly eventHub: EventHub;
-                           domEvents: DomEvents;
-                           svgRoot: SVGSVGElement;
-    /** Current scale of the document */
-                           private scale = 1;
+    readonly eventHub: EventHub;
 
+    minScale = 0.2;
+    maxScale = 2;
+
+    domEvents: DomEvents;
+    svgRoot: SVGSVGElement;
     workflow: SVGGElement;
     model: WorkflowModel;
+
+    /** Current scale of the document */
+    private _scale = 1;
+
+    /** Scale of labels, they are different than scale of other elements in the workflow */
+    labelScale = 1;
 
     private workflowBoundingClientRect;
 
     private isDragging = false;
 
     private plugins: SVGPlugin[] = [];
-
-    /**
-     * The size of the workflow boundary / padding that stops nodes from being dragged
-     * outside the workflow viewport; drag "scroll" is activated when cursor hits a boundary
-     * @type {number}
-     */
-    private dragBoundary = 50;
-
-    /**
-     * The amount which the workflow, node, and necessary paths will be translated
-     * when mouse is dragged on boundary or outside workflow every time the interval runs
-     * @type {number}
-     */
-    private dragBoundaryTranslation = 5;
-
-    /**
-     * The interval that is set when the cursor hits a boundary (or multiple boundaries)
-     * x and y represent the axes on which the boundary is hit, the interval is the interval
-     * function itself, and xOffset and yOffset represent the accumulated translations
-     */
-    private dragBoundaryInterval = {
-        x: false,
-        y: false,
-        interval: null,
-        xOffset: 0,
-        yOffset: 0,
-        highlightedPort: undefined
-    };
-
-    graphData;
 
     /**
      * Disables dragging nodes, dragging from ports, arranging and deleting
@@ -92,23 +65,6 @@ export class Workflow {
 
         this.workflow = this.svgRoot.querySelector(".workflow") as any;
 
-        /**
-         * Whenever user scrolls, take the scroll delta and scale the workflow.
-         */
-        this.svgRoot.addEventListener("mousewheel", (ev: MouseWheelEvent) => {
-            if (this.isDragging) {
-                return;
-            }
-            const scale = this.scale + ev.deltaY / 500;
-
-            // Prevent scaling to unreasonable proportions.
-            if (scale <= Workflow.minScale || scale >= Workflow.maxScale) {
-                return;
-            }
-
-            this.scaleWorkflow(scale, ev);
-            ev.stopPropagation();
-        }, true);
 
         this.eventHub = new EventHub([
             /** @link connection.create */
@@ -131,11 +87,29 @@ export class Workflow {
             this.renderModel(model);
         }
 
+        /**
+         * Whenever user scrolls, take the scroll delta and scale the workflow.
+         */
+        this.svgRoot.addEventListener("mousewheel", (ev: MouseWheelEvent) => {
+            if (this.isDragging) {
+                return;
+            }
+            const scale = this.scale - ev.deltaY / 500;
+
+            // Prevent scaling to unreasonable proportions.
+            if (scale <= this.minScale || scale >= this.maxScale) {
+                return;
+            }
+
+            this.scaleAtPoint(scale, ev.clientX, ev.clientY);
+            ev.stopPropagation();
+        }, true);
+
+
     }
 
     static canDrawIn(element: SVGElement): boolean {
-        let clientBounds = element.getBoundingClientRect();
-        return clientBounds.width !== 0;
+        return element.getBoundingClientRect().width !== 0;
     }
 
     static findParentNode(el): SVGGElement | undefined {
@@ -148,6 +122,23 @@ export class Workflow {
         }
     }
 
+    static makeConnectionPath(x1, y1, x2, y2, forceDirection: "right" | "left" | string = "right"): string {
+
+        if (!forceDirection) {
+            return `M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
+        } else if (forceDirection === "right") {
+            const outDir = x1 + Math.abs(x1 - x2) / 2;
+            const inDir  = x2 - Math.abs(x1 - x2) / 2;
+
+            return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
+        } else if (forceDirection === "left") {
+            const outDir = x1 - Math.abs(x1 - x2) / 2;
+            const inDir  = x2 + Math.abs(x1 - x2) / 2;
+
+            return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
+        }
+    }
+
     findParentNode(el: Element): SVGGElement | undefined {
         return Workflow.findParentNode(el);
     }
@@ -157,7 +148,7 @@ export class Workflow {
      * @param {{new(...args: any[]) => T}} plugin
      * @returns {T}
      */
-    getPlugin<T extends SVGPlugin>(plugin: { new(...args: any[]): T }): T | undefined {
+    getPlugin<T extends SVGPlugin>(plugin: { new(...args: any[]): T }): T {
         return this.plugins.find(p => p instanceof plugin) as T;
     }
 
@@ -173,16 +164,12 @@ export class Workflow {
         this.eventHub.off(event, handler);
     }
 
-    getScale() {
-        return this.scale;
-    }
-
     /**
      * Scales the workflow to fit the available viewport
      */
     fitToViewport(): void {
 
-        this.scaleWorkflow(1);
+        this.scaleAtPoint(1);
         Object.assign(this.workflow.transform.baseVal.getItem(0).matrix, {
             e: 0,
             f: 0
@@ -203,7 +190,7 @@ export class Workflow {
 
         // Cap the upscaling to 1, we don't want to zoom in workflows that would fit anyway
         const newScale = Math.min(this.scale / scaleFactor, 1);
-        this.scaleWorkflow(newScale);
+        this.scaleAtPoint(newScale);
 
         const scaledWFBounds = this.workflow.getBoundingClientRect();
 
@@ -217,7 +204,6 @@ export class Workflow {
 
     redrawEdges() {
 
-        const edgeEls          = this.model.connections.filter(el => el.isVisible);
         const highlightedEdges = new Set();
 
         Array.from(this.workflow.querySelectorAll(".edge")).forEach((el) => {
@@ -240,55 +226,59 @@ export class Workflow {
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
     }
 
-    redraw(model?: WorkflowModel) {
+    // noinspection JSUnusedGlobalSymbols
+    redraw(model?: WorkflowModel): void {
         if (model) {
             this.model = model;
         }
         this.renderModel(this.model);
     }
 
-    /**
-     * Scale the workflow by the scaleCoefficient over the center of the workflo
-     * @param scaleCoefficient
-     */
-    scaleWorkflowCenter(scaleCoefficient = 1) {
-        this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
-        this.scaleWorkflow(scaleCoefficient, {
-            clientX: (this.workflowBoundingClientRect.right + this.workflowBoundingClientRect.left) / 2,
-            clientY: (this.workflowBoundingClientRect.top + this.workflowBoundingClientRect.bottom) / 2
-        });
+    get scale() {
+        return this._scale;
     }
+
+    // noinspection JSUnusedGlobalSymbols
+    set scale(scale: number) {
+        this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
+
+        const x = (this.workflowBoundingClientRect.right + this.workflowBoundingClientRect.left) / 2;
+        const y = (this.workflowBoundingClientRect.top + this.workflowBoundingClientRect.bottom) / 2;
+
+        this.scaleAtPoint(scale, x, y);
+    }
+
 
     /**
      * Scale the workflow by the scaleCoefficient (not compounded) over given coordinates
-     * @param scaleCoefficient
-     * @param ev
      */
-    scaleWorkflow(scaleCoefficient = 1, ev?: { clientX: number, clientY: number }) {
-        this.scale              = scaleCoefficient;
+    scaleAtPoint(scale = 1, x = 0, y = 0): void {
+
+        this._scale     = scale;
+        this.labelScale = 1 + (1 - this._scale) / (this._scale * 2);
+
         const transform         = this.workflow.transform.baseVal;
         const matrix: SVGMatrix = transform.getItem(0).matrix;
 
-        const coords = this.transformScreenCTMtoCanvas(ev ? ev.clientX : 0, ev ? ev.clientY : 0);
+        const coords = this.transformScreenCTMtoCanvas(x, y);
 
         matrix.e += matrix.a * coords.x;
         matrix.f += matrix.a * coords.y;
-        matrix.a = matrix.d = scaleCoefficient;
-        matrix.e -= scaleCoefficient * coords.x;
-        matrix.f -= scaleCoefficient * coords.y;
+        matrix.a = matrix.d = scale;
+        matrix.e -= scale * coords.x;
+        matrix.f -= scale * coords.y;
 
-        const labelScale = 1 + (1 - this.scale) / (this.scale * 2);
+        const nodeLabels = this.workflow.querySelectorAll(".node .label") as  NodeListOf<SVGPathElement>;
 
-        Array.from(this.workflow.querySelectorAll(".node .label"))
-            .map((el: SVGTextElement) => el.transform.baseVal.getItem(0).matrix)
-            .forEach(m => {
-                m.a = labelScale;
-                m.d = labelScale;
+        for (let el of nodeLabels) {
+            const matrix = el.transform.baseVal.getItem(0).matrix;
+
+            Object.assign(matrix, {
+                a: this.labelScale,
+                d: this.labelScale
             });
-    }
+        }
 
-    adaptToScale(x) {
-        return x * (1 / this.scale);
     }
 
     public deselectEverything() {
@@ -341,12 +331,6 @@ export class Workflow {
                 const sourcePortID      = el.getAttribute("data-source-connection");
                 const destinationPortID = el.getAttribute("data-destination-connection");
 
-                const sourcePort      = this.workflow.querySelector(`.port[data-connection-id="${sourcePortID}"]`);
-                const destinationPort = this.workflow.querySelector(`.port[data-connection-id="${destinationPortID}"]`);
-
-                const sourceNode      = Workflow.findParentNode(sourcePort);
-                const destinationNode = Workflow.findParentNode(destinationPort);
-
                 this.model.disconnect(sourcePortID, destinationPortID);
                 this.renderModel(this.model);
                 (this.svgRoot as any).focus();
@@ -368,42 +352,12 @@ export class Workflow {
         this.eventHub.emit("afterChange", changeEventData);
     }
 
-    setModelPosition(obj, x, y, emitEvents = true) {
-        const update = {
-            "sbg:x": x,
-            "sbg:y": y
-        };
 
-        const changeEventData = {type: "move"};
-
-        if (emitEvents) {
-            this.eventHub.emit("beforeChange", changeEventData);
-        }
-
-        if (!obj.customProps) {
-            obj.customProps = update;
-            return;
-        }
-
-        Object.assign(obj.customProps, update);
-
-        if (emitEvents) {
-            this.eventHub.emit("afterChange", changeEventData);
-        }
+    enableEditing(enabled: boolean): void {
+        this.invokePlugins("enableEditing", enabled);
     }
 
-    disableGraphManipulations() {
-        this.disableManipulations = true;
-        for (let i = 0; i < this.handlersThatCanBeDisabled.length; i++) {
-            this.handlersThatCanBeDisabled[i]();
-        }
-    }
-
-    enableGraphManipulations() {
-        this.disableManipulations = false;
-        this.attachSelectionDeletionBehavior();
-    }
-
+    // noinspection JSUnusedGlobalSymbols
     destroy() {
         this.model.off("connection.create", this.onConnectionCreate);
 
@@ -413,7 +367,7 @@ export class Workflow {
 
     resetTransform() {
         this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
-        this.scaleWorkflow();
+        this.scaleAtPoint();
     }
 
     private renderModel(model: WorkflowModel) {
@@ -438,23 +392,17 @@ export class Workflow {
         const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
             .reduce((tpl, nodeModel: any) => {
-                let x, y;
 
-                if (!isNaN(parseInt(nodeModel.customProps["sbg:x"]))) {
-                    x = nodeModel.customProps["sbg:x"];
-                } else {
-                    x                = 0;
+                if (isNaN(parseInt(nodeModel.customProps["sbg:x"]))) {
                     arrangeNecessary = true;
                 }
 
-                if (!isNaN(parseInt(nodeModel.customProps["sbg:y"]))) {
-                    y = nodeModel.customProps["sbg:y"];
-                } else {
-                    y                = 0;
+                if (isNaN(parseInt(nodeModel.customProps["sbg:y"]))) {
                     arrangeNecessary = true;
                 }
 
-                return tpl + GraphNode.makeTemplate(nodeModel, x, y);
+                return tpl + GraphNode.makeTemplate(nodeModel);
+
             }, "");
 
         this.workflow.innerHTML += nodesTpl;
@@ -475,7 +423,7 @@ export class Workflow {
         if (arrangeNecessary) {
             // this.arrange();
         } else {
-            this.scaleWorkflow(this.scale);
+            this.scaleAtPoint(this.scale);
         }
 
         // If we had a selection before, restore it
@@ -540,15 +488,13 @@ export class Workflow {
             const changeEventData = {type: "step.create"};
             this.eventHub.emit("beforeChange", changeEventData);
 
-            const x   = step.customProps["sbg:x"] || Math.random() * 1000;
-            const y   = step.customProps["sbg:y"] || Math.random() * 1000;
-            const tpl = GraphNode.makeTemplate(step, x, y);
+            const tpl = GraphNode.makeTemplate(step);
             const el  = TemplateParser.parse(tpl);
             this.workflow.appendChild(el);
 
             // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
             // So let's trigger the scaling again
-            this.scaleWorkflow(this.scale);
+            this.scaleAtPoint(this.scale);
 
             this.eventHub.emit("afterChange", changeEventData);
         });
@@ -623,7 +569,6 @@ export class Workflow {
         }
     }
 
-
     private highlightEdge(el: SVGPathElement) {
         const sourceNode = el.getAttribute("data-source-node");
         const destNode   = el.getAttribute("data-destination-node");
@@ -638,7 +583,6 @@ export class Workflow {
 
         this.eventHub.emit("selectionChange", el);
     }
-
 
     private attachSelectionDeletionBehavior() {
         this.handlersThatCanBeDisabled.push(this.domEvents.on("keyup", (ev: KeyboardEvent) => {
@@ -711,23 +655,6 @@ export class Workflow {
         })
     }
 
-    static makeConnectionPath(x1, y1, x2, y2, forceDirection: "right" | "left" | string = "right"): string {
-
-        if (!forceDirection) {
-            return `M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1} ${(x1 + x2) / 2} ${y2} ${x2} ${y2}`;
-        } else if (forceDirection === "right") {
-            const outDir = x1 + Math.abs(x1 - x2) / 2;
-            const inDir  = x2 - Math.abs(x1 - x2) / 2;
-
-            return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
-        } else if (forceDirection === "left") {
-            const outDir = x1 - Math.abs(x1 - x2) / 2;
-            const inDir  = x2 + Math.abs(x1 - x2) / 2;
-
-            return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
-        }
-    }
-
     /**
      * Listener for “connection.create” event on model that renders new edges on canvas
      */
@@ -746,7 +673,7 @@ export class Workflow {
     private onInputCreate(input: WorkflowInputParameterModel): void {
 
         const patched       = GraphNode.patchModelPorts(input);
-        const graphTemplate = GraphNode.makeTemplate(patched);
+        const graphTemplate = GraphNode.makeTemplate(patched, this.labelScale);
 
         const el = TemplateParser.parse(graphTemplate);
         this.workflow.appendChild(el);
@@ -759,7 +686,7 @@ export class Workflow {
     private onOutputCreate(output: WorkflowOutputParameterModel): void {
 
         const patched       = GraphNode.patchModelPorts(output);
-        const graphTemplate = GraphNode.makeTemplate(patched);
+        const graphTemplate = GraphNode.makeTemplate(patched, this.labelScale);
 
         const el = TemplateParser.parse(graphTemplate);
         this.workflow.appendChild(el);

@@ -14,4 +14,6 @@ export interface SVGPlugin {
     registerOnAfterChange?(fn: (change: GraphChange) => void): void;
 
     afterRender?(): void;
+
+    enableEditing?(enabled: boolean): void;
 }

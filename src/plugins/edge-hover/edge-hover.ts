@@ -50,7 +50,7 @@ export class SVGEdgeHoverPlugin extends SVGPluginBase {
         tipEl.classList.add("label");
         tipEl.classList.add("label-edge");
         tipEl.setAttribute("x", String(coords.x));
-        tipEl.setAttribute("y", String(coords.x - 16));
+        tipEl.setAttribute("y", String(coords.y));
         tipEl.innerHTML = sourceLabel + " → " + destLabel;
 
         this.workflow.workflow.appendChild(tipEl);

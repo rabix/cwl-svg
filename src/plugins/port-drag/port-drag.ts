@@ -1,12 +1,11 @@
 import {SVGPluginBase} from "../plugin-base";
-import {Workflow}      from "../../graph/workflow";
+import {Workflow}      from "../../";
 import {GraphNode}     from "../../graph/graph-node";
 import {Geometry}      from "../../utils/geometry";
 import {Edge}          from "../../graph/edge";
 
 /**
  * @FIXME: ensure that labels of newly created nodes are properly upscaled/downscaled
- * @FIXME: ensure that new edges have hover behaviour
  */
 export class SVGPortDragPlugin extends SVGPluginBase {
 
@@ -51,6 +50,9 @@ export class SVGPortDragPlugin extends SVGPluginBase {
 
     /** Port from which we initiated the drag */
     private originPort: SVGGElement;
+    private detachDragListenerFn = undefined;
+
+    private wheelPrevent = ev => ev.stopPropagation();
 
     afterRender(): void {
 
@@ -58,8 +60,19 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         this.workflow.svgRoot.classList.add(this.classes.plugin);
     }
 
+
+    enableEditing(enabled: boolean): void {
+
+        if (enabled && !this.detachDragListenerFn) {
+            this.attachPortDrag();
+        } else if (!enabled && typeof this.detachDragListenerFn !== undefined) {
+            this.detachDragListenerFn();
+            this.detachDragListenerFn = undefined;
+        }
+    }
+
     attachPortDrag() {
-        this.workflow.domEvents.drag(
+        this.detachDragListenerFn = this.workflow.domEvents.drag(
             ".port",
             this.onMove.bind(this),
             this.onMoveStart.bind(this),
@@ -70,25 +83,30 @@ export class SVGPortDragPlugin extends SVGPluginBase {
 
     onMove(dx: number, dy: number, ev: MouseEvent, portElement: SVGGElement): void {
 
-        const ctm    = portElement.getScreenCTM();
-        const coords = this.workflow.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
-        const origin = this.workflow.transformScreenCTMtoCanvas(ctm.e, ctm.f);
+        // This prevents scrolling with mouse wheel while dragging.
+        // Zooming would change the scale, which would make these calculations a lot more complicated
+        ev.preventDefault();
+
+        document.addEventListener("mousewheel", this.wheelPrevent, true);
+        const ctm            = portElement.getScreenCTM();
+        const mouseOnSVG     = this.workflow.transformScreenCTMtoCanvas(ev.clientX, ev.clientY);
+        const workflowOrigin = this.workflow.transformScreenCTMtoCanvas(ctm.e, ctm.f);
 
         const nodeToMouseDistance = Geometry.distance(
             this.nodeCoords.x, this.nodeCoords.y,
-            coords.x, coords.y
+            mouseOnSVG.x, mouseOnSVG.y
         );
 
-        const closestPort = this.findClosestPort(coords.x, coords.y);
+        const closestPort = this.findClosestPort(mouseOnSVG.x, mouseOnSVG.y);
         this.updateSnapPort(closestPort.portEl, closestPort.distance);
 
-        const scale = this.workflow.getScale();
-        const moveX = origin.x + dx / scale;
-        const moveY = origin.y + dy / scale;
+        const scale = this.workflow.scale;
+        const moveX = workflowOrigin.x + dx / scale;
+        const moveY = workflowOrigin.y + dy / scale;
 
         this.translateGhostNode(moveX, moveY);
         this.updateGhostNodeVisibility(nodeToMouseDistance, closestPort.distance);
-        this.updateEdge(origin.x, origin.y, moveX, moveY);
+        this.updateEdge(workflowOrigin.x, workflowOrigin.y, moveX, moveY);
     }
 
     /**
@@ -103,12 +121,16 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         // Needed for collision detection
         this.boundingClientRect = this.workflow.svgRoot.getBoundingClientRect();
 
-        const originNodeCTM = this.workflow.findParentNode(portEl).getCTM();
+        const nodeMatrix = this.workflow.findParentNode(portEl).transform.baseVal.getItem(0).matrix;
+        this.nodeCoords  = {
+            x: nodeMatrix.e,
+            y: nodeMatrix.f
+        };
+
         const workflowGroup = this.workflow.workflow;
 
         this.portType = portEl.classList.contains("input-port") ? "input" : "output";
 
-        this.nodeCoords = this.workflow.transformScreenCTMtoCanvas(originNodeCTM.e, originNodeCTM.f);
 
         this.ghostNode = this.createGhostNode(this.portType);
         workflowGroup.appendChild(this.ghostNode);
@@ -128,6 +150,8 @@ export class SVGPortDragPlugin extends SVGPluginBase {
     }
 
     onMoveEnd(ev: MouseEvent): void {
+
+        document.removeEventListener("mousewheel", this.wheelPrevent, true);
 
         const ghostType      = this.ghostNode.getAttribute("data-type");
         const ghostIsVisible = !this.ghostNode.classList.contains("hidden");
@@ -273,7 +297,6 @@ export class SVGPortDragPlugin extends SVGPluginBase {
 
     /**
      * @FIXME: GraphNode.radius should somehow come through Workflow,
-     * @returns {SVGGElement}
      */
     private createGhostNode(type: "input" | "output"): SVGGElement {
         const namespace = "http://www.w3.org/2000/svg";

@@ -1,5 +1,6 @@
 import {Workflow}      from "../../graph/workflow";
 import {SVGPluginBase} from "../plugin-base";
+import {EdgePanning}   from "../../behaviors/edge-panning";
 
 export interface ConstructorParams {
     movementSpeed?: number,
@@ -37,7 +38,7 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     /** ID of the requested animation frame for panning */
     private panAnimationFrame: number;
 
-    /** Stored {@link onDragStart} to detect collision with viewport edges */
+    /** Stored onDragStart to detect collision with viewport edges */
     private boundingClientRect: ClientRect;
 
     /** Cache input edges and their parsed bezier curve parameters so we don't query for them on each mouse move */
@@ -46,7 +47,7 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     /** Cache output edges and their parsed bezier curve parameters so we don't query for them on each mouse move */
     private outputEdges: Map<SVGPathElement, number[]>;
 
-    /** Workflow panning at the time of {@link onDragStart}, used to adjust ∆x and ∆y while panning */
+    /** Workflow panning at the time of onDragStart, used to adjust ∆x and ∆y while panning */
     private startWorkflowTranslation: { x: number, y: number };
 
     /**
@@ -54,6 +55,14 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
      * positive if beyond right/bottom, zero if inside the viewport
      */
     private collision = {x: 0, y: 0};
+
+    private wheelPrevent = ev => ev.stopPropagation();
+
+    private boundMoveHandler      = this.onMove.bind(this);
+    private boundMoveStartHandler = this.onMoveStart.bind(this);
+    private boundMoveEndHandler   = this.onMoveEnd.bind(this);
+
+    private edgePanner: EdgePanning;
 
     constructor(parameters: ConstructorParams = {}) {
         super();
@@ -64,13 +73,19 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
         this.attachDrag();
     }
 
+
+    registerWorkflowModel(workflow: Workflow): void {
+        super.registerWorkflowModel(workflow);
+        this.edgePanner = new EdgePanning(this.workflow);
+    }
+
     private attachDrag() {
 
         this.workflow.domEvents.drag(
             ".node .core",
-            this.onMove.bind(this),
-            this.onMoveStart.bind(this),
-            this.onMoveEnd.bind(this)
+            this.boundMoveHandler,
+            this.boundMoveStartHandler,
+            this.boundMoveEndHandler
         );
     }
 
@@ -79,8 +94,11 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     }
 
     private onMove(dx: number, dy: number, ev: MouseEvent): void {
+        // Prevent mouse wheel events while dragging, otherwise scale would change during node movement
+
+
         /** We will use workflow scale to determine how our mouse movement translate to svg proportions */
-        const scale = this.workflow.getScale();
+        const scale = this.workflow.scale;
 
         /** Need to know how far did the workflow itself move since when we started dragging */
         const matrixMovement = {
@@ -89,12 +107,26 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
         };
 
         /** We might have hit the boundary and need to start panning */
+        // this.edgePanner.triggerCollisionDetection(ev.clientX, ev.clientY, this.sdx, this.sdy, (sdx, sdy) => {
+        //
+        //     const diffX = sdx - this.sdx;
+        //     const diffY = sdy - this.sdy;
+        //
+        //     console.log("Diffs", diffX, diffY);
+        //
+        //     this.sdx = sdx;
+        //     this.sdy = sdy;
+        //
+        //     this.translateNodeBy(this.movingNode, diffX, diffY);
+        //     this.redrawEdges(this.sdx, this.sdy);
+        // });
+
         this.triggerCollisionDetection(ev.clientX, ev.clientY);
 
         /**
          * We need to store scaled ∆x and ∆y because this is not the only place from which node is being moved.
          * If mouse is outside the viewport, and the workflow is panning, {@link startScroll} will continue moving
-         * this node, so it needs to know where to start from and update it in the same we, so this method can take
+         * this node, so it needs to know where to start from and update it, so this method can take
          * over when mouse gets back to the viewport.
          *
          * If there was no handoff, node would jump back and forth to
@@ -116,9 +148,10 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
      */
     private onMoveStart(event: MouseEvent, handle: SVGGElement): void {
 
-
         /** We will query the SVG dom for edges that we need to move, so store svg element for easy access */
         const svg = this.workflow.svgRoot;
+
+        document.addEventListener("mousewheel", this.wheelPrevent, true);
 
         /** Our drag handle is not the whole node because that would include ports and labels, but a child of it*/
         const node = handle.parentNode as SVGGElement;
@@ -235,6 +268,8 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     private onMoveEnd(): void {
         this.stopScroll();
 
+        document.removeEventListener("mousewheel", this.wheelPrevent, true);
+
         delete this.startX;
         delete this.startY;
         delete this.movingNode;
@@ -267,7 +302,7 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
 
         let startTimestamp: number;
 
-        const scale    = this.workflow.getScale();
+        const scale    = this.workflow.scale;
         const matrix   = this.getWorkflowMatrix();
         const sixtyFPS = 16.6666;
 

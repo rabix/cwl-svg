@@ -5,6 +5,7 @@ import {WorkflowFactory}    from "cwlts/models";
 import {Workflow}           from "../../../";
 import {SVGPortDragPlugin}  from "../port-drag";
 import {SVGEdgeHoverPlugin} from "../../edge-hover/edge-hover";
+import {SVGNodeMovePlugin}  from "../../node-move/node-move";
 
 const model = WorkflowFactory.from(require(__dirname + "/app.json"));
 
@@ -16,8 +17,11 @@ const wf = new Workflow({
     svgRoot: svgRoot,
     plugins: [
         new SVGPortDragPlugin(),
-        new SVGEdgeHoverPlugin()
+        new SVGEdgeHoverPlugin(),
+        new SVGNodeMovePlugin()
     ]
 });
 
 wf.fitToViewport();
+wf.enableEditing(true);
+window["wf"] = wf;

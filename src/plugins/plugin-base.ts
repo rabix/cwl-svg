@@ -20,4 +20,5 @@ export abstract class SVGPluginBase implements SVGPlugin {
     }
 
     abstract afterRender(): void;
+
 }
