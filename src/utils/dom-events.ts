@@ -193,7 +193,9 @@ export class DomEvents {
                 move(dx, dy, ev, draggedEl, this.root);
             }
         };
-        const upHandler   = (ev) => {
+
+        const upHandler = (ev) => {
+
             if (moveEventCount >= threshold) {
                 if (dragging) {
                     if (typeof end === "function") {
@@ -201,12 +203,23 @@ export class DomEvents {
                     }
                 }
 
-                const parentNode        = draggedEl.parentNode;
-                const clickCancellation = (ev) => {
-                    ev.stopPropagation();
-                    parentNode.removeEventListener("click", clickCancellation, true);
-                };
-                parentNode.addEventListener("click", clickCancellation, true);
+                // When releasing the mouse button, if it happens over the same element that we initially had
+                // the mouseDown event, it will trigger a click event. We want to stop that, so we intercept
+                // it by capturing click top-down and stopping its propagation.
+                // However, if the mouseUp didn't happen above the starting element, it wouldn't trigger a click,
+                // but it would intercept the next (unrelated) click event unless we prevent interception in the
+                // first place by checking if we released above the starting element.
+                if (draggedEl.contains(ev.target)) {
+                    const parentNode = draggedEl.parentNode;
+
+                    const clickCancellation = (ev) => {
+                        console.log("Stopping propagation");
+                        ev.stopPropagation();
+                        parentNode.removeEventListener("click", clickCancellation, true);
+                    };
+                    parentNode.addEventListener("click", clickCancellation, true);
+                }
+
             }
 
             dragging       = false;
@@ -215,6 +228,7 @@ export class DomEvents {
             moveEventCount = 0;
             document.removeEventListener("mouseup", upHandler);
             document.removeEventListener("mousemove", moveHandler);
+
 
             for (let i in mouseOverListeners) {
                 this.root.addEventListener("mouseover", mouseOverListeners[i]);

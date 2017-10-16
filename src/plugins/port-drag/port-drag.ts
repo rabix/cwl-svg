@@ -80,6 +80,10 @@ export class SVGPortDragPlugin extends PluginBase {
     }
 
     attachPortDrag() {
+        if(typeof this.detachDragListenerFn === "function"){
+            this.detachDragListenerFn();
+        }
+
         this.detachDragListenerFn = this.workflow.domEvents.drag(
             ".port",
             this.onMove.bind(this),
@@ -174,6 +178,7 @@ export class SVGPortDragPlugin extends PluginBase {
 
     onMoveEnd(ev: MouseEvent): void {
 
+        console.log("Move end");
         document.removeEventListener("mousewheel", this.wheelPrevent, true);
 
         this.panner.stop();
