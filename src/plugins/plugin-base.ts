@@ -4,8 +4,12 @@ import {Workflow}               from "../graph/workflow";
 export abstract class SVGPluginBase implements SVGPlugin {
 
     protected workflow: Workflow;
+    /** plugin should trigger before a change is about to occur on the model */
     protected onBeforeChange: (change: GraphChange) => void;
+    /** plugin should trigger after a change has occurred on the model */
     protected onAfterChange: (change: GraphChange) => void;
+    /** plugin should trigger when internal svg elements have been deleted and new ones created */
+    protected onAfterRender: (change: GraphChange) => void;
 
     registerWorkflowModel(workflow: Workflow): void {
         this.workflow = workflow;
@@ -17,6 +21,10 @@ export abstract class SVGPluginBase implements SVGPlugin {
 
     registerOnAfterChange(fn: (change: GraphChange) => void): void {
         this.onAfterChange = fn;
+    }
+
+    registerOnAfterRender(fn: (change: GraphChange) => void): void {
+        this.onAfterRender = fn;
     }
 
     abstract afterRender(): void;

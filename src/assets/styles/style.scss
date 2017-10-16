@@ -68,13 +68,6 @@ svg.cwl-workflow {
         .inner {
           stroke: darken($edge-inner-color, 50%);
         }
-
-        &.not-valid {
-          .inner {
-            stroke: darken($color-warning, 25%);
-          }
-        }
-
       }
 
     }
@@ -216,12 +209,6 @@ svg.cwl-workflow {
   }
 
   .edge {
-
-    &.not-valid {
-      .inner {
-        stroke: $color-warning;
-      }
-    }
 
     &:hover .inner,
     &.selected .inner {

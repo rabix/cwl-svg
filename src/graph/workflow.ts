@@ -78,10 +78,15 @@ export class Workflow {
             /** @link workflow.fit */
             "beforeChange",
             "afterChange",
+            "afterRender",
             "selectionChange"
         ]);
 
         this.attachEvents();
+
+        this.eventHub.on("afterRender", () => {
+            this.invokePlugins("afterRender");
+        });
 
         if (model) {
             this.renderModel(model);
@@ -498,10 +503,6 @@ export class Workflow {
 
             this.eventHub.emit("afterChange", changeEventData);
         });
-
-        this.model.on("connections.updated", (input: WorkflowStepInputModel) => {
-            this.redrawEdges();
-        });
     }
 
     private addEventListeners(root: SVGSVGElement): void {
@@ -644,6 +645,10 @@ export class Workflow {
             plugin.registerOnAfterChange(event => {
                 this.eventHub.emit("afterChange", event);
             });
+
+            plugin.registerOnAfterRender(event => {
+                this.eventHub.emit("afterRender", event);
+            })
         });
     }
 

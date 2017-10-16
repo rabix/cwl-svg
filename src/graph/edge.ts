@@ -1,6 +1,7 @@
 import {Edge as ModelEdge} from "cwlts/models";
 import {IOPort} from "./io-port";
 import {Geometry} from "../utils/geometry";
+import {Workflow} from "./workflow";
 export class Edge {
     static makeTemplate(edge: ModelEdge, containerNode: SVGGElement, connectionStates?: string): string {
         if (!edge.isVisible || edge.source.type === "Step" || edge.destination.type === "Step") {
@@ -33,17 +34,15 @@ export class Edge {
 
         const wfMatrix = containerNode.transform.baseVal[0].matrix;
 
-        const pathStr = IOPort.makeConnectionPath(
+        const pathStr = Workflow.makeConnectionPath(
             (sourceCTM.e - wfMatrix.e) / sourceCTM.a,
             (sourceCTM.f - wfMatrix.f) / sourceCTM.a,
             (destCTM.e - wfMatrix.e) / sourceCTM.a,
             (destCTM.f - wfMatrix.f) / sourceCTM.a
         );
 
-        const isInvalid = edge.isValid === false ? "not-valid" : "";
-
         return `
-            <g tabindex="-1" class="edge ${connectionStates} ${isInvalid}"
+            <g tabindex="-1" class="edge ${connectionStates}"
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"
