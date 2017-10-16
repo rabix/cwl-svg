@@ -67,8 +67,8 @@ export class SVGNodeMovePlugin extends PluginBase {
     }
 
 
-    registerWorkflowModel(workflow: Workflow): void {
-        super.registerWorkflowModel(workflow);
+    registerWorkflow(workflow: Workflow): void {
+        super.registerWorkflow(workflow);
 
         this.edgePanner = new EdgePanner(this.workflow, {
             scrollMargin: this.scrollMargin,

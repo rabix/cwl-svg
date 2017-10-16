@@ -11,7 +11,7 @@ export abstract class PluginBase implements SVGPlugin {
     /** plugin should trigger when internal svg elements have been deleted and new ones created */
     protected onAfterRender: (change: GraphChange) => void;
 
-    registerWorkflowModel(workflow: Workflow): void {
+    registerWorkflow(workflow: Workflow): void {
         this.workflow = workflow;
     }
 

@@ -58,8 +58,8 @@ export class SVGPortDragPlugin extends PluginBase {
     private portOnCanvas: { x: number; y: number };
     private lastMouseMove: { x: number; y: number };
 
-    registerWorkflowModel(workflow: Workflow): void {
-        super.registerWorkflowModel(workflow);
+    registerWorkflow(workflow: Workflow): void {
+        super.registerWorkflow(workflow);
         this.panner = new EdgePanner(this.workflow);
 
         this.workflow.svgRoot.classList.add(this.css.plugin);

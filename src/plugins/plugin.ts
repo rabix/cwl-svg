@@ -7,7 +7,7 @@ export interface GraphChange {
 
 export interface SVGPlugin {
 
-    registerWorkflowModel?(workflow: Workflow): void;
+    registerWorkflow?(workflow: Workflow): void;
 
     registerOnBeforeChange?(fn: (change: GraphChange) => void): void;
 
@@ -16,6 +16,8 @@ export interface SVGPlugin {
     registerOnAfterRender?(fn: (change: GraphChange) => void): void;
 
     afterRender?(): void;
+
+    afterModelChange?(): void;
 
     enableEditing?(enabled: boolean): void;
 

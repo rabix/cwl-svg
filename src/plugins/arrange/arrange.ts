@@ -10,7 +10,7 @@ export class SVGArrangePlugin implements SVGPlugin {
     private onAfterChange: (updates: NodePositionUpdates) => void;
     private onAfterRender: () => void;
 
-    registerWorkflowModel(workflow: Workflow): void {
+    registerWorkflow(workflow: Workflow): void {
         this.workflow = workflow;
         this.svgRoot  = workflow.svgRoot;
     }

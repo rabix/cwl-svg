@@ -51,7 +51,6 @@ export class Workflow {
         this.plugins   = parameters.plugins || [];
         this.domEvents = new DomEvents(this.svgRoot as any);
 
-        this.hookPlugins();
 
         this.svgRoot.classList.add(this.svgID);
 
@@ -61,6 +60,7 @@ export class Workflow {
         `;
 
         this.workflow = this.svgRoot.querySelector(".workflow") as any;
+
 
 
         this.eventHub = new EventHub([
@@ -76,6 +76,8 @@ export class Workflow {
 
         this.attachEvents();
 
+        this.hookPlugins();
+
         this.eventHub.on("afterRender", () => {
             this.invokePlugins("afterRender");
         });
@@ -83,6 +85,7 @@ export class Workflow {
         if (model) {
             this.renderModel(model);
         }
+
 
         /**
          * Whenever user scrolls, take the scroll delta and scale the workflow.
@@ -408,14 +411,16 @@ export class Workflow {
         }
 
 
-        this.invokePlugins("afterRender");
 
 
+        console.log("Binding basic events");
         // -- Newly added events for v0.1.0
         this.model.on("input.create", this.onInputCreate.bind(this));
         this.model.on("output.create", this.onOutputCreate.bind(this));
         this.model.on("connection.create", this.onConnectionCreate.bind(this));
 
+        this.invokePlugins("afterRender");
+        this.invokePlugins("afterModelChange");
     }
 
     private attachEvents() {
@@ -537,7 +542,7 @@ export class Workflow {
     private hookPlugins() {
 
         this.plugins.forEach(plugin => {
-            plugin.registerWorkflowModel(this);
+            plugin.registerWorkflow(this);
 
             plugin.registerOnBeforeChange(event => {
                 this.eventHub.emit("beforeChange", event);
@@ -596,6 +601,7 @@ export class Workflow {
 
         const el = TemplateParser.parse(graphTemplate);
         this.workflow.appendChild(el);
+        console.log("Appended output node", el);
     }
 
     private makeID(length = 6) {
