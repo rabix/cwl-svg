@@ -1,8 +1,8 @@
 import {Edge, WorkflowModel} from "cwlts/models";
-import {SVGPluginBase} from "../plugin-base";
+import {PluginBase} from "../plugin-base";
 import {Workflow} from "../../graph/workflow";
 
-export class SVGValidatePlugin extends SVGPluginBase {
+export class SVGValidatePlugin extends PluginBase {
     model: WorkflowModel;
 
     /** Map of CSS classes attached by this plugin */
