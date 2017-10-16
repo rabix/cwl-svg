@@ -1,6 +1,6 @@
-import {Workflow}      from "../../";
-import {SVGPluginBase} from "../plugin-base";
-import {EdgePanner}    from "../../behaviors/edge-panning";
+import {Workflow}   from "../../";
+import {PluginBase} from "../plugin-base";
+import {EdgePanner} from "../../behaviors/edge-panning";
 
 export interface ConstructorParams {
     movementSpeed?: number,
@@ -12,7 +12,7 @@ export interface ConstructorParams {
  *
  * @FIXME: attach events for before and after change
  */
-export class SVGNodeMovePlugin extends SVGPluginBase {
+export class SVGNodeMovePlugin extends PluginBase {
 
     /** Difference in movement on the X axis since drag start, adapted for scale and possibly panned distance */
     private sdx: number;

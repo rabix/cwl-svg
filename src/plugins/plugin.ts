@@ -16,4 +16,6 @@ export interface SVGPlugin {
     afterRender?(): void;
 
     enableEditing?(enabled: boolean): void;
+
+    destroy?(): void;
 }

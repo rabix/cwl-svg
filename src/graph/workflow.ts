@@ -15,6 +15,7 @@ import {WorkflowOutputParameterModel}                                           
 export class Workflow {
 
     readonly eventHub: EventHub;
+    readonly svgID = this.makeID();
 
     minScale = 0.2;
     maxScale = 2;
@@ -36,12 +37,6 @@ export class Workflow {
 
     private plugins: SVGPlugin[] = [];
 
-    /**
-     * Disables dragging nodes, dragging from ports, arranging and deleting
-     * @type {boolean}
-     */
-    private disableManipulations = false;
-
     private handlersThatCanBeDisabled = [];
 
     constructor(parameters: {
@@ -58,6 +53,8 @@ export class Workflow {
 
         this.hookPlugins();
 
+        this.svgRoot.classList.add(this.svgID);
+
         this.svgRoot.innerHTML = `
             <rect x="0" y="0" width="100%" height="100%" class="pan-handle" transform="matrix(1,0,0,1,0,0)"></rect>
             <g class="workflow" transform="matrix(1,0,0,1,0,0)"></g>
@@ -67,15 +64,10 @@ export class Workflow {
 
 
         this.eventHub = new EventHub([
-            /** @link connection.create */
             "connection.create",
-            /** @link app.create.step */
             "app.create.step",
-            /** @link app.create.input */
             "app.create.input",
-            /** @link app.create.output */
             "app.create.output",
-            /** @link workflow.fit */
             "beforeChange",
             "afterChange",
             "selectionChange"
@@ -112,16 +104,6 @@ export class Workflow {
         return element.getBoundingClientRect().width !== 0;
     }
 
-    static findParentNode(el): SVGGElement | undefined {
-        let parentNode = el;
-        while (parentNode) {
-            if (parentNode.classList.contains("node")) {
-                return parentNode;
-            }
-            parentNode = parentNode.parentNode;
-        }
-    }
-
     static makeConnectionPath(x1, y1, x2, y2, forceDirection: "right" | "left" | string = "right"): string {
 
         if (!forceDirection) {
@@ -139,8 +121,14 @@ export class Workflow {
         }
     }
 
-    findParentNode(el: Element): SVGGElement | undefined {
-        return Workflow.findParentNode(el);
+    findParent(el: Element, parentClass = "node"): SVGGElement | undefined {
+        let parentNode = el as Element;
+        while (parentNode) {
+            if (parentNode.classList.contains(parentClass)) {
+                return parentNode as SVGGElement;
+            }
+            parentNode = parentNode.parentElement;
+        }
     }
 
     /**
@@ -281,19 +269,7 @@ export class Workflow {
 
     }
 
-    public deselectEverything() {
-        Array.from(this.workflow.querySelectorAll(".highlighted")).forEach(el => {
-            el.classList.remove("highlighted");
-        });
-        this.workflow.classList.remove("has-selection");
-        const selected = this.workflow.querySelector(".selected");
-        if (selected) {
-            selected.classList.remove("selected");
-        }
-        this.eventHub.emit("selectionChange", null);
-    }
-
-    public transformScreenCTMtoCanvas(x, y) {
+    transformScreenCTMtoCanvas(x, y) {
         const svg   = this.svgRoot;
         const ctm   = this.workflow.getScreenCTM();
         const point = svg.createSVGPoint();
@@ -307,7 +283,7 @@ export class Workflow {
         };
     }
 
-    public deleteSelection() {
+    deleteSelection() {
 
         const selection = Array.from(this.workflow.querySelectorAll(".selected"));
         if (selection.length == 0) {
@@ -361,8 +337,12 @@ export class Workflow {
     destroy() {
         this.model.off("connection.create", this.onConnectionCreate);
 
+        this.svgRoot.classList.remove(this.svgID);
+
         this.clearCanvas();
         this.eventHub.empty();
+
+        this.invokePlugins("destroy");
     }
 
     resetTransform() {
@@ -376,10 +356,6 @@ export class Workflow {
 
         // We will need to restore the transformations when we redraw the model, so save the current state
         const oldTransform = this.workflow.getAttribute("transform");
-
-        // We might have an active selection that we want to preserve upon redrawing, save it
-        let selectedStuff            = this.workflow.querySelector(".selected");
-        let selectedItemConnectionID = selectedStuff ? selectedStuff.getAttribute("data-connection-id") : undefined;
 
         this.clearCanvas();
 
@@ -415,7 +391,7 @@ export class Workflow {
             this.workflow.appendChild(e);
         });
 
-        this.addEventListeners(this.svgRoot);
+        this.addEventListeners();
 
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
@@ -426,14 +402,6 @@ export class Workflow {
             this.scaleAtPoint(this.scale);
         }
 
-        // If we had a selection before, restore it
-        if (selectedItemConnectionID) {
-            const newSelection = this.workflow.querySelector(`[data-connection-id='${selectedItemConnectionID}']`);
-            // We need to check if the previously selected item still exist, since it might be deleted in the meantime
-            if (newSelection) {
-                this.activateSelection(newSelection as SVGGElement);
-            }
-        }
 
         this.invokePlugins("afterRender");
 
@@ -499,28 +467,13 @@ export class Workflow {
             this.eventHub.emit("afterChange", changeEventData);
         });
 
-        this.model.on("connections.updated", (input: WorkflowStepInputModel) => {
+        this.model.on("connections.updated", () => {
             this.redrawEdges();
         });
     }
 
-    private addEventListeners(root: SVGSVGElement): void {
+    private addEventListeners(): void {
 
-        /**
-         * Whenever a click happens on a blank space, remove selections
-         */
-        this.domEvents.on("click", "*", (ev, el, root) => {
-            this.deselectEverything();
-        });
-
-        /**
-         * Whenever a click happens on a node, select that node and
-         * highlight all connecting edges and adjacent vertices
-         * while shadowing others.
-         */
-        this.domEvents.on("click", ".node", (ev, el: SVGGElement) => {
-            this.activateSelection(el);
-        });
 
         /**
          * Attach canvas panning
@@ -547,14 +500,6 @@ export class Workflow {
         }
 
         /**
-         * Edge Selection
-         */
-        this.domEvents.on("click", ".edge", (ev, target: SVGPathElement, root) => {
-            this.highlightEdge(target);
-            target.classList.add("selected");
-        });
-
-        /**
          * On mouse over node, bring it to the front
          */
         this.domEvents.on("mouseover", ".node", (ev, target, root) => {
@@ -564,24 +509,6 @@ export class Workflow {
             target.parentElement.appendChild(target);
         });
 
-        if (!this.disableManipulations) {
-            this.attachSelectionDeletionBehavior();
-        }
-    }
-
-    private highlightEdge(el: SVGPathElement) {
-        const sourceNode = el.getAttribute("data-source-node");
-        const destNode   = el.getAttribute("data-destination-node");
-        const sourcePort = el.getAttribute("data-source-port");
-        const destPort   = el.getAttribute("data-destination-port");
-
-        Array.from(this.workflow.querySelectorAll(
-            `.node[data-id="${sourceNode}"] .output-port[data-port-id="${sourcePort}"], `
-            + `.node[data-id="${destNode}"] .input-port[data-port-id="${destPort}"]`)).forEach(el => {
-            el.classList.add("highlighted");
-        });
-
-        this.eventHub.emit("selectionChange", el);
     }
 
     private attachSelectionDeletionBehavior() {
@@ -604,32 +531,6 @@ export class Workflow {
         this.domEvents.detachAll();
         this.workflow.innerHTML = "";
         this.workflow.setAttribute("class", "workflow");
-    }
-
-    private activateSelection(el: SVGGElement) {
-        this.deselectEverything();
-
-        this.workflow.classList.add("has-selection");
-
-        const nodeID = el.getAttribute("data-id");
-
-        const firstNode = this.workflow.getElementsByClassName("node")[0];
-        Array.from(this.workflow.querySelectorAll(`.edge[data-source-node="${nodeID}"], .edge[data-destination-node="${nodeID}"]`)).forEach((edge: HTMLElement) => {
-            edge.classList.add("highlighted");
-            const sourceNodeID      = edge.getAttribute("data-source-node");
-            const destinationNodeID = edge.getAttribute("data-destination-node");
-
-            Array.from(this.workflow.querySelectorAll(`.node[data-id="${sourceNodeID}"], .node[data-id="${destinationNodeID}"]`))
-                .forEach((el: SVGGElement) => el.classList.add("highlighted"));
-
-            this.workflow.insertBefore(edge, firstNode);
-        });
-
-        el.classList.add("selected");
-        if (typeof (el as any).focus === "function") {
-            (el as any).focus();
-        }
-        this.eventHub.emit("selectionChange", el);
     }
 
     private hookPlugins() {
@@ -690,6 +591,17 @@ export class Workflow {
 
         const el = TemplateParser.parse(graphTemplate);
         this.workflow.appendChild(el);
+    }
+
+    private makeID(length = 6) {
+        let output    = "";
+        const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+        for (let i = 0; i < length; i++) {
+            output += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+
+        return output;
     }
 
 }

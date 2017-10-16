@@ -1,6 +1,6 @@
-import {SVGPluginBase} from "../plugin-base";
+import {PluginBase} from "../plugin-base";
 
-export class SVGEdgeHoverPlugin extends SVGPluginBase {
+export class SVGEdgeHoverPlugin extends PluginBase {
 
     private boundEdgeEnterFunction = this.onEdgeEnter.bind(this);
 

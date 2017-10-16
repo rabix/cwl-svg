@@ -1,7 +1,7 @@
 import {GraphChange, SVGPlugin} from "./plugin";
 import {Workflow}               from "../graph/workflow";
 
-export abstract class SVGPluginBase implements SVGPlugin {
+export abstract class PluginBase implements SVGPlugin {
 
     protected workflow: Workflow;
     protected onBeforeChange: (change: GraphChange) => void;
@@ -18,7 +18,5 @@ export abstract class SVGPluginBase implements SVGPlugin {
     registerOnAfterChange(fn: (change: GraphChange) => void): void {
         this.onAfterChange = fn;
     }
-
-    abstract afterRender(): void;
 
 }
