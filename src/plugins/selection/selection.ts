@@ -30,12 +30,6 @@ export class SelectionPlugin extends PluginBase {
         const clickListener = this.onClick.bind(this);
         this.svg.addEventListener("click", clickListener);
         this.cleanups.push(() => this.svg.removeEventListener("click", clickListener));
-
-
-    }
-
-    afterModelChange() {
-        this.detachModelEvents = this.bindModelEvents();
     }
 
     private bindModelEvents() {
@@ -53,6 +47,7 @@ export class SelectionPlugin extends PluginBase {
     }
 
     afterRender() {
+        this.detachModelEvents = this.bindModelEvents();
         this.restoreSelection();
     }
 
