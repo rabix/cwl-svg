@@ -61,12 +61,12 @@ export class SVGPortDragPlugin extends PluginBase {
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
         this.panner = new EdgePanner(this.workflow);
+
+        this.workflow.svgRoot.classList.add(this.css.plugin);
     }
 
     afterRender(): void {
-
         this.attachPortDrag();
-        this.workflow.svgRoot.classList.add(this.css.plugin);
     }
 
     enableEditing(enabled: boolean): void {
@@ -80,7 +80,8 @@ export class SVGPortDragPlugin extends PluginBase {
     }
 
     attachPortDrag() {
-        if(typeof this.detachDragListenerFn === "function"){
+
+        if (typeof this.detachDragListenerFn === "function") {
             this.detachDragListenerFn();
         }
 
@@ -178,7 +179,6 @@ export class SVGPortDragPlugin extends PluginBase {
 
     onMoveEnd(ev: MouseEvent): void {
 
-        console.log("Move end");
         document.removeEventListener("mousewheel", this.wheelPrevent, true);
 
         this.panner.stop();

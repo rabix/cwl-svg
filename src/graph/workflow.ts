@@ -69,12 +69,17 @@ export class Workflow {
             "app.create.output",
             "beforeChange",
             "afterChange",
+            "afterRender",
             "selectionChange"
         ]);
 
         this.attachEvents();
 
         this.hookPlugins();
+
+        this.eventHub.on("afterRender", () => {
+            this.invokePlugins("afterRender");
+        });
 
         this.draw();
 
@@ -461,10 +466,6 @@ export class Workflow {
 
             this.eventHub.emit("afterChange", changeEventData);
         });
-
-        this.model.on("connections.updated", () => {
-            this.redrawEdges();
-        });
     }
 
     private addEventListeners(): void {
@@ -540,6 +541,10 @@ export class Workflow {
             plugin.registerOnAfterChange(event => {
                 this.eventHub.emit("afterChange", event);
             });
+
+            plugin.registerOnAfterRender(event => {
+                this.eventHub.emit("afterRender", event);
+            })
         });
     }
 
