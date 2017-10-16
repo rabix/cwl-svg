@@ -11,8 +11,8 @@ export class SVGValidatePlugin extends PluginBase {
         invalid: "__validate-invalid"
     };
 
-    registerWorkflowModel(workflow: Workflow): void {
-        super.registerWorkflowModel(workflow);
+    registerWorkflow(workflow: Workflow): void {
+        super.registerWorkflow(workflow);
         this.model = workflow.model;
 
         // add listener for all subsequent edge validation
