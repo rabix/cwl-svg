@@ -27,50 +27,6 @@ svg.cwl-workflow {
   .workflow {
     @extend .noselect;
 
-    &.has-selection {
-      .node:not(.highlighted):not(.selected) {
-        &.step,
-        &.input,
-        &.output {
-          .outer {
-            stroke: darken($edge-inner-color, 50%);
-          }
-        }
-
-        &.step {
-          .inner {
-            fill: darken($color-primary, 15%);
-          }
-
-          &.hasUpdate {
-            .inner {
-              fill: darken($color-warning, 15%);
-            }
-          }
-        }
-        &.input,
-        &.output {
-          .inner {
-            fill: darken($color-neutral, 25%);
-          }
-        }
-
-        .label {
-          fill: darken($font-color, 50%);
-        }
-
-        .port {
-          fill: darken($color-neutral, 50%);
-        }
-      }
-
-      .edge:not(.highlighted){
-        .inner {
-          stroke: darken($edge-inner-color, 50%);
-        }
-      }
-
-    }
   }
 
   .label {
@@ -87,11 +43,6 @@ svg.cwl-workflow {
 
   .node {
 
-    &.selected {
-      .outer {
-        stroke: $color-highlight !important;
-      }
-    }
 
     .icon {
       stroke: $background;
@@ -159,7 +110,7 @@ svg.cwl-workflow {
       position: relative;
 
       &:hover,
-      &.highlightedt {
+      &.highlighted {
         stroke: white;
         stroke-width: 2px;
       }
@@ -210,8 +161,7 @@ svg.cwl-workflow {
 
   .edge {
 
-    &:hover .inner,
-    &.selected .inner {
+    &:hover .inner {
       stroke: $port-highlight-color;
     }
 

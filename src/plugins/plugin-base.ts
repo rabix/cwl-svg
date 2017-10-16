@@ -1,7 +1,7 @@
 import {GraphChange, SVGPlugin} from "./plugin";
 import {Workflow}               from "../graph/workflow";
 
-export abstract class SVGPluginBase implements SVGPlugin {
+export abstract class PluginBase implements SVGPlugin {
 
     protected workflow: Workflow;
     /** plugin should trigger before a change is about to occur on the model */

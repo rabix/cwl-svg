@@ -1,8 +1,9 @@
 @import "../../assets/styles/variables";
 
-$suggestedPortFill: $color-success !default;
-$snapPortStrokeHighlight: white !default;
-$snapPortStrokeWidth: 2px !default;
+$port-suggested-fill: $color-success !default;
+$port-snap-highlight-stroke: white !default;
+$port-snap-stroke-width: 2px !default;
+$edge-dragged-stroke: $color-neutral !default;
 
 // Expectations:
 //
@@ -10,7 +11,7 @@ $snapPortStrokeWidth: 2px !default;
 
   // Ports that are marked as suggested should be coloured differently and have visible labels
   .port.__port-drag-suggestion {
-    fill: $suggestedPortFill;
+    fill: $port-suggested-fill;
 
     .label {
       opacity: 1;
@@ -20,8 +21,8 @@ $snapPortStrokeWidth: 2px !default;
 
   // Port that is marked as a snap choice should have a stroke around it
   .port.__port-drag-snap {
-    stroke: $snapPortStrokeHighlight;
-    stroke-width: $snapPortStrokeWidth;
+    stroke: $port-snap-highlight-stroke;
+    stroke-width: $port-snap-stroke-width;
   }
 
   .node.__port-drag-snap {
@@ -41,6 +42,11 @@ $snapPortStrokeWidth: 2px !default;
   // This also prevents zooming in and out using mouse scroll while dragging
   &.__port-drag-dragging {
     pointer-events: none;
+  }
+
+  // When a port is dragged, its edge should
+  .edge.__port-drag-dragging .inner {
+    stroke: $edge-dragged-stroke !important;
   }
 
   .ghost {

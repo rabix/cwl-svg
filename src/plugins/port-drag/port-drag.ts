@@ -1,11 +1,11 @@
-import {SVGPluginBase} from "../plugin-base";
-import {Workflow}      from "../../";
-import {GraphNode}     from "../../graph/graph-node";
-import {Geometry}      from "../../utils/geometry";
-import {Edge}          from "../../graph/edge";
-import {EdgePanner}    from "../../behaviors/edge-panning";
+import {PluginBase} from "../plugin-base";
+import {Workflow}   from "../../";
+import {GraphNode}  from "../../graph/graph-node";
+import {Geometry}   from "../../utils/geometry";
+import {Edge}       from "../../graph/edge";
+import {EdgePanner} from "../../behaviors/edge-panning";
 
-export class SVGPortDragPlugin extends SVGPluginBase {
+export class SVGPortDragPlugin extends PluginBase {
 
     /** Stored on drag start to detect collision with viewport edges */
     private boundingClientRect: ClientRect;
@@ -31,7 +31,7 @@ export class SVGPortDragPlugin extends SVGPluginBase {
     private snapPort: SVGGElement;
 
     /** Map of CSS classes attached by this plugin */
-    private classes = {
+    private css = {
 
         /** Added to svgRoot as a sign that this plugin is active */
         plugin: "__plugin-port-drag",
@@ -62,7 +62,7 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         super.registerWorkflowModel(workflow);
         this.panner = new EdgePanner(this.workflow);
 
-        this.workflow.svgRoot.classList.add(this.classes.plugin);
+        this.workflow.svgRoot.classList.add(this.css.plugin);
     }
 
     afterRender(): void {
@@ -147,7 +147,7 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         // Needed for collision detection
         this.boundingClientRect = this.workflow.svgRoot.getBoundingClientRect();
 
-        const nodeMatrix = this.workflow.findParentNode(portEl).transform.baseVal.getItem(0).matrix;
+        const nodeMatrix = this.workflow.findParent(portEl).transform.baseVal.getItem(0).matrix;
         this.nodeCoords  = {
             x: nodeMatrix.e,
             y: nodeMatrix.f
@@ -163,11 +163,11 @@ export class SVGPortDragPlugin extends SVGPluginBase {
 
         /** @FIXME: this should come from workflow */
         this.edgeGroup = Edge.spawn();
-        this.edgeGroup.classList.add("dragged");
+        this.edgeGroup.classList.add(this.css.dragging);
 
         workflowGroup.appendChild(this.edgeGroup);
 
-        this.workflow.svgRoot.classList.add(this.classes.dragging);
+        this.workflow.svgRoot.classList.add(this.css.dragging);
 
 
         this.portOrigins = this.getPortCandidateTransformations(portEl);
@@ -219,9 +219,9 @@ export class SVGPortDragPlugin extends SVGPluginBase {
 
         // We might need to remove old class for snapping if we are closer to some other port now
         if (this.snapPort && (closestPortChanged || closestPortIsOutOfRange)) {
-            const node = this.workflow.findParentNode(this.snapPort);
-            this.snapPort.classList.remove(this.classes.snap);
-            node.classList.remove(this.classes.snap);
+            const node = this.workflow.findParent(this.snapPort);
+            this.snapPort.classList.remove(this.css.snap);
+            node.classList.remove(this.css.snap);
             delete this.snapPort;
         }
 
@@ -240,12 +240,12 @@ export class SVGPortDragPlugin extends SVGPluginBase {
 
         this.snapPort = closestPort;
 
-        const node             = this.workflow.findParentNode(closestPort);
+        const node             = this.workflow.findParent(closestPort);
         const oppositePortType = this.portType === "input" ? "output" : "input";
 
-        closestPort.classList.add(this.classes.snap);
-        node.classList.add(this.classes.snap);
-        node.classList.add(`${this.classes.snap}-${oppositePortType}`);
+        closestPort.classList.add(this.css.snap);
+        node.classList.add(this.css.snap);
+        node.classList.add(`${this.css.snap}-${oppositePortType}`);
     }
 
     private updateEdge(fromX: number, fromY: number, toX: number, toY: number): void {
@@ -282,7 +282,7 @@ export class SVGPortDragPlugin extends SVGPluginBase {
     }
 
     private getPortCandidateTransformations(portEl: SVGGElement): Map<SVGGElement, SVGMatrix> {
-        const nodeEl           = this.workflow.findParentNode(portEl);
+        const nodeEl           = this.workflow.findParent(portEl);
         const nodeConnectionID = nodeEl.getAttribute("data-connection-id");
 
         const otherPortType = this.portType === "input" ? "output" : "input";
@@ -319,11 +319,11 @@ export class SVGPortDragPlugin extends SVGPluginBase {
             // Find port element by this connectionID and it's parent node element
             const portQuery   = `.port[data-connection-id="${portModel.connectionId}"]`;
             const portElement = this.workflow.workflow.querySelector(portQuery);
-            const parentNode  = this.workflow.findParentNode(portElement);
+            const parentNode  = this.workflow.findParent(portElement);
 
             // Add highlighting classes to port and it's parent node
-            parentNode.classList.add(this.classes.suggestion);
-            portElement.classList.add(this.classes.suggestion);
+            parentNode.classList.add(this.css.suggestion);
+            portElement.classList.add(this.css.suggestion);
         }
     }
 
@@ -387,13 +387,13 @@ export class SVGPortDragPlugin extends SVGPluginBase {
      * Removes all css classes attached by this plugin
      */
     private cleanStyles(): void {
-        this.workflow.svgRoot.classList.remove(this.classes.dragging);
+        this.workflow.svgRoot.classList.remove(this.css.dragging);
 
-        for (let cls in this.classes) {
-            const query = this.workflow.svgRoot.querySelectorAll("." + this.classes[cls]);
+        for (let cls in this.css) {
+            const query = this.workflow.svgRoot.querySelectorAll("." + this.css[cls]);
 
             for (let el of query) {
-                el.classList.remove(this.classes[cls]);
+                el.classList.remove(this.css[cls]);
             }
         }
     }

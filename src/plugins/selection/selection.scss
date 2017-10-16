@@ -1,0 +1,72 @@
+@import "../../assets/styles/variables";
+
+$selection-stroke: #5196ce !default;
+$node-selected-outer-stroke: $selection-stroke !default;
+$edge-selected-inner-stroke: $selection-stroke !default;
+
+.cwl-workflow.__plugin-selection {
+
+  .node,
+  .edge {
+    cursor: pointer;
+  }
+
+  // When something is selected on canvas, everything should fade.
+  // Then, selected and highlighted elements should override that.
+  &.__selection-plugin-fade {
+
+    // This is how nodes fade out
+    .node:not(.__selection-plugin-highlight) {
+
+      .outer {
+        stroke: #444343;
+      }
+
+      .inner {
+        fill: #3d6688;
+      }
+
+      &.input,
+      &.output {
+        .inner {
+          fill: #838383;
+        }
+      }
+
+      // Their labels fade away a bit
+      .label {
+        fill: #807f7f;
+      }
+      // Ports are darker
+      .port {
+        fill: #444343;
+      }
+
+    }
+
+    .edge:not(.__selection-plugin-highlight) {
+      .inner {
+        stroke: #444343;
+      }
+    }
+
+  }
+
+
+
+  .port.__selection-plugin-highlight .label {
+    opacity: 1;
+  }
+
+  .__selection-plugin-selected {
+
+    &.edge .inner {
+      stroke: $selection-stroke;
+    }
+
+    &.node .outer {
+      stroke: $selection-stroke;
+    }
+
+  }
+}
