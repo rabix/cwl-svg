@@ -8,10 +8,19 @@ export class SVGEdgeHoverPlugin extends PluginBase {
         this.attachEdgeHoverBehavior();
     }
 
+
+    destroy(): void {
+        this.detachEdgeHoverBehavior();
+    }
+
     private attachEdgeHoverBehavior() {
 
-        this.workflow.workflow.removeEventListener("mouseenter", this.boundEdgeEnterFunction);
+        this.detachEdgeHoverBehavior();
         this.workflow.workflow.addEventListener("mouseenter", this.boundEdgeEnterFunction, true);
+    }
+
+    private detachEdgeHoverBehavior() {
+        this.workflow.workflow.removeEventListener("mouseenter", this.boundEdgeEnterFunction, true);
     }
 
     private onEdgeEnter(ev: MouseEvent) {
