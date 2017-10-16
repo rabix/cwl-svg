@@ -36,7 +36,6 @@ describe("Dragging from port", () => {
             }).then(() => {
                 resolve(ports)
             }).catch(err => {
-                console.log("Got an error", err);
                 reject(err);
             });
 

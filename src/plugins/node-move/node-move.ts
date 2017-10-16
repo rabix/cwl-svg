@@ -1,6 +1,6 @@
 import {Workflow}      from "../../graph/workflow";
 import {SVGPluginBase} from "../plugin-base";
-import {EdgePanning}   from "../../behaviors/edge-panning";
+import {EdgePanner}    from "../../behaviors/edge-panning";
 
 export interface ConstructorParams {
     movementSpeed?: number,
@@ -20,10 +20,10 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     /** Difference in movement on the Y axis since drag start, adapted for scale and possibly panned distance */
     private sdy: number;
 
-    /** Stored {@link onDragStart} so we can put node to a fixed position determined by startX + ∆x */
+    /** Stored onDragStart so we can put node to a fixed position determined by startX + ∆x */
     private startX: number;
 
-    /** Stored {@link onDragStart} so we can put node to a fixed position determined by startY + ∆y */
+    /** Stored onDragStart so we can put node to a fixed position determined by startY + ∆y */
     private startY: number;
 
     /** How far from the edge of the viewport does mouse need to be before panning is triggered */
@@ -32,11 +32,8 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     /** How fast does workflow move while panning */
     private movementSpeed = 10;
 
-    /** Holds an element that is currently being dragged. Stored {@link onDragStart} and translated afterwards. */
+    /** Holds an element that is currently being dragged. Stored onDragStart and translated afterwards. */
     private movingNode: SVGGElement;
-
-    /** ID of the requested animation frame for panning */
-    private panAnimationFrame: number;
 
     /** Stored onDragStart to detect collision with viewport edges */
     private boundingClientRect: ClientRect;
@@ -50,19 +47,13 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     /** Workflow panning at the time of onDragStart, used to adjust ∆x and ∆y while panning */
     private startWorkflowTranslation: { x: number, y: number };
 
-    /**
-     * Current state of collision on both axes, each negative if beyond top/left border,
-     * positive if beyond right/bottom, zero if inside the viewport
-     */
-    private collision = {x: 0, y: 0};
-
     private wheelPrevent = ev => ev.stopPropagation();
 
     private boundMoveHandler      = this.onMove.bind(this);
     private boundMoveStartHandler = this.onMoveStart.bind(this);
     private boundMoveEndHandler   = this.onMoveEnd.bind(this);
 
-    private edgePanner: EdgePanning;
+    private edgePanner: EdgePanner;
 
     constructor(parameters: ConstructorParams = {}) {
         super();
@@ -76,7 +67,11 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
 
     registerWorkflowModel(workflow: Workflow): void {
         super.registerWorkflowModel(workflow);
-        this.edgePanner = new EdgePanning(this.workflow);
+
+        this.edgePanner = new EdgePanner(this.workflow, {
+            scrollMargin: this.scrollMargin,
+            movementSpeed: this.movementSpeed
+        });
     }
 
     private attachDrag() {
@@ -94,8 +89,6 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
     }
 
     private onMove(dx: number, dy: number, ev: MouseEvent): void {
-        // Prevent mouse wheel events while dragging, otherwise scale would change during node movement
-
 
         /** We will use workflow scale to determine how our mouse movement translate to svg proportions */
         const scale = this.workflow.scale;
@@ -107,25 +100,17 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
         };
 
         /** We might have hit the boundary and need to start panning */
-        // this.edgePanner.triggerCollisionDetection(ev.clientX, ev.clientY, this.sdx, this.sdy, (sdx, sdy) => {
-        //
-        //     const diffX = sdx - this.sdx;
-        //     const diffY = sdy - this.sdy;
-        //
-        //     console.log("Diffs", diffX, diffY);
-        //
-        //     this.sdx = sdx;
-        //     this.sdy = sdy;
-        //
-        //     this.translateNodeBy(this.movingNode, diffX, diffY);
-        //     this.redrawEdges(this.sdx, this.sdy);
-        // });
+        this.edgePanner.triggerCollisionDetection(ev.clientX, ev.clientY, (sdx, sdy) => {
+            this.sdx += sdx;
+            this.sdy += sdy;
 
-        this.triggerCollisionDetection(ev.clientX, ev.clientY);
+            this.translateNodeBy(this.movingNode, sdx, sdy);
+            this.redrawEdges(this.sdx, this.sdy);
+        });
 
         /**
          * We need to store scaled ∆x and ∆y because this is not the only place from which node is being moved.
-         * If mouse is outside the viewport, and the workflow is panning, {@link startScroll} will continue moving
+         * If mouse is outside the viewport, and the workflow is panning, startScroll will continue moving
          * this node, so it needs to know where to start from and update it, so this method can take
          * over when mouse gets back to the viewport.
          *
@@ -225,48 +210,12 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
         });
     }
 
-
-    /**
-     * Calculates if dragged node is at or beyond the point beyond which workflow panning should be triggered.
-     * If collision state has changed, {@link onBoundaryCollisionChange} will be triggered.
-     */
-    private triggerCollisionDetection(x: number, y: number) {
-        const collision = {x: 0, y: 0};
-
-        let {left, right, top, bottom} = this.boundingClientRect;
-
-        left   = left + this.scrollMargin;
-        right  = right - this.scrollMargin;
-        top    = top + this.scrollMargin;
-        bottom = bottom - this.scrollMargin;
-
-        if (x < left) {
-            collision.x = x - left
-        } else if (x > right) {
-            collision.x = x - right;
-        }
-
-        if (y < top) {
-            collision.y = y - top;
-        } else if (y > bottom) {
-            collision.y = y - bottom;
-        }
-
-        if (
-            Math.sign(collision.x) !== Math.sign(this.collision.x)
-            || Math.sign(collision.y) !== Math.sign(this.collision.y)
-        ) {
-            const previous = this.collision;
-            this.collision = collision;
-            this.onBoundaryCollisionChange(collision, previous);
-        }
-    }
-
     /**
      * Triggered from {@link attachDrag} after move event ends
      */
     private onMoveEnd(): void {
-        this.stopScroll();
+
+        this.edgePanner.stop();
 
         document.removeEventListener("mousewheel", this.wheelPrevent, true);
 
@@ -279,66 +228,5 @@ export class SVGNodeMovePlugin extends SVGPluginBase {
         delete this.startWorkflowTranslation;
     }
 
-    private stopScroll() {
-        window.cancelAnimationFrame(this.panAnimationFrame);
-        delete this.panAnimationFrame;
-    }
 
-    /**
-     * Triggered when {@link triggerCollisionDetection} determines that collision properties have changed.
-     */
-    private onBoundaryCollisionChange(current: { x: number, y: number }, previous: { x: number, y: number }): void {
-
-        this.stopScroll();
-
-        if (current.x === 0 && current.y === 0) {
-            return;
-        }
-
-        this.startScroll(this.collision);
-    }
-
-    private startScroll(direction: { x: number, y: number }) {
-
-        let startTimestamp: number;
-
-        const scale    = this.workflow.scale;
-        const matrix   = this.getWorkflowMatrix();
-        const sixtyFPS = 16.6666;
-
-        const onFrame = (timestamp: number) => {
-
-            const frameDeltaTime = timestamp - (startTimestamp || timestamp);
-            startTimestamp       = timestamp;
-
-            // We need to stop the animation at some point
-            // It should be stopped when there is no animation frame ID anymore,
-            // which means that stopScroll() was called
-            // However, don't do that if we haven't made the first move yet, which is a situation when ∆t is 0
-            if (frameDeltaTime !== 0 && !this.panAnimationFrame) {
-                startTimestamp = undefined;
-                return;
-            }
-
-            const moveX = Math.sign(direction.x) * this.movementSpeed * frameDeltaTime / sixtyFPS;
-            const moveY = Math.sign(direction.y) * this.movementSpeed * frameDeltaTime / sixtyFPS;
-
-            matrix.e -= moveX;
-            matrix.f -= moveY;
-
-            const xDiff = moveX / scale;
-            const yDiff = moveY / scale;
-
-            this.translateNodeBy(this.movingNode, xDiff, yDiff);
-
-            this.sdx += xDiff;
-            this.sdy += yDiff;
-
-            this.redrawEdges(this.sdx, this.sdy);
-
-            this.panAnimationFrame = window.requestAnimationFrame(onFrame);
-        };
-
-        this.panAnimationFrame = window.requestAnimationFrame(onFrame);
-    }
 }

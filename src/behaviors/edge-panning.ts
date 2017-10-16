@@ -1,30 +1,47 @@
 import {Workflow} from "../";
 
-export class EdgePanning {
+export class EdgePanner {
 
-    private movementSpeed = 10;
 
+    /** ID of the requested animation frame for panning */
     private panAnimationFrame;
+
     private workflow: Workflow;
 
-    private scrollMargin    = 100;
-    private collision       = {x: 0, y: 0};
+    private movementSpeed = 10;
+    private scrollMargin  = 100;
+
+    /**
+     * Current state of collision on both axes, each negative if beyond top/left border,
+     * positive if beyond right/bottom, zero if inside the viewport
+     */
+    private collision = {x: 0, y: 0};
+
     private viewportClientRect: ClientRect;
-    private handoff: { sdx: number, sdy: number };
     private panningCallback = (sdx: number, sdy: number) => void 0;
 
     constructor(workflow: Workflow, config = {
-        scrollMargin: 100
+        scrollMargin: 100,
+        movementSpeed: 10
     }) {
-        this.workflow = workflow;
-        Object.assign(this, config);
+        const options = Object.assign({
+            scrollMargin: 100,
+            movementSpeed: 10
+        }, config);
+
+        this.workflow      = workflow;
+        this.scrollMargin  = options.scrollMargin;
+        this.movementSpeed = options.movementSpeed;
 
         this.viewportClientRect = this.workflow.svgRoot.getBoundingClientRect();
     }
 
-    triggerCollisionDetection(x: number, y: number, sdx: number, sdy: number, callback) {
+    /**
+     * Calculates if dragged node is at or beyond the point beyond which workflow panning should be triggered.
+     * If collision state has changed, {@link onBoundaryCollisionChange} will be triggered.
+     */
+    triggerCollisionDetection(x: number, y: number, callback: (sdx: number, sdy: number) => void) {
         const collision      = {x: 0, y: 0};
-        this.handoff         = {sdx, sdy};
         this.panningCallback = callback;
 
         let {left, right, top, bottom} = this.viewportClientRect;
@@ -67,11 +84,10 @@ export class EdgePanning {
             return;
         }
 
-        this.start(this.collision, this.handoff);
+        this.start(this.collision);
     }
 
-    private start(direction: { x: number, y: number },
-                  handoffDiff: { sdx: number, sdy: number }) {
+    private start(direction: { x: number, y: number }) {
 
         let startTimestamp: number;
 
@@ -99,31 +115,17 @@ export class EdgePanning {
             matrix.e -= moveX;
             matrix.f -= moveY;
 
-            const xDiff = moveX / scale;
-            const yDiff = moveY / scale;
+            const frameDiffX = moveX / scale;
+            const frameDiffY = moveY / scale;
 
-            console.log("Handoff", handoffDiff);
-
-            const sdx = handoffDiff.sdx + xDiff;
-            const sdy = handoffDiff.sdy + yDiff;
-
-
-            this.panningCallback(sdx, sdy);
-
-            // this.translateNodeBy(this.movingNode, xDiff, yDiff);
-            //
-            // this.sdx += xDiff;
-            // this.sdy += yDiff;
-            //
-            // this.redrawEdges(this.sdx, this.sdy);
-
+            this.panningCallback(frameDiffX, frameDiffY);
             this.panAnimationFrame = window.requestAnimationFrame(onFrame);
         };
 
         this.panAnimationFrame = window.requestAnimationFrame(onFrame);
     }
 
-    private stop() {
+    stop() {
         window.cancelAnimationFrame(this.panAnimationFrame);
         this.panAnimationFrame = undefined;
     }
