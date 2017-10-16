@@ -1,4 +1,4 @@
-import {Workflow}      from "../../graph/workflow";
+import {Workflow}      from "../../";
 import {SVGPluginBase} from "../plugin-base";
 import {EdgePanner}    from "../../behaviors/edge-panning";
 

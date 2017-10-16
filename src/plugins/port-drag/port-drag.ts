@@ -5,9 +5,6 @@ import {Geometry}      from "../../utils/geometry";
 import {Edge}          from "../../graph/edge";
 import {EdgePanner}    from "../../behaviors/edge-panning";
 
-/**
- * @FIXME: ensure that labels of newly created nodes are properly upscaled/downscaled
- */
 export class SVGPortDragPlugin extends SVGPluginBase {
 
     /** Stored on drag start to detect collision with viewport edges */
@@ -372,10 +369,13 @@ export class SVGPortDragPlugin extends SVGPluginBase {
         this.edgeGroup.remove();
         this.ghostNode.remove();
 
-        delete this.nodeCoords;
-        delete this.originPort;
-        delete this.portOrigins;
-        delete this.boundingClientRect;
+        this.snapPort           = undefined;
+        this.edgeGroup          = undefined;
+        this.nodeCoords         = undefined;
+        this.originPort         = undefined;
+        this.portOrigins        = undefined;
+        this.boundingClientRect = undefined;
+
     }
 
     /**
