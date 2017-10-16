@@ -62,7 +62,6 @@ export class Workflow {
         this.workflow = this.svgRoot.querySelector(".workflow") as any;
 
 
-
         this.eventHub = new EventHub([
             "connection.create",
             "app.create.step",
@@ -77,9 +76,7 @@ export class Workflow {
 
         this.hookPlugins();
 
-        if (model) {
-            this.renderModel(model);
-        }
+        this.draw();
 
 
         /**
@@ -217,14 +214,6 @@ export class Workflow {
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
     }
 
-    // noinspection JSUnusedGlobalSymbols
-    redraw(model?: WorkflowModel): void {
-        if (model) {
-            this.model = model;
-        }
-        this.renderModel(this.model);
-    }
-
     get scale() {
         return this._scale;
     }
@@ -303,7 +292,7 @@ export class Workflow {
             if (el.classList.contains("step")) {
 
                 this.model.removeStep(el.getAttribute("data-connection-id"));
-                this.renderModel(this.model);
+                this.draw();
                 (this.svgRoot as any).focus();
             } else if (el.classList.contains("edge")) {
 
@@ -311,17 +300,17 @@ export class Workflow {
                 const destinationPortID = el.getAttribute("data-destination-connection");
 
                 this.model.disconnect(sourcePortID, destinationPortID);
-                this.renderModel(this.model);
+                this.draw();
                 (this.svgRoot as any).focus();
             } else if (el.classList.contains("input")) {
 
                 this.model.removeInput(el.getAttribute("data-connection-id"));
-                this.renderModel(this.model);
+                this.draw();
                 (this.svgRoot as any).focus();
             } else if (el.classList.contains("output")) {
 
                 this.model.removeOutput(el.getAttribute("data-connection-id"));
-                this.renderModel(this.model);
+                this.draw();
                 (this.svgRoot as any).focus();
             }
         });
@@ -353,9 +342,8 @@ export class Workflow {
         this.scaleAtPoint();
     }
 
-    private renderModel(model: WorkflowModel) {
+    draw() {
         console.time("Graph Rendering");
-        this.model = model;
 
         // We will need to restore the transformations when we redraw the model, so save the current state
         const oldTransform = this.workflow.getAttribute("transform");
@@ -368,7 +356,12 @@ export class Workflow {
         // the graph should be arranged to avoid random placement
         let arrangeNecessary = false;
 
-        const nodes    = [...model.steps, ...model.inputs, ...model.outputs].filter(n => n.isVisible);
+        const nodes = [
+            ...this.model.steps,
+            ...this.model.inputs,
+            ...this.model.outputs
+        ].filter(n => n.isVisible);
+
         const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
             .reduce((tpl, nodeModel: any) => {
 
@@ -387,6 +380,7 @@ export class Workflow {
         this.workflow.innerHTML += nodesTpl;
 
         this.redrawEdges();
+
         console.timeEnd("Graph Rendering");
         console.time("Ordering");
 
@@ -406,16 +400,12 @@ export class Workflow {
         }
 
 
-
-
-        console.log("Binding basic events");
         // -- Newly added events for v0.1.0
         this.model.on("input.create", this.onInputCreate.bind(this));
         this.model.on("output.create", this.onOutputCreate.bind(this));
         this.model.on("connection.create", this.onConnectionCreate.bind(this));
 
         this.invokePlugins("afterRender");
-        this.invokePlugins("afterModelChange");
     }
 
     private attachEvents() {

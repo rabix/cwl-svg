@@ -15,8 +15,6 @@ export interface SVGPlugin {
 
     afterRender?(): void;
 
-    afterModelChange?(): void;
-
     enableEditing?(enabled: boolean): void;
 
     destroy?(): void;
