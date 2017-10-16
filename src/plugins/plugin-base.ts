@@ -7,7 +7,7 @@ export abstract class PluginBase implements SVGPlugin {
     protected onBeforeChange: (change: GraphChange) => void;
     protected onAfterChange: (change: GraphChange) => void;
 
-    registerWorkflowModel(workflow: Workflow): void {
+    registerWorkflow(workflow: Workflow): void {
         this.workflow = workflow;
     }
 

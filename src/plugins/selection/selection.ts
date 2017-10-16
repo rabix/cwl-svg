@@ -11,6 +11,8 @@ export class SelectionPlugin extends PluginBase {
 
     private edgePortsDelimiter = "$!$";
 
+    private detachModelEvents: Function;
+
     private css = {
         selected: "__selection-plugin-selected",
         highlight: "__selection-plugin-highlight",
@@ -18,8 +20,8 @@ export class SelectionPlugin extends PluginBase {
         plugin: "__plugin-selection"
     };
 
-    registerWorkflowModel(workflow: Workflow): void {
-        super.registerWorkflowModel(workflow);
+    registerWorkflow(workflow: Workflow): void {
+        super.registerWorkflow(workflow);
 
         this.svg = this.workflow.svgRoot;
 
@@ -29,11 +31,61 @@ export class SelectionPlugin extends PluginBase {
         this.svg.addEventListener("click", clickListener);
         this.cleanups.push(() => this.svg.removeEventListener("click", clickListener));
 
+
     }
 
+    afterModelChange() {
+        this.detachModelEvents = this.bindModelEvents();
+    }
+
+    private bindModelEvents() {
+
+        const handler = () => this.restoreSelection();
+        const cleanup = [];
+        const events  = ["connection.create", "connection.remove"];
+
+        for (const ev of events) {
+            this.workflow.model.on(ev, handler);
+            cleanup.push(() => this.workflow.model.off(ev, handler));
+        }
+
+        return () => cleanup.forEach(fn => fn());
+    }
 
     afterRender() {
+        this.restoreSelection();
+    }
 
+    destroy() {
+
+        this.detachModelEvents();
+
+        this.svg.classList.remove(this.css.plugin);
+
+        for (const fn of this.cleanups) {
+            fn();
+        }
+    }
+
+    clearSelection(): void {
+
+        const selection  = this.svg.querySelectorAll(`.${this.css.selected}`);
+        const highlights = this.svg.querySelectorAll(`.${this.css.highlight}`);
+
+        for (const el of selection) {
+            el.classList.remove(this.css.selected);
+        }
+
+        for (const el of highlights) {
+            el.classList.remove(this.css.highlight);
+        }
+
+        this.svg.classList.remove(this.css.fade);
+
+        this.selection.clear();
+    }
+
+    private restoreSelection() {
         this.selection.forEach((type, connectionID) => {
 
             if (type === "node") {
@@ -80,34 +132,6 @@ export class SelectionPlugin extends PluginBase {
             this.selection.set(cid, "edge");
         }
 
-    }
-
-    destroy() {
-
-        this.svg.classList.remove(this.css.plugin);
-
-        for (const fn of this.cleanups) {
-            fn();
-        }
-    }
-
-
-    clearSelection(): void {
-
-        const selection  = this.svg.querySelectorAll(`.${this.css.selected}`);
-        const highlights = this.svg.querySelectorAll(`.${this.css.highlight}`);
-
-        for (const el of selection) {
-            el.classList.remove(this.css.selected);
-        }
-
-        for (const el of highlights) {
-            el.classList.remove(this.css.highlight);
-        }
-
-        this.svg.classList.remove(this.css.fade);
-
-        this.selection.clear();
     }
 
     private selectNode(element: SVGElement): void {
