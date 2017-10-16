@@ -53,6 +53,8 @@ export class SVGNodeMovePlugin extends PluginBase {
     private boundMoveStartHandler = this.onMoveStart.bind(this);
     private boundMoveEndHandler   = this.onMoveEnd.bind(this);
 
+    private detachDragListenerFn = undefined;
+
     private edgePanner: EdgePanner;
 
     constructor(parameters: ConstructorParams = {}) {
@@ -75,8 +77,11 @@ export class SVGNodeMovePlugin extends PluginBase {
     }
 
     private attachDrag() {
+        if (typeof this.detachDragListenerFn === "function") {
+            this.detachDragListenerFn();
+        }
 
-        this.workflow.domEvents.drag(
+        this.detachDragListenerFn = this.workflow.domEvents.drag(
             ".node .core",
             this.boundMoveHandler,
             this.boundMoveStartHandler,

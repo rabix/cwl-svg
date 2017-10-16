@@ -8,6 +8,7 @@ export class SVGArrangePlugin implements SVGPlugin {
     private svgRoot: SVGSVGElement;
     private onBeforeChange: () => void;
     private onAfterChange: (updates: NodePositionUpdates) => void;
+    private onAfterRender: () => void;
 
     registerWorkflow(workflow: Workflow): void {
         this.workflow = workflow;
@@ -21,6 +22,10 @@ export class SVGArrangePlugin implements SVGPlugin {
 
     registerOnAfterChange(fn: (change: GraphChange) => void): void {
         this.onAfterChange = () => fn({type: "arrange"});
+    }
+
+    registerOnAfterRender(fn: (change: GraphChange) => void): void {
+        this.onAfterRender = () => fn({type: "arrange"});
     }
 
     arrange() {
@@ -185,6 +190,7 @@ export class SVGArrangePlugin implements SVGPlugin {
 
 
         this.onAfterChange(nodePositionUpdates);
+        this.onAfterRender();
 
     }
 

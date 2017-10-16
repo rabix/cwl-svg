@@ -161,12 +161,6 @@ svg.cwl-workflow {
 
   .edge {
 
-    &.not-valid {
-      .inner {
-        stroke: $color-warning;
-      }
-    }
-
     &:hover .inner {
       stroke: $port-highlight-color;
     }

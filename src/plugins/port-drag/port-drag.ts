@@ -61,12 +61,12 @@ export class SVGPortDragPlugin extends PluginBase {
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
         this.panner = new EdgePanner(this.workflow);
+
+        this.workflow.svgRoot.classList.add(this.css.plugin);
     }
 
     afterRender(): void {
-
         this.attachPortDrag();
-        this.workflow.svgRoot.classList.add(this.css.plugin);
     }
 
     enableEditing(enabled: boolean): void {
@@ -80,6 +80,11 @@ export class SVGPortDragPlugin extends PluginBase {
     }
 
     attachPortDrag() {
+
+        if (typeof this.detachDragListenerFn === "function") {
+            this.detachDragListenerFn();
+        }
+
         this.detachDragListenerFn = this.workflow.domEvents.drag(
             ".port",
             this.onMove.bind(this),
