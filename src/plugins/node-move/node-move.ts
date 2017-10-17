@@ -64,6 +64,8 @@ export class SVGNodeMovePlugin extends PluginBase {
 
 
     enableEditing(enabled: boolean): void {
+        super.enableEditing(enabled);
+
         if (enabled) {
             this.attachDrag();
         } else {
@@ -72,7 +74,11 @@ export class SVGNodeMovePlugin extends PluginBase {
     }
 
     afterRender() {
-        this.attachDrag();
+
+        if (this.editingEnabled) {
+            this.attachDrag();
+        }
+
     }
 
 

@@ -66,10 +66,14 @@ export class SVGPortDragPlugin extends PluginBase {
     }
 
     afterRender(): void {
-        this.attachPortDrag();
+        if(this.editingEnabled){
+            this.attachPortDrag();
+        }
+
     }
 
     enableEditing(enabled: boolean): void {
+        super.enableEditing(enabled);
 
         if (enabled) {
             this.attachPortDrag();

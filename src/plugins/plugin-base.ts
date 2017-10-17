@@ -14,6 +14,8 @@ export abstract class PluginBase implements SVGPlugin {
     /** plugin should trigger when internal svg elements have been deleted and new ones created */
     protected onAfterRender: (change: GraphChange) => void;
 
+    protected editingEnabled = true;
+
     registerWorkflow(workflow: Workflow): void {
         this.workflow = workflow;
     }
@@ -30,4 +32,8 @@ export abstract class PluginBase implements SVGPlugin {
         this.onAfterRender = fn;
     }
 
+
+    enableEditing(enabled: boolean): void {
+        this.editingEnabled = enabled;
+    }
 }
