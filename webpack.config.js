@@ -1,5 +1,3 @@
-const webpack = require("webpack");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
 /**
  * @type {{entry: string, output: {filename: string}, module: {rules: *[]}, resolve: {extensions: string[]}, plugins: *[], devtool: string}}
  */

@@ -39,21 +39,30 @@ export class SelectionPlugin extends PluginBase {
         const events  = ["connection.create", "connection.remove"];
 
         for (const ev of events) {
-            this.workflow.model.on(ev, handler);
-            cleanup.push(() => this.workflow.model.off(ev, handler));
+            const dispose = this.workflow.model.on(ev, handler);
+            cleanup.push(() => dispose.dispose());
         }
 
         return () => cleanup.forEach(fn => fn());
     }
 
     afterRender() {
-        this.detachModelEvents = this.bindModelEvents();
         this.restoreSelection();
+    }
+
+
+    afterModelChange(): void {
+        if (typeof this.detachModelEvents === "function") {
+            this.detachModelEvents();
+        }
+
+        this.detachModelEvents = this.bindModelEvents();
     }
 
     destroy() {
 
         this.detachModelEvents();
+        this.detachModelEvents = undefined;
 
         this.svg.classList.remove(this.css.plugin);
 

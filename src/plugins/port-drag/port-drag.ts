@@ -71,19 +71,29 @@ export class SVGPortDragPlugin extends PluginBase {
 
     enableEditing(enabled: boolean): void {
 
-        if (enabled && !this.detachDragListenerFn) {
+        if (enabled) {
             this.attachPortDrag();
-        } else if (!enabled && typeof this.detachDragListenerFn !== undefined) {
-            this.detachDragListenerFn();
-            this.detachDragListenerFn = undefined;
+        } else {
+            this.detachPortDrag();
         }
+    }
+
+
+    destroy(): void {
+        this.detachPortDrag();
+    }
+
+    detachPortDrag() {
+        if (typeof this.detachDragListenerFn === "function") {
+            this.detachDragListenerFn();
+        }
+
+        this.detachDragListenerFn = undefined;
     }
 
     attachPortDrag() {
 
-        if (typeof this.detachDragListenerFn === "function") {
-            this.detachDragListenerFn();
-        }
+        this.detachPortDrag();
 
         this.detachDragListenerFn = this.workflow.domEvents.drag(
             ".port",

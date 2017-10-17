@@ -1,13 +1,14 @@
-import {StepModel, WorkflowModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
-import {DomEvents}                                                                 from "../utils/dom-events";
-import {EventHub}                                                                  from "../utils/event-hub";
-import {Edge as GraphEdge}                                                         from "./edge";
-import {GraphNode}                                                                 from "./graph-node";
-import {TemplateParser}                                                            from "./template-parser";
-import {SVGPlugin}                                                                 from "../plugins/plugin";
-import {Connectable}                                                               from "./connectable";
-import {WorkflowInputParameterModel}                                               from "cwlts/models/generic/WorkflowInputParameterModel";
-import {WorkflowOutputParameterModel}                                              from "cwlts/models/generic/WorkflowOutputParameterModel";
+import {StepModel} from "cwlts/models/generic/StepModel";
+import {WorkflowInputParameterModel} from "cwlts/models/generic/WorkflowInputParameterModel";
+import {WorkflowModel} from "cwlts/models/generic/WorkflowModel";
+import {WorkflowOutputParameterModel} from "cwlts/models/generic/WorkflowOutputParameterModel";
+import {SVGPlugin} from "../plugins/plugin";
+import {DomEvents} from "../utils/dom-events";
+import {EventHub} from "../utils/event-hub";
+import {Connectable} from "./connectable";
+import {Edge as GraphEdge} from "./edge";
+import {GraphNode} from "./graph-node";
+import {TemplateParser} from "./template-parser";
 
 /**
  * @FIXME validation states of old and newly created edges
@@ -33,24 +34,20 @@ export class Workflow {
 
     private workflowBoundingClientRect;
 
-    private isDragging = false;
-
     private plugins: SVGPlugin[] = [];
 
     private handlersThatCanBeDisabled = [];
+
+    private disposers: Function[] = [];
 
     constructor(parameters: {
         svgRoot: SVGSVGElement,
         model: WorkflowModel,
         plugins?: SVGPlugin[]
     }) {
-        let {svgRoot, model} = parameters;
-
-        this.model     = model;
-        this.svgRoot   = svgRoot;
+        this.svgRoot   = parameters.svgRoot;
         this.plugins   = parameters.plugins || [];
         this.domEvents = new DomEvents(this.svgRoot as any);
-
 
         this.svgRoot.classList.add(this.svgID);
 
@@ -60,6 +57,8 @@ export class Workflow {
         `;
 
         this.workflow = this.svgRoot.querySelector(".workflow") as any;
+
+        this.invokePlugins("registerWorkflow", this);
 
 
         this.eventHub = new EventHub([
@@ -73,36 +72,11 @@ export class Workflow {
             "selectionChange"
         ]);
 
-        this.attachEvents();
-
         this.hookPlugins();
-
-        this.eventHub.on("afterRender", () => {
-            this.invokePlugins("afterRender");
-        });
-
-        this.draw();
+        this.draw(parameters.model);
 
 
-        /**
-         * Whenever user scrolls, take the scroll delta and scale the workflow.
-         */
-        this.svgRoot.addEventListener("mousewheel", (ev: MouseWheelEvent) => {
-            if (this.isDragging) {
-                return;
-            }
-            const scale = this.scale - ev.deltaY / 500;
-
-            // Prevent scaling to unreasonable proportions.
-            if (scale <= this.minScale || scale >= this.maxScale) {
-                return;
-            }
-
-            this.scaleAtPoint(scale, ev.clientX, ev.clientY);
-            ev.stopPropagation();
-        }, true);
-
-
+        this.eventHub.on("afterRender", () => this.invokePlugins("afterRender"));
     }
 
     static canDrawIn(element: SVGElement): boolean {
@@ -163,6 +137,7 @@ export class Workflow {
     fitToViewport(): void {
 
         this.scaleAtPoint(1);
+
         Object.assign(this.workflow.transform.baseVal.getItem(0).matrix, {
             e: 0,
             f: 0
@@ -332,7 +307,6 @@ export class Workflow {
 
     // noinspection JSUnusedGlobalSymbols
     destroy() {
-        this.model.off("connection.create", this.onConnectionCreate);
 
         this.svgRoot.classList.remove(this.svgID);
 
@@ -340,6 +314,10 @@ export class Workflow {
         this.eventHub.empty();
 
         this.invokePlugins("destroy");
+
+        for (const dispose of this.disposers) {
+            dispose();
+        }
     }
 
     resetTransform() {
@@ -347,19 +325,35 @@ export class Workflow {
         this.scaleAtPoint();
     }
 
-    draw() {
+    draw(model: WorkflowModel = this.model) {
         console.time("Graph Rendering");
 
         // We will need to restore the transformations when we redraw the model, so save the current state
         const oldTransform = this.workflow.getAttribute("transform");
 
+        const modelChanged = this.model !== model;
+
+        if (modelChanged) {
+            this.model = model;
+
+            const stepChangeDisposer       = this.model.on("step.change", this.onStepChange.bind(this));
+            const stepCreateDisposer       = this.model.on("step.create", this.onStepCreate.bind(this));
+            const inputCreateDisposer      = this.model.on("input.create", this.onInputCreate.bind(this));
+            const outputCreateDisposer     = this.model.on("output.create", this.onOutputCreate.bind(this));
+            const connectionCreateDisposer = this.model.on("connection.create", this.onConnectionCreate.bind(this));
+
+            this.disposers.push(() => {
+                stepChangeDisposer.dispose();
+                stepCreateDisposer.dispose();
+                inputCreateDisposer.dispose();
+                outputCreateDisposer.dispose();
+                connectionCreateDisposer.dispose();
+            });
+
+            this.invokePlugins("afterModelChange");
+        }
+
         this.clearCanvas();
-
-        this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
-
-        // If there is a missing sbg:x or sbg:y property on any node model,
-        // the graph should be arranged to avoid random placement
-        let arrangeNecessary = false;
 
         const nodes = [
             ...this.model.steps,
@@ -367,22 +361,28 @@ export class Workflow {
             ...this.model.outputs
         ].filter(n => n.isVisible);
 
-        const nodesTpl = nodes.map(n => GraphNode.patchModelPorts(n))
-            .reduce((tpl, nodeModel: any) => {
+        /**
+         * If there is a missing sbg:x or sbg:y property on any node model,
+         * graph should be arranged to avoid random placement.
+         */
+        let arrangeNecessary = false;
 
-                if (isNaN(parseInt(nodeModel.customProps["sbg:x"]))) {
-                    arrangeNecessary = true;
-                }
+        let nodeTemplate = "";
 
-                if (isNaN(parseInt(nodeModel.customProps["sbg:y"]))) {
-                    arrangeNecessary = true;
-                }
+        for (let node of nodes) {
+            const patched  = GraphNode.patchModelPorts(node);
+            const missingX = isNaN(parseInt(patched.customProps["sbg:x"]));
+            const missingY = isNaN(parseInt(patched.customProps["sbg:y"]));
 
-                return tpl + GraphNode.makeTemplate(nodeModel);
+            if (missingX || missingY) {
+                arrangeNecessary = true;
+            }
 
-            }, "");
+            nodeTemplate += GraphNode.makeTemplate(patched);
 
-        this.workflow.innerHTML += nodesTpl;
+        }
+
+        this.workflow.innerHTML += nodeTemplate;
 
         this.redrawEdges();
 
@@ -398,74 +398,10 @@ export class Workflow {
         this.workflow.setAttribute("transform", oldTransform);
         console.timeEnd("Ordering");
 
-        if (arrangeNecessary) {
-            // this.arrange();
-        } else {
-            this.scaleAtPoint(this.scale);
-        }
+        this.scaleAtPoint(this.scale);
 
-
-        // -- Newly added events for v0.1.0
-        this.model.on("input.create", this.onInputCreate.bind(this));
-        this.model.on("output.create", this.onOutputCreate.bind(this));
-        this.model.on("connection.create", this.onConnectionCreate.bind(this));
 
         this.invokePlugins("afterRender");
-    }
-
-    private attachEvents() {
-
-        this.model.on("step.change", (change: StepModel) => {
-            const title = this.workflow.querySelector(`.node.step[data-id="${change.connectionId}"] .title`) as SVGTextElement;
-            if (title) {
-                title.textContent = change.label;
-            }
-        });
-
-        /**
-         * @name app.create.input
-         */
-        this.eventHub.on("app.create.input", (input: WorkflowStepInputModel) => {
-            this.command("app.create.step", Object.assign(input, {
-                out: [{
-                    id: input.id,
-                    connectionId: input.connectionId,
-                    isVisible: true
-                }]
-            }))
-        });
-
-        /**
-         * @name app.create.output
-         */
-        this.eventHub.on("app.create.output", (output: WorkflowStepOutputModel) => {
-            this.command("app.create.step", Object.assign(output, {
-                in: [{
-                    id: output.id,
-                    connectionId: output.connectionId,
-                    isVisible: true
-                }]
-            }))
-        });
-
-        /**
-         * @name app.create.step
-         */
-        this.eventHub.on("app.create.step", (step: StepModel) => {
-
-            const changeEventData = {type: "step.create"};
-            this.eventHub.emit("beforeChange", changeEventData);
-
-            const tpl = GraphNode.makeTemplate(step);
-            const el  = TemplateParser.parse(tpl);
-            this.workflow.appendChild(el);
-
-            // Labels on this new step will not be scaled properly since they are custom-adjusted during scaling
-            // So let's trigger the scaling again
-            this.scaleAtPoint(this.scale);
-
-            this.eventHub.emit("afterChange", changeEventData);
-        });
     }
 
     private addEventListeners(): void {
@@ -479,7 +415,7 @@ export class Workflow {
             let x;
             let y;
             let matrix: SVGMatrix;
-            this.domEvents.drag(".pan-handle", (dx, dy, ev, el, root) => {
+            this.domEvents.drag(".pan-handle", (dx, dy) => {
 
                 matrix.e = x + dx;
                 matrix.f = y + dy;
@@ -526,13 +462,13 @@ export class Workflow {
     private clearCanvas() {
         this.domEvents.detachAll();
         this.workflow.innerHTML = "";
+        this.workflow.setAttribute("transform", "matrix(1,0,0,1,0,0)");
         this.workflow.setAttribute("class", "workflow");
     }
 
     private hookPlugins() {
 
         this.plugins.forEach(plugin => {
-            plugin.registerWorkflow(this);
 
             plugin.registerOnBeforeChange(event => {
                 this.eventHub.emit("beforeChange", event);
@@ -591,7 +527,21 @@ export class Workflow {
 
         const el = TemplateParser.parse(graphTemplate);
         this.workflow.appendChild(el);
-        console.log("Appended output node", el);
+    }
+
+    private onStepCreate(step: StepModel) {
+
+        const template = GraphNode.makeTemplate(step, this.labelScale);
+        const element  = TemplateParser.parse(template);
+        this.workflow.appendChild(element);
+    }
+
+
+    private onStepChange(change: StepModel) {
+        const title = this.workflow.querySelector(`.step[data-id="${change.connectionId}"] .title`) as SVGTextElement;
+        if (title) {
+            title.textContent = change.label;
+        }
     }
 
     private makeID(length = 6) {

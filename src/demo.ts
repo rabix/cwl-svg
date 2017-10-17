@@ -9,6 +9,7 @@ import {SVGNodeMovePlugin}  from "./plugins/node-move/node-move";
 import {SVGPortDragPlugin}  from "./plugins/port-drag/port-drag";
 import {SelectionPlugin}    from "./plugins/selection/selection";
 import {SVGEdgeHoverPlugin} from "./plugins/edge-hover/edge-hover";
+import {ZoomPlugin}         from "./plugins/zoom/zoom";
 
 const sample = require(__dirname + "/../cwl-samples/rna-seq-alignment.json");
 
@@ -26,9 +27,10 @@ const workflow = new Workflow({
             movementSpeed: 10
         }),
         new SVGPortDragPlugin(),
-        new SelectionPlugin()
+        new SelectionPlugin(),
+        new ZoomPlugin(),
     ]
 });
 
-workflow.getPlugin(SVGArrangePlugin).arrange();
+// workflow.getPlugin(SVGArrangePlugin).arrange();
 window["wf"] = workflow;

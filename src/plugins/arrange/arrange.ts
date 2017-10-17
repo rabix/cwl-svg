@@ -8,7 +8,7 @@ export class SVGArrangePlugin implements SVGPlugin {
     private svgRoot: SVGSVGElement;
     private onBeforeChange: () => void;
     private onAfterChange: (updates: NodePositionUpdates) => void;
-    private onAfterRender: () => void;
+    private triggerAfterRender: () => void;
 
     registerWorkflow(workflow: Workflow): void {
         this.workflow = workflow;
@@ -25,7 +25,24 @@ export class SVGArrangePlugin implements SVGPlugin {
     }
 
     registerOnAfterRender(fn: (change: GraphChange) => void): void {
-        this.onAfterRender = () => fn({type: "arrange"});
+        this.triggerAfterRender = () => fn({type: "arrange"});
+    }
+
+
+    afterRender(): void {
+
+        for (let step of this.workflow.model.steps) {
+            if (step.isVisible) {
+
+                const missingCoordinate = isNaN(parseInt(step.customProps["sbg:x"]));
+
+                if (missingCoordinate) {
+                    this.arrange();
+                }
+
+                return;
+            }
+        }
     }
 
     arrange() {
@@ -190,7 +207,22 @@ export class SVGArrangePlugin implements SVGPlugin {
 
 
         this.onAfterChange(nodePositionUpdates);
-        this.onAfterRender();
+        this.triggerAfterRender();
+
+        for (const id in nodePositionUpdates) {
+            const pos       = nodePositionUpdates[id];
+            const nodeModel = this.workflow.model.findById(id);
+            if (!nodeModel.customProps) {
+                nodeModel.customProps = {};
+            }
+
+            Object.assign(nodeModel.customProps, {
+                "sbg:x": pos.x,
+                "sbg:y": pos.y
+            });
+        }
+
+        return nodePositionUpdates;
 
     }
 
@@ -419,6 +451,7 @@ export class SVGArrangePlugin implements SVGPlugin {
         };
     }
 }
+
 
 export type NodeIO = {
     inputs: string[],

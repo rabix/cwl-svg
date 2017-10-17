@@ -1,9 +1,11 @@
 import {Edge, WorkflowModel} from "cwlts/models";
-import {PluginBase} from "../plugin-base";
-import {Workflow} from "../../graph/workflow";
+import {PluginBase}          from "../plugin-base";
+import {Workflow}            from "../../graph/workflow";
 
 export class SVGValidatePlugin extends PluginBase {
     model: WorkflowModel;
+
+    private modelDisposers = [];
 
     /** Map of CSS classes attached by this plugin */
     private classes = {
@@ -15,13 +17,28 @@ export class SVGValidatePlugin extends PluginBase {
         super.registerWorkflow(workflow);
         this.model = workflow.model;
 
-        // add listener for all subsequent edge validation
-        this.model.on("connections.updated", () => {
-            this.renderEdgeValidation();
-        });
 
         // add plugin specific class to the svgRoot for scoping
         this.workflow.svgRoot.classList.add(this.classes.plugin);
+
+    }
+
+
+    afterModelChange(): void {
+
+        this.disposeModelListeners();
+
+        // add listener for all subsequent edge validation
+        const dispose = this.model.on("connections.updated", () => {
+            this.renderEdgeValidation();
+        });
+
+        this.modelDisposers.push(dispose);
+
+    }
+
+    destroy(): void {
+        this.disposeModelListeners();
 
     }
 
@@ -29,7 +46,6 @@ export class SVGValidatePlugin extends PluginBase {
         // do initial validation rendering for edges
         this.renderEdgeValidation();
     }
-
 
     enableEditing(enabled: boolean): void {
 
@@ -41,14 +57,21 @@ export class SVGValidatePlugin extends PluginBase {
         }
     }
 
-    private removeClasses(edges: NodeListOf<Element>) {
+    private disposeModelListeners(): void {
+        for (let disposeListener of this.modelDisposers) {
+            disposeListener();
+        }
+        this.modelDisposers = [];
+    }
+
+    private removeClasses(edges: NodeListOf<Element>): void {
         // remove validity class on all edges
         for (const e of edges) {
             e.classList.remove(this.classes.invalid);
         }
     }
 
-    private renderEdgeValidation() {
+    private renderEdgeValidation(): void {
         const graphEdges = this.workflow.workflow.querySelectorAll(".edge") as NodeListOf<Element>;
 
         this.removeClasses(graphEdges);

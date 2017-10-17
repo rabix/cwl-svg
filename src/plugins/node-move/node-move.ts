@@ -62,10 +62,23 @@ export class SVGNodeMovePlugin extends PluginBase {
         Object.assign(this, parameters);
     }
 
+
+    enableEditing(enabled: boolean): void {
+        if (enabled) {
+            this.attachDrag();
+        } else {
+            this.detachDrag();
+        }
+    }
+
     afterRender() {
         this.attachDrag();
     }
 
+
+    destroy(): void {
+        this.detachDrag();
+    }
 
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
@@ -76,10 +89,17 @@ export class SVGNodeMovePlugin extends PluginBase {
         });
     }
 
-    private attachDrag() {
+    private detachDrag() {
         if (typeof this.detachDragListenerFn === "function") {
             this.detachDragListenerFn();
         }
+
+        this.detachDragListenerFn = undefined;
+    }
+
+    private attachDrag() {
+
+        this.detachDrag();
 
         this.detachDragListenerFn = this.workflow.domEvents.drag(
             ".node .core",
@@ -221,6 +241,20 @@ export class SVGNodeMovePlugin extends PluginBase {
     private onMoveEnd(): void {
 
         this.edgePanner.stop();
+
+        const id        = this.movingNode.getAttribute("data-connection-id");
+        const nodeModel = this.workflow.model.findById(id);
+
+        if (!nodeModel.customProps) {
+            nodeModel.customProps = {};
+        }
+
+        const matrix = this.movingNode.transform.baseVal.getItem(0).matrix;
+
+        Object.assign(nodeModel.customProps, {
+            "sbg:x": matrix.e,
+            "sbg:y": matrix.f,
+        });
 
         document.removeEventListener("mousewheel", this.wheelPrevent, true);
 
