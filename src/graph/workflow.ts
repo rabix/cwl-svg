@@ -531,6 +531,14 @@ export class Workflow {
 
     private onStepCreate(step: StepModel) {
 
+        if(!step.customProps["sbg:x"] && step.run.customProps && step.run.customProps["sbg:x"]){
+
+            Object.assign(step.customProps, {
+                "sbg:x": step.run.customProps["sbg:x"],
+                "sbg:y": step.run.customProps["sbg:y"]
+            })
+        }
+
         const template = GraphNode.makeTemplate(step, this.labelScale);
         const element  = TemplateParser.parse(template);
         this.workflow.appendChild(element);
