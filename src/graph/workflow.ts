@@ -119,10 +119,6 @@ export class Workflow {
         return this.plugins.find(p => p instanceof plugin) as T;
     }
 
-    command(event: string, ...data: any[]) {
-        this.eventHub.emit(event, ...data);
-    }
-
     on(event: string, handler) {
         this.eventHub.on(event, handler);
     }

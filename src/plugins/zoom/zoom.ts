@@ -5,7 +5,6 @@ export class ZoomPlugin extends PluginBase {
     private svg: SVGSVGElement;
     private dispose: () => void;
 
-
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
         this.svg = workflow.svgRoot;

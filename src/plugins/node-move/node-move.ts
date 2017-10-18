@@ -81,7 +81,6 @@ export class SVGNodeMovePlugin extends PluginBase {
 
     }
 
-
     destroy(): void {
         this.detachDrag();
     }

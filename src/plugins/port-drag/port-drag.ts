@@ -123,6 +123,7 @@ export class SVGPortDragPlugin extends PluginBase {
             this.ghostX += sdx;
             this.ghostY += sdy;
             this.translateGhostNode(this.ghostX, this.ghostY);
+            this.updateEdge(this.portOnCanvas.x, this.portOnCanvas.y, this.ghostX, this.ghostY);
         });
 
         const nodeToMouseDistance = Geometry.distance(
