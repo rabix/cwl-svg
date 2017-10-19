@@ -1,3 +1,4 @@
+import {WorkflowStepInputModel} from "cwlts/models/generic";
 import {StepModel} from "cwlts/models/generic/StepModel";
 import {WorkflowInputParameterModel} from "cwlts/models/generic/WorkflowInputParameterModel";
 import {WorkflowModel} from "cwlts/models/generic/WorkflowModel";
@@ -8,6 +9,7 @@ import {EventHub} from "../utils/event-hub";
 import {Connectable} from "./connectable";
 import {Edge as GraphEdge} from "./edge";
 import {GraphNode} from "./graph-node";
+import {StepNode} from "./step-node";
 import {TemplateParser} from "./template-parser";
 
 /**
@@ -25,20 +27,12 @@ export class Workflow {
     svgRoot: SVGSVGElement;
     workflow: SVGGElement;
     model: WorkflowModel;
-
-    /** Current scale of the document */
-    private _scale = 1;
-
     /** Scale of labels, they are different than scale of other elements in the workflow */
-    labelScale = 1;
-
+    labelScale                        = 1;
     private workflowBoundingClientRect;
-
-    private plugins: SVGPlugin[] = [];
-
+    private plugins: SVGPlugin[]      = [];
     private handlersThatCanBeDisabled = [];
-
-    private disposers: Function[] = [];
+    private disposers: Function[]     = [];
 
     constructor(parameters: {
         svgRoot: SVGSVGElement,
@@ -79,6 +73,23 @@ export class Workflow {
         this.eventHub.on("afterRender", () => this.invokePlugins("afterRender"));
     }
 
+    /** Current scale of the document */
+    private _scale = 1;
+
+    get scale() {
+        return this._scale;
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    set scale(scale: number) {
+        this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
+
+        const x = (this.workflowBoundingClientRect.right + this.workflowBoundingClientRect.left) / 2;
+        const y = (this.workflowBoundingClientRect.top + this.workflowBoundingClientRect.bottom) / 2;
+
+        this.scaleAtPoint(scale, x, y);
+    }
+
     static canDrawIn(element: SVGElement): boolean {
         return element.getBoundingClientRect().width !== 0;
     }
@@ -98,6 +109,89 @@ export class Workflow {
 
             return `M ${x1} ${y1} C ${outDir} ${y1} ${inDir} ${y2} ${x2} ${y2}`;
         }
+    }
+
+    draw(model: WorkflowModel = this.model) {
+        console.time("Graph Rendering");
+
+        // We will need to restore the transformations when we redraw the model, so save the current state
+        const oldTransform = this.workflow.getAttribute("transform");
+
+        const modelChanged = this.model !== model;
+
+        if (modelChanged) {
+            this.model = model;
+
+            const stepChangeDisposer       = this.model.on("step.change", this.onStepChange.bind(this));
+            const stepCreateDisposer       = this.model.on("step.create", this.onStepCreate.bind(this));
+            const inputCreateDisposer      = this.model.on("input.create", this.onInputCreate.bind(this));
+            const outputCreateDisposer     = this.model.on("output.create", this.onOutputCreate.bind(this));
+            const stepInPortShowDisposer   = this.model.on("step.inPort.show", this.onInputPortShow.bind(this));
+            const stepInPortHideDisposer   = this.model.on("step.inPort.hide", this.onInputPortHide.bind(this));
+            const connectionCreateDisposer = this.model.on("connection.create", this.onConnectionCreate.bind(this));
+
+            this.disposers.push(() => {
+                stepChangeDisposer.dispose();
+                stepCreateDisposer.dispose();
+                inputCreateDisposer.dispose();
+                outputCreateDisposer.dispose();
+                stepInPortShowDisposer.dispose();
+                stepInPortHideDisposer.dispose();
+                connectionCreateDisposer.dispose();
+            });
+
+            this.invokePlugins("afterModelChange");
+        }
+
+        this.clearCanvas();
+
+        const nodes = [
+            ...this.model.steps,
+            ...this.model.inputs,
+            ...this.model.outputs
+        ].filter(n => n.isVisible);
+
+        /**
+         * If there is a missing sbg:x or sbg:y property on any node model,
+         * graph should be arranged to avoid random placement.
+         */
+        let arrangeNecessary = false;
+
+        let nodeTemplate = "";
+
+        for (let node of nodes) {
+            const patched  = GraphNode.patchModelPorts(node);
+            const missingX = isNaN(parseInt(patched.customProps["sbg:x"]));
+            const missingY = isNaN(parseInt(patched.customProps["sbg:y"]));
+
+            if (missingX || missingY) {
+                arrangeNecessary = true;
+            }
+
+            nodeTemplate += GraphNode.makeTemplate(patched);
+
+        }
+
+        this.workflow.innerHTML += nodeTemplate;
+
+        this.redrawEdges();
+
+        console.timeEnd("Graph Rendering");
+        console.time("Ordering");
+
+        Array.from(this.workflow.querySelectorAll(".node")).forEach(e => {
+            this.workflow.appendChild(e);
+        });
+
+        this.addEventListeners();
+
+        this.workflow.setAttribute("transform", oldTransform);
+        console.timeEnd("Ordering");
+
+        this.scaleAtPoint(this.scale);
+
+
+        this.invokePlugins("afterRender");
     }
 
     findParent(el: Element, parentClass = "node"): SVGGElement | undefined {
@@ -189,21 +283,6 @@ export class Workflow {
 
         this.workflow.innerHTML = edgesTpl + this.workflow.innerHTML;
     }
-
-    get scale() {
-        return this._scale;
-    }
-
-    // noinspection JSUnusedGlobalSymbols
-    set scale(scale: number) {
-        this.workflowBoundingClientRect = this.svgRoot.getBoundingClientRect();
-
-        const x = (this.workflowBoundingClientRect.right + this.workflowBoundingClientRect.left) / 2;
-        const y = (this.workflowBoundingClientRect.top + this.workflowBoundingClientRect.bottom) / 2;
-
-        this.scaleAtPoint(scale, x, y);
-    }
-
 
     /**
      * Scale the workflow by the scaleCoefficient (not compounded) over given coordinates
@@ -321,84 +400,6 @@ export class Workflow {
         this.scaleAtPoint();
     }
 
-    draw(model: WorkflowModel = this.model) {
-        console.time("Graph Rendering");
-
-        // We will need to restore the transformations when we redraw the model, so save the current state
-        const oldTransform = this.workflow.getAttribute("transform");
-
-        const modelChanged = this.model !== model;
-
-        if (modelChanged) {
-            this.model = model;
-
-            const stepChangeDisposer       = this.model.on("step.change", this.onStepChange.bind(this));
-            const stepCreateDisposer       = this.model.on("step.create", this.onStepCreate.bind(this));
-            const inputCreateDisposer      = this.model.on("input.create", this.onInputCreate.bind(this));
-            const outputCreateDisposer     = this.model.on("output.create", this.onOutputCreate.bind(this));
-            const connectionCreateDisposer = this.model.on("connection.create", this.onConnectionCreate.bind(this));
-
-            this.disposers.push(() => {
-                stepChangeDisposer.dispose();
-                stepCreateDisposer.dispose();
-                inputCreateDisposer.dispose();
-                outputCreateDisposer.dispose();
-                connectionCreateDisposer.dispose();
-            });
-
-            this.invokePlugins("afterModelChange");
-        }
-
-        this.clearCanvas();
-
-        const nodes = [
-            ...this.model.steps,
-            ...this.model.inputs,
-            ...this.model.outputs
-        ].filter(n => n.isVisible);
-
-        /**
-         * If there is a missing sbg:x or sbg:y property on any node model,
-         * graph should be arranged to avoid random placement.
-         */
-        let arrangeNecessary = false;
-
-        let nodeTemplate = "";
-
-        for (let node of nodes) {
-            const patched  = GraphNode.patchModelPorts(node);
-            const missingX = isNaN(parseInt(patched.customProps["sbg:x"]));
-            const missingY = isNaN(parseInt(patched.customProps["sbg:y"]));
-
-            if (missingX || missingY) {
-                arrangeNecessary = true;
-            }
-
-            nodeTemplate += GraphNode.makeTemplate(patched);
-
-        }
-
-        this.workflow.innerHTML += nodeTemplate;
-
-        this.redrawEdges();
-
-        console.timeEnd("Graph Rendering");
-        console.time("Ordering");
-
-        Array.from(this.workflow.querySelectorAll(".node")).forEach(e => {
-            this.workflow.appendChild(e);
-        });
-
-        this.addEventListeners();
-
-        this.workflow.setAttribute("transform", oldTransform);
-        console.timeEnd("Ordering");
-
-        this.scaleAtPoint(this.scale);
-
-
-        this.invokePlugins("afterRender");
-    }
 
     private addEventListeners(): void {
 
@@ -493,6 +494,12 @@ export class Workflow {
      */
     private onConnectionCreate(source: Connectable, destination: Connectable): void {
 
+        console.log("Connection cretion", source, destination);
+        if (!source.isVisible || !destination.isVisible) {
+
+            return;
+        }
+
         const sourceID      = source.connectionId;
         const destinationID = destination.connectionId;
 
@@ -504,6 +511,10 @@ export class Workflow {
      * Listener for “input.create” event on model that renders workflow inputs
      */
     private onInputCreate(input: WorkflowInputParameterModel): void {
+        console.log("Input creation", input);
+        if (!input.isVisible) {
+            return;
+        }
 
         const patched       = GraphNode.patchModelPorts(input);
         const graphTemplate = GraphNode.makeTemplate(patched, this.labelScale);
@@ -518,6 +529,10 @@ export class Workflow {
      */
     private onOutputCreate(output: WorkflowOutputParameterModel): void {
 
+        if (!output.isVisible) {
+            return;
+        }
+
         const patched       = GraphNode.patchModelPorts(output);
         const graphTemplate = GraphNode.makeTemplate(patched, this.labelScale);
 
@@ -527,7 +542,7 @@ export class Workflow {
 
     private onStepCreate(step: StepModel) {
 
-        if(!step.customProps["sbg:x"] && step.run.customProps && step.run.customProps["sbg:x"]){
+        if (!step.customProps["sbg:x"] && step.run.customProps && step.run.customProps["sbg:x"]) {
 
             Object.assign(step.customProps, {
                 "sbg:x": step.run.customProps["sbg:x"],
@@ -546,6 +561,17 @@ export class Workflow {
         if (title) {
             title.textContent = change.label;
         }
+    }
+
+    private onInputPortShow(input: WorkflowStepInputModel) {
+
+        const stepEl = this.svgRoot.querySelector(`.step[data-connection-id="${input.parentStep.connectionId}"]`) as SVGElement;
+        new StepNode(stepEl, input.parentStep).update();
+    }
+
+    private onInputPortHide(input: WorkflowStepInputModel) {
+        const stepEl = this.svgRoot.querySelector(`.step[data-connection-id="${input.parentStep.connectionId}"]`) as SVGElement;
+        new StepNode(stepEl, input.parentStep).update();
     }
 
     private makeID(length = 6) {

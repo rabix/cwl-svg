@@ -41,19 +41,18 @@ svg.cwl-workflow {
 
   }
 
-  .node {
+  .node-icon {
+    stroke: $background;
+    stroke-width: 3px;
+    fill: $background;
+    stroke-linecap: round;
 
-
-    .icon {
-      stroke: $background;
-      stroke-width: 3px;
+    &.icon-workflow {
       fill: $background;
-      stroke-linecap: round;
-
-      &.icon-workflow {
-        fill: $background;
-      }
     }
+  }
+
+  .node {
 
     &.input, &.output {
       .inner {

@@ -3,7 +3,6 @@ export class IOPort {
     static radius = 7;
 
     /**
-     * @deprecated Use {@link Workflow.makeConnectionPath}
      * @param x1
      * @param y1
      * @param x2
