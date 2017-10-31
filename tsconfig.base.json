@@ -8,7 +8,6 @@
     "declaration": true,
     "sourceMap": true,
     "noEmitHelpers": false,
-    "preserveSymlinks": true,
     "lib": [
       "dom",
       "dom.iterable",

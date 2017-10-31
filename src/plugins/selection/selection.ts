@@ -9,7 +9,7 @@ export class SelectionPlugin extends PluginBase {
 
     private cleanups: Function[] = [];
 
-    private edgePortsDelimiter = "$!$";
+    static edgePortsDelimiter = "$!$";
 
     private detachModelEvents: Function;
 
@@ -39,7 +39,7 @@ export class SelectionPlugin extends PluginBase {
         const events  = ["connection.create", "connection.remove"];
 
         for (const ev of events) {
-            const dispose = this.workflow.model.on(ev, handler);
+            const dispose = this.workflow.model.on(ev as any, handler);
             cleanup.push(() => dispose.dispose());
         }
 
@@ -89,6 +89,10 @@ export class SelectionPlugin extends PluginBase {
         this.selection.clear();
     }
 
+    getSelection() {
+        return this.selection;
+    }
+
     private restoreSelection() {
         this.selection.forEach((type, connectionID) => {
 
@@ -102,7 +106,7 @@ export class SelectionPlugin extends PluginBase {
 
             } else if (type === "edge") {
 
-                const [sID, dID]   = connectionID.split(this.edgePortsDelimiter);
+                const [sID, dID]   = connectionID.split(SelectionPlugin.edgePortsDelimiter);
                 const edgeSelector = `[data-source-connection="${sID}"][data-destination-connection="${dID}"]`;
 
                 const edge = this.svg.querySelector(edgeSelector) as SVGElement;
@@ -129,7 +133,7 @@ export class SelectionPlugin extends PluginBase {
             this.selectEdge(element);
             const cid = [
                 element.getAttribute("data-source-connection"),
-                this.edgePortsDelimiter,
+                SelectionPlugin.edgePortsDelimiter,
                 element.getAttribute("data-destination-connection")
             ].join("");
 

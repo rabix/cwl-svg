@@ -6,6 +6,7 @@ export * from "./src/plugins/node-move/node-move";
 export * from "./src/plugins/validate/validate";
 export * from "./src/plugins/selection/selection";
 export * from "./src/plugins/zoom/zoom";
+export * from "./src/plugins/deletion/deletion";
 
 // for implementing third-party plugins
 export * from "./src/plugins/plugin-base";

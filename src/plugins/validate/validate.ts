@@ -1,9 +1,8 @@
-import {Edge, WorkflowModel} from "cwlts/models";
+import {Edge} from "cwlts/models";
 import {PluginBase}          from "../plugin-base";
 import {Workflow}            from "../../graph/workflow";
 
 export class SVGValidatePlugin extends PluginBase {
-    model: WorkflowModel;
 
     private modelDisposers = [];
 
@@ -15,31 +14,26 @@ export class SVGValidatePlugin extends PluginBase {
 
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
-        this.model = workflow.model;
-
 
         // add plugin specific class to the svgRoot for scoping
         this.workflow.svgRoot.classList.add(this.classes.plugin);
-
     }
-
 
     afterModelChange(): void {
 
         this.disposeModelListeners();
 
         // add listener for all subsequent edge validation
-        const dispose = this.model.on("connections.updated", () => {
+        const dispose = this.workflow.model.on("connections.updated", () => {
             this.renderEdgeValidation();
         });
 
-        this.modelDisposers.push(dispose);
+        this.modelDisposers.push(dispose.dispose);
 
     }
 
     destroy(): void {
         this.disposeModelListeners();
-
     }
 
     afterRender(): void {
@@ -77,7 +71,7 @@ export class SVGValidatePlugin extends PluginBase {
         this.removeClasses(graphEdges);
 
         // iterate through all modal connections
-        this.model.connections.forEach((e: Edge) => {
+        this.workflow.model.connections.forEach((e: Edge) => {
             // if the connection isn't valid (should be colored on graph)
             if (!e.isValid) {
 

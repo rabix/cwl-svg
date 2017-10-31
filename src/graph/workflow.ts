@@ -124,17 +124,24 @@ export class Workflow {
 
             const stepChangeDisposer       = this.model.on("step.change", this.onStepChange.bind(this));
             const stepCreateDisposer       = this.model.on("step.create", this.onStepCreate.bind(this));
+            const stepRemoveDisposer       = this.model.on("step.remove", this.onStepRemove.bind(this));
             const inputCreateDisposer      = this.model.on("input.create", this.onInputCreate.bind(this));
+            const inputRemoveDisposer      = this.model.on("input.remove", this.onInputRemove.bind(this));
             const outputCreateDisposer     = this.model.on("output.create", this.onOutputCreate.bind(this));
+            const outputRemoveDisposer     = this.model.on("output.remove", this.onOutputRemove.bind(this));
             const stepInPortShowDisposer   = this.model.on("step.inPort.show", this.onInputPortShow.bind(this));
             const stepInPortHideDisposer   = this.model.on("step.inPort.hide", this.onInputPortHide.bind(this));
             const connectionCreateDisposer = this.model.on("connection.create", this.onConnectionCreate.bind(this));
+            const connectionRemoveDisposer = this.model.on("connection.remove", this.onConnectionRemove.bind(this));
 
             this.disposers.push(() => {
                 stepChangeDisposer.dispose();
                 stepCreateDisposer.dispose();
+                stepRemoveDisposer.dispose();
                 inputCreateDisposer.dispose();
+                inputRemoveDisposer.dispose();
                 outputCreateDisposer.dispose();
+                outputRemoveDisposer.dispose();
                 stepInPortShowDisposer.dispose();
                 stepInPortHideDisposer.dispose();
                 connectionCreateDisposer.dispose();
@@ -330,52 +337,6 @@ export class Workflow {
         };
     }
 
-    deleteSelection() {
-
-        const selection = Array.from(this.workflow.querySelectorAll(".selected"));
-        if (selection.length == 0) {
-            return;
-        }
-
-        const changeEventData = {
-            type: "deletion",
-            data: selection
-        };
-        this.eventHub.emit("beforeChange", changeEventData);
-
-        selection.forEach(el => {
-            if (el.classList.contains("step")) {
-
-                this.model.removeStep(el.getAttribute("data-connection-id"));
-                this.draw();
-                (this.svgRoot as any).focus();
-            } else if (el.classList.contains("edge")) {
-
-                const sourcePortID      = el.getAttribute("data-source-connection");
-                const destinationPortID = el.getAttribute("data-destination-connection");
-
-                this.model.disconnect(sourcePortID, destinationPortID);
-                this.draw();
-                (this.svgRoot as any).focus();
-            } else if (el.classList.contains("input")) {
-
-                this.model.removeInput(el.getAttribute("data-connection-id"));
-                this.draw();
-                (this.svgRoot as any).focus();
-            } else if (el.classList.contains("output")) {
-
-                this.model.removeOutput(el.getAttribute("data-connection-id"));
-                this.draw();
-                (this.svgRoot as any).focus();
-            }
-        });
-
-        this.eventHub.emit("selectionChange", null);
-
-        this.eventHub.emit("afterChange", changeEventData);
-    }
-
-
     enableEditing(enabled: boolean): void {
         this.invokePlugins("enableEditing", enabled);
     }
@@ -440,22 +401,6 @@ export class Workflow {
 
     }
 
-    private attachSelectionDeletionBehavior() {
-        this.handlersThatCanBeDisabled.push(this.domEvents.on("keyup", (ev: KeyboardEvent) => {
-
-            if (!(ev.target instanceof SVGElement)) {
-                return;
-            }
-
-            if (ev.which !== 8) {
-                return;
-            }
-
-            this.deleteSelection();
-            // Only input elements can be focused, but we added tabindex to the svg so this works
-        }, window));
-    }
-
     private clearCanvas() {
         this.domEvents.detachAll();
         this.workflow.innerHTML = "";
@@ -494,7 +439,7 @@ export class Workflow {
      */
     private onConnectionCreate(source: Connectable, destination: Connectable): void {
 
-        console.log("Connection cretion", source, destination);
+        console.log("Connection creation", source, destination);
         if (!source.isVisible || !destination.isVisible) {
 
             return;
@@ -505,6 +450,22 @@ export class Workflow {
 
         GraphEdge.spawnBetweenConnectionIDs(this.workflow, sourceID, destinationID);
 
+    }
+
+    /**
+     * Listener for "connection.remove" event on the model that disconnects nodes
+     */
+    private onConnectionRemove(source: Connectable, destination: Connectable): void {
+        console.log("Connection remove", source, destination);
+        if (!source.isVisible || !destination.isVisible) {
+            return;
+        }
+
+        const sourceID      = source.connectionId;
+        const destinationID = destination.connectionId;
+
+        const edge = this.svgRoot.querySelector(`.edge[data-source-connection="${sourceID}"][data-destination-connection="${destinationID}"`);
+        edge.remove();
     }
 
     /**
@@ -572,6 +533,30 @@ export class Workflow {
     private onInputPortHide(input: WorkflowStepInputModel) {
         const stepEl = this.svgRoot.querySelector(`.step[data-connection-id="${input.parentStep.connectionId}"]`) as SVGElement;
         new StepNode(stepEl, input.parentStep).update();
+    }
+
+    /**
+     * Listener for "step.remove" event on model which removes steps
+     */
+    private onStepRemove(step: StepModel) {
+        const stepEl = this.svgRoot.querySelector(`.step[data-connection-id="${step.connectionId}"]`) as SVGElement;
+        stepEl.remove();
+    }
+
+    /**
+     * Listener for "input.remove" event on model which removes inputs
+     */
+    private onInputRemove(input: WorkflowInputParameterModel) {
+        const inputEl = this.svgRoot.querySelector(`.node.input[data-connection-id="${input.connectionId}"]`);
+        inputEl.remove();
+    }
+
+    /**
+     * Listener for "output.remove" event on model which removes outputs
+     */
+    private onOutputRemove(output: WorkflowOutputParameterModel) {
+        const outputEl = this.svgRoot.querySelector(`.node.output[data-connection-id="${output.connectionId}"]`);
+        outputEl.remove();
     }
 
     private makeID(length = 6) {
