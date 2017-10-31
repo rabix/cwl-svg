@@ -43,19 +43,24 @@ export class DeletionPlugin extends PluginBase {
                 if (model instanceof StepModel) {
                     this.workflow.model.removeStep(model);
                     selection.clearSelection();
+                    this.onAfterChange({type: "deletion"});
 
                 } else if (model instanceof WorkflowInputParameterModel) {
                     this.workflow.model.removeInput(model);
                     selection.clearSelection();
+                    this.onAfterChange({type: "deletion"});
 
                 } else if (model instanceof WorkflowOutputParameterModel) {
 
                     this.workflow.model.removeOutput(model);
                     selection.clearSelection();
+                    this.onAfterChange({type: "deletion"});
                 }
             } else {
                 const [source, destination] = id.split(SelectionPlugin.edgePortsDelimiter);
                 this.workflow.model.disconnect(source, destination);
+                selection.clearSelection();
+                this.onAfterChange({type: "deletion"});
             }
         });
     }

@@ -261,6 +261,8 @@ export class SVGNodeMovePlugin extends PluginBase {
             "sbg:y": matrix.f,
         });
 
+        this.onAfterChange({type: "node-move"});
+
         document.removeEventListener("mousewheel", this.wheelPrevent, true);
 
         delete this.startX;
