@@ -25,6 +25,10 @@ export class DeletionPlugin extends PluginBase {
             return;
         }
 
+        this.deleteSelection();
+    }
+
+    public deleteSelection() {
         const selection = this.workflow.getPlugin(SelectionPlugin);
 
         if (!selection) {
@@ -38,10 +42,16 @@ export class DeletionPlugin extends PluginBase {
 
                 if (model instanceof StepModel) {
                     this.workflow.model.removeStep(model);
+                    selection.clearSelection();
+
                 } else if (model instanceof WorkflowInputParameterModel) {
                     this.workflow.model.removeInput(model);
+                    selection.clearSelection();
+
                 } else if (model instanceof WorkflowOutputParameterModel) {
+
                     this.workflow.model.removeOutput(model);
+                    selection.clearSelection();
                 }
             } else {
                 const [source, destination] = id.split(SelectionPlugin.edgePortsDelimiter);

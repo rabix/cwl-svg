@@ -4,13 +4,15 @@ export class SVGEdgeHoverPlugin extends PluginBase {
 
     private boundEdgeEnterFunction = this.onEdgeEnter.bind(this);
 
+    private modelListener;
+
     afterRender(): void {
         this.attachEdgeHoverBehavior();
     }
 
-
     destroy(): void {
         this.detachEdgeHoverBehavior();
+        this.modelListener.dispose();
     }
 
     private attachEdgeHoverBehavior() {
@@ -44,10 +46,20 @@ export class SVGEdgeHoverPlugin extends PluginBase {
             target.removeEventListener("mouseleave", onMouseLeave)
         }).bind(this);
 
-        const sourceNode = target.getAttribute("data-source-node");
-        const destNode   = target.getAttribute("data-destination-node");
-        const sourcePort = target.getAttribute("data-source-port");
-        const destPort   = target.getAttribute("data-destination-port");
+        this.modelListener = this.workflow.model.on("connection.remove", (source, destination) => {
+            if (!tipEl) return;
+            const [tipS, tipD] = tipEl.getAttribute("data-source-destination").split("$!$");
+            if (tipS === source.connectionId && tipD === destination.connectionId) {
+                tipEl.remove();
+            }
+        });
+
+        const sourceNode    = target.getAttribute("data-source-node");
+        const destNode      = target.getAttribute("data-destination-node");
+        const sourcePort    = target.getAttribute("data-source-port");
+        const destPort      = target.getAttribute("data-destination-port");
+        const sourceConnect = target.getAttribute("data-source-connection");
+        const destConnect   = target.getAttribute("data-destination-connection");
 
         const sourceLabel = sourceNode === sourcePort ? sourceNode : `${sourceNode} (${sourcePort})`;
         const destLabel   = destNode === destPort ? destNode : `${destNode} (${destPort})`;
@@ -60,6 +72,7 @@ export class SVGEdgeHoverPlugin extends PluginBase {
         tipEl.classList.add("label-edge");
         tipEl.setAttribute("x", String(coords.x));
         tipEl.setAttribute("y", String(coords.y));
+        tipEl.setAttribute("data-source-destination", sourceConnect + "$!$" + destConnect);
         tipEl.innerHTML = sourceLabel + " → " + destLabel;
 
         this.workflow.workflow.appendChild(tipEl);

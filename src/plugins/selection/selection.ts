@@ -13,6 +13,8 @@ export class SelectionPlugin extends PluginBase {
 
     private detachModelEvents: Function;
 
+    private selectionChangeCallbacks = [];
+
     private css = {
         selected: "__selection-plugin-selected",
         highlight: "__selection-plugin-highlight",
@@ -87,6 +89,8 @@ export class SelectionPlugin extends PluginBase {
         this.svg.classList.remove(this.css.fade);
 
         this.selection.clear();
+
+        this.emitChange(null);
     }
 
     getSelection() {
@@ -129,6 +133,8 @@ export class SelectionPlugin extends PluginBase {
         if (element = this.workflow.findParent(target, "node")) {
             this.selectNode(element);
             this.selection.set(element.getAttribute("data-connection-id"), "node");
+            this.emitChange(element);
+
         } else if (element = this.workflow.findParent(target, "edge")) {
             this.selectEdge(element);
             const cid = [
@@ -138,6 +144,7 @@ export class SelectionPlugin extends PluginBase {
             ].join("");
 
             this.selection.set(cid, "edge");
+            this.emitChange(cid);
         }
 
     }
@@ -203,5 +210,15 @@ export class SelectionPlugin extends PluginBase {
             port.classList.add(this.css.highlight);
         }
 
+    }
+
+    registerOnSelectionChange(fn: (node: any) => any) {
+        this.selectionChangeCallbacks.push(fn);
+    }
+
+    private emitChange(change) {
+        for (const fn of this.selectionChangeCallbacks) {
+            fn(change);
+        }
     }
 }
