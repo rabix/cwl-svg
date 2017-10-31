@@ -145,6 +145,7 @@ export class Workflow {
                 stepInPortShowDisposer.dispose();
                 stepInPortHideDisposer.dispose();
                 connectionCreateDisposer.dispose();
+                connectionRemoveDisposer.dispose();
             });
 
             this.invokePlugins("afterModelChange");
