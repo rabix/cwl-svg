@@ -148,6 +148,8 @@ export class SelectionPlugin extends PluginBase {
 
         // Mark this node as selected
         element.classList.add(this.css.selected);
+        // Highlight it in case there are no edges on the graph
+        element.classList.add(this.css.highlight);
 
         // Take all adjacent edges since we should highlight them and move them above the other edges
         const nodeID        = element.getAttribute("data-id");
