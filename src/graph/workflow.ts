@@ -548,6 +548,7 @@ export class Workflow {
      * Listener for "input.remove" event on model which removes inputs
      */
     private onInputRemove(input: WorkflowInputParameterModel) {
+        if (!input.isVisible) return;
         const inputEl = this.svgRoot.querySelector(`.node.input[data-connection-id="${input.connectionId}"]`);
         inputEl.remove();
     }
@@ -556,6 +557,7 @@ export class Workflow {
      * Listener for "output.remove" event on model which removes outputs
      */
     private onOutputRemove(output: WorkflowOutputParameterModel) {
+        if (!output.isVisible) return;
         const outputEl = this.svgRoot.querySelector(`.node.output[data-connection-id="${output.connectionId}"]`);
         outputEl.remove();
     }
