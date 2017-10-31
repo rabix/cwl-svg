@@ -49,4 +49,8 @@ export class DeletionPlugin extends PluginBase {
             }
         });
     }
+
+    destroy() {
+        this.detachDeleteBehavior();
+    }
 }
