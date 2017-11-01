@@ -4,7 +4,9 @@ export class SVGEdgeHoverPlugin extends PluginBase {
 
     private boundEdgeEnterFunction = this.onEdgeEnter.bind(this);
 
-    private modelListener = {dispose: () => {}};
+    private modelListener: { dispose: Function } = {
+        dispose: () => void 0
+    };
 
     afterRender(): void {
         this.attachEdgeHoverBehavior();
