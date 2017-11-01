@@ -1,6 +1,7 @@
-import {Edge} from "cwlts/models";
-import {PluginBase}          from "../plugin-base";
-import {Workflow}            from "../../graph/workflow";
+import {Edge}          from "cwlts/models";
+import {PluginBase}    from "../plugin-base";
+import {Workflow}      from "../../graph/workflow";
+import {WorkflowModel} from "cwlts/models/generic/WorkflowModel";
 
 export class SVGValidatePlugin extends PluginBase {
 
@@ -11,9 +12,13 @@ export class SVGValidatePlugin extends PluginBase {
         plugin: "__plugin-validate",
         invalid: "__validate-invalid"
     };
+    private model: WorkflowModel;
 
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
+
+        this.model = workflow.model;
+
 
         // add plugin specific class to the svgRoot for scoping
         this.workflow.svgRoot.classList.add(this.classes.plugin);

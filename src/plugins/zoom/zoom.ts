@@ -1,5 +1,5 @@
+import {Workflow} from "../../";
 import {PluginBase} from "../plugin-base";
-import {Workflow}   from "../../";
 
 export class ZoomPlugin extends PluginBase {
     private svg: SVGSVGElement;
@@ -19,13 +19,22 @@ export class ZoomPlugin extends PluginBase {
     }
 
     onMouseWheel(event: MouseWheelEvent) {
-        const scale = this.workflow.scale - event.deltaY / 500;
 
-        if (scale <= this.workflow.minScale || scale >= this.workflow.maxScale) {
+        const scale       = this.workflow.scale;
+        const scaleUpdate = scale - event.deltaY / 500;
+
+        const zoominOut = scaleUpdate < scale;
+        const zoomingIn = scaleUpdate > scale;
+
+        if (zoomingIn && this.workflow.maxScale < scaleUpdate) {
             return;
         }
 
-        this.workflow.scaleAtPoint(scale, event.clientX, event.clientY);
+        if (zoominOut && this.workflow.minScale > scaleUpdate) {
+            return;
+        }
+
+        this.workflow.scaleAtPoint(scaleUpdate, event.clientX, event.clientY);
         event.stopPropagation();
     }
 

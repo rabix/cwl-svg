@@ -34,6 +34,8 @@ export class Workflow {
     private handlersThatCanBeDisabled = [];
     private disposers: Function[]     = [];
 
+    private pendingFirstDraw = true;
+
     constructor(parameters: {
         svgRoot: SVGSVGElement,
         model: WorkflowModel,
@@ -42,6 +44,7 @@ export class Workflow {
         this.svgRoot   = parameters.svgRoot;
         this.plugins   = parameters.plugins || [];
         this.domEvents = new DomEvents(this.svgRoot as any);
+        this.model     = parameters.model;
 
         this.svgRoot.classList.add(this.svgID);
 
@@ -112,14 +115,15 @@ export class Workflow {
     }
 
     draw(model: WorkflowModel = this.model) {
-        console.time("Graph Rendering");
 
         // We will need to restore the transformations when we redraw the model, so save the current state
         const oldTransform = this.workflow.getAttribute("transform");
 
         const modelChanged = this.model !== model;
 
-        if (modelChanged) {
+        if (modelChanged || this.pendingFirstDraw) {
+            this.pendingFirstDraw = false;
+
             this.model = model;
 
             const stepChangeDisposer       = this.model.on("step.change", this.onStepChange.bind(this));
@@ -184,9 +188,6 @@ export class Workflow {
 
         this.redrawEdges();
 
-        console.timeEnd("Graph Rendering");
-        console.time("Ordering");
-
         Array.from(this.workflow.querySelectorAll(".node")).forEach(e => {
             this.workflow.appendChild(e);
         });
@@ -194,7 +195,6 @@ export class Workflow {
         this.addEventListeners();
 
         this.workflow.setAttribute("transform", oldTransform);
-        console.timeEnd("Ordering");
 
         this.scaleAtPoint(this.scale);
 
@@ -232,7 +232,7 @@ export class Workflow {
     /**
      * Scales the workflow to fit the available viewport
      */
-    fitToViewport(): void {
+    fitToViewport(ignoreScaleLimits = false): void {
 
         this.scaleAtPoint(1);
 
@@ -255,7 +255,12 @@ export class Workflow {
         const scaleFactor = Math.max(verticalScale, horizontalScale);
 
         // Cap the upscaling to 1, we don't want to zoom in workflows that would fit anyway
-        const newScale = Math.min(this.scale / scaleFactor, 1);
+        let newScale = Math.min(this.scale / scaleFactor, 1);
+
+        if (!ignoreScaleLimits) {
+            newScale = Math.max(newScale, this.minScale);
+        }
+
         this.scaleAtPoint(newScale);
 
         const scaledWFBounds = this.workflow.getBoundingClientRect();
@@ -440,7 +445,6 @@ export class Workflow {
      */
     private onConnectionCreate(source: Connectable, destination: Connectable): void {
 
-        console.log("Connection creation", source, destination);
         if (!source.isVisible || !destination.isVisible) {
 
             return;
@@ -457,7 +461,6 @@ export class Workflow {
      * Listener for "connection.remove" event on the model that disconnects nodes
      */
     private onConnectionRemove(source: Connectable, destination: Connectable): void {
-        console.log("Connection remove", source, destination);
         if (!source.isVisible || !destination.isVisible) {
             return;
         }
@@ -473,7 +476,6 @@ export class Workflow {
      * Listener for “input.create” event on model that renders workflow inputs
      */
     private onInputCreate(input: WorkflowInputParameterModel): void {
-        console.log("Input creation", input);
         if (!input.isVisible) {
             return;
         }
