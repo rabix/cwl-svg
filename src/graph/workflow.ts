@@ -505,13 +505,17 @@ export class Workflow {
     }
 
     private onStepCreate(step: StepModel) {
-
+        // if the step doesn't have x & y coordinates, check if they are in the run property
         if (!step.customProps["sbg:x"] && step.run.customProps && step.run.customProps["sbg:x"]) {
 
             Object.assign(step.customProps, {
                 "sbg:x": step.run.customProps["sbg:x"],
                 "sbg:y": step.run.customProps["sbg:y"]
-            })
+            });
+
+            // remove them from the run property once finished
+            delete step.run.customProps["sbg:x"];
+            delete step.run.customProps["sbg:y"];
         }
 
         const template = GraphNode.makeTemplate(step, this.labelScale);
