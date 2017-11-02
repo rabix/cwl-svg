@@ -10,6 +10,14 @@ export class DeletionPlugin extends PluginBase {
         this.attachDeleteBehavior();
     }
 
+    onEditableStateChange(enable: boolean) {
+        if (enable) {
+            this.attachDeleteBehavior();
+        } else {
+            this.detachDeleteBehavior();
+        }
+    }
+
     private attachDeleteBehavior() {
 
         this.detachDeleteBehavior();
@@ -31,7 +39,7 @@ export class DeletionPlugin extends PluginBase {
     public deleteSelection() {
         const selection = this.workflow.getPlugin(SelectionPlugin);
 
-        if (!selection) {
+        if (!selection || !this.workflow.editingEnabled) {
             return;
         }
 

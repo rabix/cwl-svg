@@ -28,6 +28,8 @@ export class Workflow {
     svgRoot: SVGSVGElement;
     workflow: SVGGElement;
     model: WorkflowModel;
+    editingEnabled = true;
+
     /** Scale of labels, they are different than scale of other elements in the workflow */
     labelScale                        = 1;
     private workflowBoundingClientRect;
@@ -40,12 +42,14 @@ export class Workflow {
     constructor(parameters: {
         svgRoot: SVGSVGElement,
         model: WorkflowModel,
-        plugins?: SVGPlugin[]
+        plugins?: SVGPlugin[],
+        editingEnabled?: boolean
     }) {
-        this.svgRoot   = parameters.svgRoot;
-        this.plugins   = parameters.plugins || [];
-        this.domEvents = new DomEvents(this.svgRoot as any);
-        this.model     = parameters.model;
+        this.svgRoot        = parameters.svgRoot;
+        this.plugins        = parameters.plugins || [];
+        this.domEvents      = new DomEvents(this.svgRoot as any);
+        this.model          = parameters.model;
+        this.editingEnabled = parameters.editingEnabled !== false; // default to true if undefined
 
         this.svgRoot.classList.add(this.svgID);
 
@@ -349,7 +353,8 @@ export class Workflow {
     }
 
     enableEditing(enabled: boolean): void {
-        this.invokePlugins("enableEditing", enabled);
+        this.invokePlugins("onEditableStateChange", enabled);
+        this.editingEnabled = enabled;
     }
 
     // noinspection JSUnusedGlobalSymbols

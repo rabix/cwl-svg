@@ -66,14 +66,13 @@ export class SVGPortDragPlugin extends PluginBase {
     }
 
     afterRender(): void {
-        if(this.editingEnabled){
+        if(this.workflow.editingEnabled){
             this.attachPortDrag();
         }
 
     }
 
-    enableEditing(enabled: boolean): void {
-        super.enableEditing(enabled);
+    onEditableStateChange(enabled: boolean): void {
 
         if (enabled) {
             this.attachPortDrag();

@@ -23,7 +23,7 @@ export interface SVGPlugin {
      */
     afterModelChange?(): void;
 
-    enableEditing?(enabled: boolean): void;
+    onEditableStateChange?(enabled: boolean): void;
 
     /**
      * Invoked when a graph should be destroyed.

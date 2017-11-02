@@ -41,7 +41,7 @@ export class SVGValidatePlugin extends PluginBase {
         this.renderEdgeValidation();
     }
 
-    enableEditing(enabled: boolean): void {
+    onEditableStateChange(enabled: boolean): void {
 
         if (enabled) {
             // only show validation if workflow is editable
