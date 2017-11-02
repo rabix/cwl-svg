@@ -17,7 +17,7 @@ export class Edge {
         const destVertex   = containerNode.querySelector(`.node[data-id="${destStepId}"] .input-port[data-port-id="${destPort}"] .io-port`) as SVGGElement;
 
         if (edge.source.type === edge.destination.type) {
-            console.error("Cant update edge between nodes of the same type.", edge);
+            console.error("Can't update edge between nodes of the same type.", edge);
             return;
         }
 

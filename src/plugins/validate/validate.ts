@@ -1,27 +1,22 @@
 import {Edge}          from "cwlts/models";
 import {PluginBase}    from "../plugin-base";
 import {Workflow}      from "../../graph/workflow";
-import {WorkflowModel} from "cwlts/models/generic/WorkflowModel";
 
 export class SVGValidatePlugin extends PluginBase {
 
     private modelDisposers = [];
 
     /** Map of CSS classes attached by this plugin */
-    private classes = {
+    private css = {
         plugin: "__plugin-validate",
         invalid: "__validate-invalid"
     };
-    private model: WorkflowModel;
 
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
 
-        this.model = workflow.model;
-
-
         // add plugin specific class to the svgRoot for scoping
-        this.workflow.svgRoot.classList.add(this.classes.plugin);
+        this.workflow.svgRoot.classList.add(this.css.plugin);
     }
 
     afterModelChange(): void {
@@ -66,7 +61,7 @@ export class SVGValidatePlugin extends PluginBase {
     private removeClasses(edges: NodeListOf<Element>): void {
         // remove validity class on all edges
         for (const e of edges) {
-            e.classList.remove(this.classes.invalid);
+            e.classList.remove(this.css.invalid);
         }
     }
 
@@ -88,7 +83,7 @@ export class SVGValidatePlugin extends PluginBase {
                     // compare invalid edge source/destination with svg edge
                     if (e.source.id === sourceNodeID && e.destination.id === destinationNodeID) {
                         // if its a match, tag it with the appropriate class and break from the loop
-                        ge.classList.add(this.classes.invalid);
+                        ge.classList.add(this.css.invalid);
                         break;
                     }
                 }

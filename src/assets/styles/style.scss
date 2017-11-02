@@ -85,12 +85,6 @@ svg.cwl-workflow {
       }
     }
 
-    &.hasUpdate {
-      .inner {
-        fill: $color-warning;
-      }
-    }
-
     .outer {
       stroke: $node-outer-color;
       stroke-width: 2px;

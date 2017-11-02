@@ -126,10 +126,8 @@ export class GraphNode {
             ))
             .reduce((acc, tpl) => acc + tpl, "");
 
-        const hasUpdate = dataModel["hasUpdate"] ? "hasUpdate" : "";
-
         return `
-            <g tabindex="-1" class="node ${nodeTypeClass} ${hasUpdate} ${typeClass} ${itemsClass}"
+            <g tabindex="-1" class="node ${nodeTypeClass} ${typeClass} ${itemsClass}"
                data-connection-id="${dataModel.connectionId}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
                data-id="${dataModel.id}">

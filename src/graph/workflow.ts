@@ -11,6 +11,7 @@ import {Edge as GraphEdge} from "./edge";
 import {GraphNode} from "./graph-node";
 import {StepNode} from "./step-node";
 import {TemplateParser} from "./template-parser";
+import {WorkflowStepOutputModel} from "cwlts/models";
 
 /**
  * @FIXME validation states of old and newly created edges
@@ -126,17 +127,19 @@ export class Workflow {
 
             this.model = model;
 
-            const stepChangeDisposer       = this.model.on("step.change", this.onStepChange.bind(this));
-            const stepCreateDisposer       = this.model.on("step.create", this.onStepCreate.bind(this));
-            const stepRemoveDisposer       = this.model.on("step.remove", this.onStepRemove.bind(this));
-            const inputCreateDisposer      = this.model.on("input.create", this.onInputCreate.bind(this));
-            const inputRemoveDisposer      = this.model.on("input.remove", this.onInputRemove.bind(this));
-            const outputCreateDisposer     = this.model.on("output.create", this.onOutputCreate.bind(this));
-            const outputRemoveDisposer     = this.model.on("output.remove", this.onOutputRemove.bind(this));
-            const stepInPortShowDisposer   = this.model.on("step.inPort.show", this.onInputPortShow.bind(this));
-            const stepInPortHideDisposer   = this.model.on("step.inPort.hide", this.onInputPortHide.bind(this));
-            const connectionCreateDisposer = this.model.on("connection.create", this.onConnectionCreate.bind(this));
-            const connectionRemoveDisposer = this.model.on("connection.remove", this.onConnectionRemove.bind(this));
+            const stepChangeDisposer        = this.model.on("step.change", this.onStepChange.bind(this));
+            const stepCreateDisposer        = this.model.on("step.create", this.onStepCreate.bind(this));
+            const stepRemoveDisposer        = this.model.on("step.remove", this.onStepRemove.bind(this));
+            const inputCreateDisposer       = this.model.on("input.create", this.onInputCreate.bind(this));
+            const inputRemoveDisposer       = this.model.on("input.remove", this.onInputRemove.bind(this));
+            const outputCreateDisposer      = this.model.on("output.create", this.onOutputCreate.bind(this));
+            const outputRemoveDisposer      = this.model.on("output.remove", this.onOutputRemove.bind(this));
+            const stepInPortShowDisposer    = this.model.on("step.inPort.show", this.onInputPortShow.bind(this));
+            const stepInPortHideDisposer    = this.model.on("step.inPort.hide", this.onInputPortHide.bind(this));
+            const connectionCreateDisposer  = this.model.on("connection.create", this.onConnectionCreate.bind(this));
+            const connectionRemoveDisposer  = this.model.on("connection.remove", this.onConnectionRemove.bind(this));
+            const stepOutPortCreateDisposer = this.model.on("step.outPort.create", this.onOutputPortCreate.bind(this));
+            const stepOutPortRemoveDisposer = this.model.on("step.outPort.remove", this.onOutputPortRemove.bind(this));
 
             this.disposers.push(() => {
                 stepChangeDisposer.dispose();
@@ -150,6 +153,8 @@ export class Workflow {
                 stepInPortHideDisposer.dispose();
                 connectionCreateDisposer.dispose();
                 connectionRemoveDisposer.dispose();
+                stepOutPortCreateDisposer.dispose();
+                stepOutPortRemoveDisposer.dispose();
             });
 
             this.invokePlugins("afterModelChange");
@@ -540,6 +545,16 @@ export class Workflow {
     private onInputPortHide(input: WorkflowStepInputModel) {
         const stepEl = this.svgRoot.querySelector(`.step[data-connection-id="${input.parentStep.connectionId}"]`) as SVGElement;
         new StepNode(stepEl, input.parentStep).update();
+    }
+
+    private onOutputPortCreate(output: WorkflowStepOutputModel) {
+        const stepEl = this.svgRoot.querySelector(`.step[data-connection-id="${output.parentStep.connectionId}"]`) as SVGElement;
+        new StepNode(stepEl, output.parentStep).update();
+    }
+
+    private onOutputPortRemove(output: WorkflowStepOutputModel) {
+        const stepEl = this.svgRoot.querySelector(`.step[data-connection-id="${output.parentStep.connectionId}"]`) as SVGElement;
+        new StepNode(stepEl, output.parentStep).update();
     }
 
     /**
