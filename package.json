@@ -7,28 +7,43 @@
   "license": "Apache-2.0",
   "author": "Ivan Batic <ivan.batic@live.com> (http://github.com/ivanbatic)",
   "description": "A library for generating an interactive SVG visualization of CWL workflows",
-  "version": "0.0.43",
+  "version": "1.0.0",
   "scripts": {
-    "webpack:watch": "node_modules/.bin/webpack --watch"
+    "webpack:watch": "node_modules/.bin/webpack --watch",
+    "webdriver:update": "./node_modules/.bin/webdriver-manager update",
+    "webdriver:start": "./node_modules/.bin/webdriver-manager start",
+    "pretest": "npx tsc -p tsconfig.test.json",
+    "watch:tests": "tsc -p tsconfig.test.json --watch",
+    "test": "npx protractor protractor.config.js",
+    "start": "npx webpack-dev-server --no-watch"
   },
   "dependencies": {
-    "core-js": "^2.4.1"
+    "core-js": "^2.5.1"
   },
   "peerDependencies": {
-    "cwlts": "^1.13.15"
+    "cwlts": "^1.13.40"
   },
   "devDependencies": {
-    "@types/core-js": "0.9.41",
-    "@types/node": "^6.0.69",
-    "css-loader": "^0.28.0",
-    "extract-text-webpack-plugin": "^2.1.0",
-    "json-loader": "0.5.4",
-    "node-sass": "^4.5.2",
-    "sass-loader": "^6.0.3",
-    "source-map-loader": "^0.2.1",
-    "style-loader": "^0.16.1",
-    "ts-loader": "2.0.3",
-    "typescript": "^2.4.1",
-    "webpack": "^2.4.1"
+    "@types/core-js": "^0.9.43",
+    "@types/jasmine": "^2.6.3",
+    "@types/node": "^8.0.50",
+    "@types/webpack": "^3.8.0",
+    "@types/webpack-dev-server": "^2.9.1",
+    "css-loader": "^0.28.7",
+    "cwlts": "^1.13.40",
+    "extract-text-webpack-plugin": "^3.0.2",
+    "html-webpack-plugin": "^2.30.1",
+    "jasmine": "^2.8.0",
+    "json-loader": "^0.5.7",
+    "node-sass": "^4.6.0",
+    "protractor": "^5.2.0",
+    "protractor-webpack": "^1.1.0",
+    "sass-loader": "^6.0.6",
+    "source-map-loader": "^0.2.3",
+    "style-loader": "^0.19.0",
+    "ts-loader": "^2.3.7",
+    "typescript": "^2.6.1",
+    "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.9.4"
   }
 }

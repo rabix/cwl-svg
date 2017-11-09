@@ -1,37 +1,4 @@
-// Color Scheme
-$color-background: rgb(48, 48, 48);
-$color-primary: #5c8db6;
-$color-primary-alt: #2e556f;
-$color-secondary: #886653;
-$color-tertiary: #538881;
-
-$color-success: #76ed21;
-$color-highlight: #5196ce;
-//$color-neutral: rgb(121, 121, 121);
-$color-neutral: #c3c3c3;
-$color-warning: #f89406;
-$color-danger: #dd4a38;
-
-// Color Application
-$background: $color-background;
-
-$node-background-color: $color-primary;
-$node-outer-color: $color-neutral;
-$port-background-color: $color-neutral;
-$port-highlight-color: $color-highlight;
-$port-label-color: white;
-
-$port-candidate-color: white;
-
-$label-highlight-color: lighten($color-highlight, 30%);
-
-$edge-inner-color: $color-neutral;
-$edge-inner-width: 2px;
-$edge-outer-color: $color-background;
-$edge-outer-width: 7px;
-
-$font-family: sans-serif;
-$font-color: white;
+@import "variables";
 
 svg.cwl-workflow {
 
@@ -60,81 +27,6 @@ svg.cwl-workflow {
   .workflow {
     @extend .noselect;
 
-    &.edge-dragging {
-      cursor: pointer;
-    }
-
-    &.has-suggestion {
-      .node:not(.highlighted) {
-        &.step {
-          .outer {
-            stroke: darken($edge-inner-color, 30%);
-          }
-        }
-
-        .label {
-          fill: darken($font-color, 15%);
-        }
-      }
-
-      .edge:not(.highlighted):not(.dragged) {
-        .inner {
-          stroke: darken($edge-inner-color, 50%);
-        }
-      }
-    }
-
-    &.has-selection {
-      .node:not(.highlighted):not(.selected) {
-        &.step,
-        &.input,
-        &.output {
-          .outer {
-            stroke: darken($edge-inner-color, 50%);
-          }
-        }
-
-        &.step {
-          .inner {
-            fill: darken($color-primary, 15%);
-          }
-
-          &.hasUpdate {
-            .inner {
-              fill: darken($color-warning, 15%);
-            }
-          }
-        }
-        &.input,
-        &.output {
-          .inner {
-            fill: darken($color-neutral, 25%);
-          }
-        }
-
-        .label {
-          fill: darken($font-color, 50%);
-        }
-
-        .port {
-          fill: darken($color-neutral, 50%);
-        }
-      }
-
-      .edge:not(.highlighted):not(.dragged) {
-        .inner {
-          stroke: darken($edge-inner-color, 50%);
-        }
-
-        &.not-valid {
-          .inner {
-            stroke: darken($color-warning, 25%);
-          }
-        }
-
-      }
-
-    }
   }
 
   .label {
@@ -149,32 +41,18 @@ svg.cwl-workflow {
 
   }
 
-  .node {
+  .node-icon {
+    stroke: $background;
+    stroke-width: 3px;
+    fill: $background;
+    stroke-linecap: round;
 
-    &.selected {
-      .outer {
-        stroke: $color-highlight !important;
-      }
-    }
-
-    &.ghost {
-      stroke: $color-neutral;
-      stroke-width: 2px;
-
-      stroke-dasharray: 5 3;
-      fill: $color-background;
-    }
-
-    .icon {
-      stroke: $background;
-      stroke-width: 3px;
+    &.icon-workflow {
       fill: $background;
-      stroke-linecap: round;
-
-      &.icon-workflow {
-        fill: $background;
-      }
     }
+  }
+
+  .node {
 
     &.input, &.output {
       .inner {
@@ -188,7 +66,7 @@ svg.cwl-workflow {
       }
     }
 
-    .drag-handle {
+    .core {
       transition: all .3s;
       stroke: $background;
       stroke-width: 0;
@@ -204,12 +82,6 @@ svg.cwl-workflow {
       .port .label {
         transition: all .1s;
         opacity: 1;
-      }
-    }
-
-    &.hasUpdate {
-      .inner {
-        fill: $color-warning;
       }
     }
 
@@ -230,23 +102,14 @@ svg.cwl-workflow {
       cursor: pointer;
       position: relative;
 
-      &.connection-suggestion {
-        fill: $color-success
-      }
-
-      //&:hover, &.highlighted {
-      //  fill: $port-highlight-color;
-      //}
       &:hover,
-      &.highlighted,
-      &.preferred-port {
+      &.highlighted {
         stroke: white;
         stroke-width: 2px;
       }
 
       &.highlighted,
-      &.visible,
-      &.connection-suggestion {
+      &.visible {
         .label {
           opacity: 1;
         }
@@ -291,14 +154,7 @@ svg.cwl-workflow {
 
   .edge {
 
-    &.not-valid {
-      .inner {
-        stroke: $color-warning;
-      }
-    }
-
-    &:hover .inner,
-    &.selected .inner {
+    &:hover .inner {
       stroke: $port-highlight-color;
     }
 

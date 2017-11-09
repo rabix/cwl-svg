@@ -1,7 +1,15 @@
 export class IOPort {
 
     static radius = 7;
-    
+
+    /**
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param {"right" | "left" | string} forceDirection
+     * @returns {string}
+     */
     public static makeConnectionPath(x1, y1, x2, y2, forceDirection: "right" | "left" | string = "right"): string {
 
         if (!forceDirection) {

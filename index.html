@@ -1,20 +1,14 @@
 <html>
 <head>
     <meta charset="UTF-8">
+
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <base href="./">
     <title>Workflow Editor</title>
     <style>
-        .io-port-label {
-            font-family: sans-serif;
-        }
-
-        .io-port-label.faded {
-            opacity: .5;
-        }
-
         #svg {
             width: 100%;
             height: 100%;
@@ -24,15 +18,9 @@
 </head>
 
 <body>
-<svg id="svg" class="cwl-workflow"
-     style="
-     /*position: absolute; */
-     /*top: 300px; */
-     /*left: 200px;*/
-">
+<svg id="svg" class="cwl-workflow">
 </svg>
 <script src="dist/bundle.js"></script>
-<script>
-</script>
+
 </body>
 </html>

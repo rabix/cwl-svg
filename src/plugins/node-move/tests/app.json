@@ -1,0 +1,40 @@
+{
+  "class": "Workflow",
+  "cwlVersion": "v1.0",
+  "id": "node_move_test",
+  "label": "node-move-test",
+  "inputs": [],
+  "outputs": [],
+  "steps": [
+    {
+      "id": "print",
+      "in": [],
+      "out": [],
+      "run": {
+        "class": "CommandLineTool",
+        "cwlVersion": "v1.0",
+        "baseCommand": [
+          "echo"
+        ],
+        "inputs": [
+          {
+            "id": "message",
+            "type": "string"
+          }
+        ],
+        "outputs": [],
+        "sbg:job": {
+          "inputs": {
+            "message": "message-string-value"
+          },
+          "runtime": {
+            "cores": 1,
+            "ram": 1000
+          }
+        }
+      },
+      "sbg:x": 200,
+      "sbg:y": 200
+    }
+  ]
+}

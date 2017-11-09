@@ -1,5 +1,9 @@
 node_modules
 dist
-compiled
 .idea
 
+compiled
+
+cwl-svg.iml
+src/**/*.js
+src/**/*.js.map

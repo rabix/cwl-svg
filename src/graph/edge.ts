@@ -1,20 +1,23 @@
 import {Edge as ModelEdge} from "cwlts/models";
-import {IOPort} from "./io-port";
 import {Geometry} from "../utils/geometry";
+import {IOPort} from "./io-port";
+import {Workflow} from "./workflow";
+
 export class Edge {
+
     static makeTemplate(edge: ModelEdge, containerNode: SVGGElement, connectionStates?: string): string {
         if (!edge.isVisible || edge.source.type === "Step" || edge.destination.type === "Step") {
             return "";
         }
 
         let [sourceSide, sourceStepId, sourcePort] = edge.source.id.split("/");
-        let [destSide, destStepId, destPort] = edge.destination.id.split("/");
+        let [destSide, destStepId, destPort]       = edge.destination.id.split("/");
 
         const sourceVertex = containerNode.querySelector(`.node[data-id="${sourceStepId}"] .output-port[data-port-id="${sourcePort}"] .io-port`) as SVGGElement;
-        const destVertex = containerNode.querySelector(`.node[data-id="${destStepId}"] .input-port[data-port-id="${destPort}"] .io-port`) as SVGGElement;
+        const destVertex   = containerNode.querySelector(`.node[data-id="${destStepId}"] .input-port[data-port-id="${destPort}"] .io-port`) as SVGGElement;
 
         if (edge.source.type === edge.destination.type) {
-            console.error("Cant draw edge between nodes of the same type.", edge);
+            console.error("Can't update edge between nodes of the same type.", edge);
             return;
         }
 
@@ -29,21 +32,19 @@ export class Edge {
         }
 
         const sourceCTM = sourceVertex.getCTM() as SVGMatrix;
-        const destCTM = destVertex.getCTM() as SVGMatrix;
+        const destCTM   = destVertex.getCTM() as SVGMatrix;
 
         const wfMatrix = containerNode.transform.baseVal[0].matrix;
 
-        const pathStr = IOPort.makeConnectionPath(
+        const pathStr = Workflow.makeConnectionPath(
             (sourceCTM.e - wfMatrix.e) / sourceCTM.a,
             (sourceCTM.f - wfMatrix.f) / sourceCTM.a,
             (destCTM.e - wfMatrix.e) / sourceCTM.a,
             (destCTM.f - wfMatrix.f) / sourceCTM.a
         );
 
-        const isInvalid = edge.isValid === false ? "not-valid" : "";
-
         return `
-            <g tabindex="-1" class="edge ${connectionStates} ${isInvalid}"
+            <g tabindex="-1" class="edge ${connectionStates}"
                data-source-port="${sourcePort}"
                data-destination-port="${destPort}"
                data-source-node="${sourceStepId}"
@@ -57,15 +58,15 @@ export class Edge {
     }
 
     static spawn(pathStr = "", connectionIDs: {
-                     source?: string,
-                     destination?: string,
-                 } = {}) {
+        source?: string,
+        destination?: string,
+    }                    = {}) {
 
-        const ns = "http://www.w3.org/2000/svg";
+        const ns   = "http://www.w3.org/2000/svg";
         const edge = document.createElementNS(ns, "g");
 
         let [sourceSide, sourceStepId, sourcePort] = (connectionIDs.source || "//").split("/");
-        let [destSide, destStepId, destPort] = (connectionIDs.destination || "//").split("/");
+        let [destSide, destStepId, destPort]       = (connectionIDs.destination || "//").split("/");
 
         edge.classList.add("edge");
         if (sourceStepId) {
@@ -93,17 +94,28 @@ export class Edge {
     static spawnBetweenConnectionIDs(root: SVGElement, source, destination) {
 
         if (source.startsWith("in")) {
-            const tmp = source;
-            source = destination;
+            const tmp   = source;
+            source      = destination;
             destination = tmp;
         }
 
-        let sourceNode = root.querySelector(`.port[data-connection-id="${source}"]`);
+        let sourceNode      = root.querySelector(`.port[data-connection-id="${source}"]`);
         let destinationNode = root.querySelector(`.port[data-connection-id="${destination}"]`);
 
         const sourceCTM = Geometry.getTransformToElement(sourceNode, root);
-        const destCTM = Geometry.getTransformToElement(destinationNode, root);
-        const path = IOPort.makeConnectionPath(sourceCTM.e, sourceCTM.f, destCTM.e, destCTM.f);
+        const destCTM   = Geometry.getTransformToElement(destinationNode, root);
+        const path      = IOPort.makeConnectionPath(sourceCTM.e, sourceCTM.f, destCTM.e, destCTM.f);
+
+        // If there is already a connection between these ports, update that one instead
+        const existingEdge = root.querySelector(`.edge[data-source-connection="${source}"][data-destination-connection="${destination}"]`);
+        if (existingEdge) {
+            console.log("Updating existing edge");
+            for (const sub of existingEdge.querySelectorAll(".sub-edge")) {
+                sub.setAttribute("d", path);
+            }
+            return existingEdge;
+        }
+
 
         const edge = Edge.spawn(path, {
             source,

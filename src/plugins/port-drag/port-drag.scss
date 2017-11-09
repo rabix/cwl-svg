@@ -1,0 +1,60 @@
+@import "../../assets/styles/variables";
+
+$port-suggested-fill: $color-success !default;
+$port-snap-highlight-stroke: white !default;
+$port-snap-stroke-width: 2px !default;
+$edge-dragged-stroke: $color-neutral !default;
+
+// Expectations:
+//
+.cwl-workflow.__plugin-port-drag {
+
+  // Ports that are marked as suggested should be coloured differently and have visible labels
+  .port.__port-drag-suggestion {
+    fill: $port-suggested-fill;
+
+    .label {
+      opacity: 1;
+    }
+
+  }
+
+  // Port that is marked as a snap choice should have a stroke around it
+  .port.__port-drag-snap {
+    stroke: $port-snap-highlight-stroke;
+    stroke-width: $port-snap-stroke-width;
+  }
+
+  .node.__port-drag-snap {
+
+    // Nodes that are parents of snap choice ports should make all port labels on that side visible
+    &.__port-drag-snap-input .input-port,
+    &.__port-drag-snap-output .output-port {
+
+      .label {
+        opacity: 1;
+      }
+
+    }
+  }
+
+  // While dragging from a port, hover effects over other elements should not be triggered
+  // This also prevents zooming in and out using mouse scroll while dragging
+  &.__port-drag-dragging {
+    pointer-events: none;
+  }
+
+  // When a port is dragged, its edge should
+  .edge.__port-drag-dragging .inner {
+    stroke: $edge-dragged-stroke !important;
+  }
+
+  .ghost {
+    stroke: $color-neutral;
+    stroke-width: 2px;
+
+    stroke-dasharray: 5 3;
+    fill: $color-background;
+  }
+
+}

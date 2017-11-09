@@ -1,0 +1,148 @@
+{
+  "class": "Workflow",
+  "cwlVersion": "v1.0",
+  "id": "node_move_test",
+  "label": "node-move-test",
+  "inputs": [
+    {
+      "id": "egeba",
+      "type": "string",
+      "sbg:x": -30,
+      "sbg:y": 77
+    },
+    {
+      "id": "upato",
+      "type": "string",
+      "sbg:x": -50,
+      "sbg:y": -61
+    }
+  ],
+  "outputs": [],
+  "steps": [
+    {
+      "id": "first",
+      "in": [],
+      "out": [
+        {
+          "id": "first_out"
+        }
+      ],
+      "run": {
+        "class": "CommandLineTool",
+        "cwlVersion": "v1.0",
+        "baseCommand": [
+          "echo"
+        ],
+        "inputs": [
+          {
+            "id": "message",
+            "type": "string"
+          }
+        ],
+        "outputs": [
+          {
+            "id": "first_out",
+            "type": "File",
+            "outputBinding": {
+              "glob": "hello.txt"
+            }
+          }
+        ],
+        "sbg:job": {
+          "inputs": {
+            "message": "message-string-value"
+          },
+          "runtime": {
+            "cores": 1,
+            "ram": 1000
+          }
+        }
+      },
+      "sbg:x": -50,
+      "sbg:y": 229
+    },
+    {
+      "id": "second",
+      "in": [
+        {
+          "id": "alpha",
+          "source": [
+            "first/first_out"
+          ]
+        },
+        {
+          "id": "upato",
+          "default": "nef",
+          "source": [
+            "upato"
+          ]
+        },
+        {
+          "id": "egeba",
+          "default": "erte",
+          "source": [
+            "egeba"
+          ]
+        }
+      ],
+      "out": [
+        {
+          "id": "beta"
+        }
+      ],
+      "run": {
+        "class": "CommandLineTool",
+        "cwlVersion": "v1.0",
+        "baseCommand": [
+          "echo"
+        ],
+        "inputs": [
+          {
+            "id": "alpha",
+            "type": "File"
+          },
+          {
+            "id": "nini",
+            "type": "File"
+          },
+          {
+            "id": "upato",
+            "type": "string"
+          },
+          {
+            "id": "agode",
+            "type": "File[]"
+          },
+          {
+            "id": "egeba",
+            "type": "string"
+          }
+        ],
+        "outputs": [
+          {
+            "id": "beta",
+            "type": "File",
+            "outputBinding": {
+              "glob": "hello.txt"
+            }
+          }
+        ],
+        "sbg:job": {
+          "inputs": {
+            "alpha": null,
+            "nini": null,
+            "upato": null,
+            "agode": [],
+            "egeba": null
+          },
+          "runtime": {
+            "cores": 1,
+            "ram": 1000
+          }
+        }
+      },
+      "sbg:x": 159.609375,
+      "sbg:y": 73
+    }
+  ]
+}
