@@ -1,16 +1,12 @@
+import {Workflow} from "../../";
 import {PluginBase} from "../plugin-base";
-import {Workflow}   from "../../";
 
 export class SelectionPlugin extends PluginBase {
 
-    private svg: SVGSVGElement;
-
-    private selection = new Map<string, "edge" | "node">();
-
-    private cleanups: Function[] = [];
-
     static edgePortsDelimiter = "$!$";
-
+    private svg: SVGSVGElement;
+    private selection = new Map<string, "edge" | "node">();
+    private cleanups: Function[] = [];
     private detachModelEvents: Function;
 
     private selectionChangeCallbacks = [];
@@ -34,24 +30,9 @@ export class SelectionPlugin extends PluginBase {
         this.cleanups.push(() => this.svg.removeEventListener("click", clickListener));
     }
 
-    private bindModelEvents() {
-
-        const handler = () => this.restoreSelection();
-        const cleanup = [];
-        const events  = ["connection.create", "connection.remove"];
-
-        for (const ev of events) {
-            const dispose = this.workflow.model.on(ev as any, handler);
-            cleanup.push(() => dispose.dispose());
-        }
-
-        return () => cleanup.forEach(fn => fn());
-    }
-
     afterRender() {
         this.restoreSelection();
     }
-
 
     afterModelChange(): void {
         if (typeof this.detachModelEvents === "function") {
@@ -97,6 +78,34 @@ export class SelectionPlugin extends PluginBase {
         return this.selection;
     }
 
+    registerOnSelectionChange(fn: (node: any) => any) {
+        this.selectionChangeCallbacks.push(fn);
+    }
+
+    selectStep(stepID: string) {
+        const query = `[data-connection-id="${stepID}"]`;
+        const el = this.svg.querySelector(query) as SVGElement;
+
+        if (el) {
+            this.materializeClickOnElement(el);
+        }
+
+    }
+
+    private bindModelEvents() {
+
+        const handler = () => this.restoreSelection();
+        const cleanup = [];
+        const events  = ["connection.create", "connection.remove"];
+
+        for (const ev of events) {
+            const dispose = this.workflow.model.on(ev as any, handler);
+            cleanup.push(() => dispose.dispose());
+        }
+
+        return () => cleanup.forEach(fn => fn());
+    }
+
     private restoreSelection() {
         this.selection.forEach((type, connectionID) => {
 
@@ -128,6 +137,11 @@ export class SelectionPlugin extends PluginBase {
 
         this.clearSelection();
 
+        this.materializeClickOnElement(target);
+    }
+
+    private materializeClickOnElement(target: SVGElement) {
+
         let element: SVGElement;
 
         if (element = this.workflow.findParent(target, "node")) {
@@ -146,7 +160,6 @@ export class SelectionPlugin extends PluginBase {
             this.selection.set(cid, "edge");
             this.emitChange(cid);
         }
-
     }
 
     private selectNode(element: SVGElement): void {
@@ -210,10 +223,6 @@ export class SelectionPlugin extends PluginBase {
             port.classList.add(this.css.highlight);
         }
 
-    }
-
-    registerOnSelectionChange(fn: (node: any) => any) {
-        this.selectionChangeCallbacks.push(fn);
     }
 
     private emitChange(change) {
