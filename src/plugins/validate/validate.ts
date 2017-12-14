@@ -24,12 +24,10 @@ export class SVGValidatePlugin extends PluginBase {
         this.disposeModelListeners();
 
         // add listener for all subsequent edge validation
-        const dispose = this.workflow.model.on("connections.updated", () => {
-            this.renderEdgeValidation();
-        });
+        const update = this.workflow.model.on("connections.updated", this.renderEdgeValidation.bind(this));
+        const create = this.workflow.model.on("connection.create", this.renderEdgeValidation.bind(this));
 
-        this.modelDisposers.push(dispose.dispose);
-
+        this.modelDisposers.concat([update.dispose, create.dispose]);
     }
 
     destroy(): void {
