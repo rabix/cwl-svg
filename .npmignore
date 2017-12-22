@@ -1,0 +1,9 @@
+node_modules
+dist
+.idea
+
+cwl-svg.iml
+
+
+src/**/*.js
+src/**/*.js.map
