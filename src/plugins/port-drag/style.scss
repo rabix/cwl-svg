@@ -1,9 +1,4 @@
-@import "../../assets/styles/variables";
-
-$port-suggested-fill: $color-success !default;
-$port-snap-highlight-stroke: white !default;
-$port-snap-stroke-width: 2px !default;
-$edge-dragged-stroke: $color-neutral !default;
+@import "variables";
 
 // Expectations:
 //
@@ -44,17 +39,18 @@ $edge-dragged-stroke: $color-neutral !default;
     pointer-events: none;
   }
 
-  // When a port is dragged, its edge should
   .edge.__port-drag-dragging .inner {
     stroke: $edge-dragged-stroke !important;
+    stroke-dasharray: $edge-dragged-dasharray;
+
   }
 
   .ghost {
-    stroke: $color-neutral;
+    stroke: $ghost-node-stroke-color;
     stroke-width: 2px;
 
     stroke-dasharray: 5 3;
-    fill: $color-background;
+    fill: $ghost-node-fill-color;
   }
 
 }

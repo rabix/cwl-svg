@@ -1,8 +1,4 @@
-@import "../../assets/styles/variables";
-
-$selection-stroke: #5196ce !default;
-$node-selected-outer-stroke: $selection-stroke !default;
-$edge-selected-inner-stroke: $selection-stroke !default;
+@import "variables";
 
 .cwl-workflow.__plugin-selection {
 
@@ -19,40 +15,39 @@ $edge-selected-inner-stroke: $selection-stroke !default;
     .node:not(.__selection-plugin-highlight) {
 
       .outer {
-        stroke: #444343;
+        stroke: $node-faded-outer-stroke-color;
       }
 
       .inner {
-        fill: #3d6688;
+        fill: $node-faded-step-fill-color;
       }
 
-      &.input,
-      &.output {
-        .inner {
-          fill: #838383;
-        }
+      &.input .inner {
+        fill: $node-faded-input-fill-color;
       }
 
-      // Their labels fade away a bit
+      &.output .inner {
+        fill: $node-faded-output-fill-color;
+      }
+
+      // Their labels fade away a bit less
       .label {
-        fill: #807f7f;
+        fill: $label-faded-color;
       }
       // Ports are darker
       .port {
-        fill: #444343;
+        fill: $port-faded-fill-color;;
       }
 
     }
 
     .edge:not(.__selection-plugin-highlight) {
       .inner {
-        stroke: #444343;
+        stroke: $edge-faded-inner-stroke-color;
       }
     }
 
   }
-
-
 
   .port.__selection-plugin-highlight .label {
     opacity: 1;
@@ -61,11 +56,11 @@ $edge-selected-inner-stroke: $selection-stroke !default;
   .__selection-plugin-selected {
 
     &.edge .inner {
-      stroke: $selection-stroke;
+      stroke: $edge-selected-inner-stroke;
     }
 
     &.node .outer {
-      stroke: $selection-stroke;
+      stroke: $node-selected-outer-stroke;
     }
 
   }

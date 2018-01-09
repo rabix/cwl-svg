@@ -1,5 +1,5 @@
 import "../../../assets/styles/style.scss";
-import "../port-drag.scss"
+import "../theme.dark.scss"
 
 import {WorkflowFactory}    from "cwlts/models";
 import {Workflow}           from "../../../";

@@ -1,6 +1,10 @@
-import "./assets/styles/style.scss";
-import "./plugins/port-drag/port-drag.scss";
-import "./plugins/selection/selection.scss";
+import "./assets/styles/themes/rabix-dark/theme";
+import "./plugins/port-drag/theme.dark.scss";
+import "./plugins/selection/theme.dark.scss";
+
+// import "./assets/styles/theme";
+// import "./plugins/port-drag/theme.scss";
+// import "./plugins/selection/theme.scss";
 
 import {WorkflowFactory}    from "cwlts/models";
 import {Workflow}           from "./graph/workflow";
