@@ -175,7 +175,7 @@ export class SelectionPlugin extends PluginBase {
         const nodeID        = element.getAttribute("data-id");
         const adjacentEdges = this.svg.querySelectorAll(
             `.edge[data-source-node="${nodeID}"],` +
-            `.edge[data-destination-node="${nodeID}"`
+            `.edge[data-destination-node="${nodeID}"]`
         );
 
         // Find the first node to be an anchor, so we can put all those edges just before that one.
