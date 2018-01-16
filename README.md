@@ -1,44 +1,70 @@
 # CWL-SVG
 
 CWL-SVG is a Typescript library for visualization of Common Workflow Language workflows
- 
-## Usage
 
-```typescript
-// If you need the bundled theme
-import "./assets/styles/style.scss";
-
-// Visualizer uses the data model from CWL-TS library, which is a dependency
-import {WorkflowFactory} from "cwlts/models";
-
-// Import the CWL-SVG workflow renderer 
-import {Workflow} from "./graph/workflow";
-
-const wf = WorkflowFactory.from({
-    label: "Whole Genome Analysis",
-    class: "Workflow",
-    outputs: ...
-    inputs: ...
-    steps: ...
-});
-
-// We need an SVG dom element inside which we should draw the workflow
-const svgRoot      = document.getElementById("svg") as SVGSVGElement;
-
-// Draw
-const workflow     = new Workflow(svgRoot, wf);
-
-// You can scale the drawing to adjust it to fit the available viewport 
-workflow.fitToViewport();
-
-// You can also auto-arrange graph nodes spatially in case there's no information about node positions inside the CWL document
-workflow.arrange();
+## Installation
+```
+npm install cwl-svg
 ```
 
-## Todo
-- Create a CLI interface for generating images from CWL files directly
-- Compile a bundle usable without module loaders
-- Make it more theming-friendly
+## Standalone Demo
+```
+git clone https://github.com/rabix/cwl-svg
+cd cwl-svg
+npm install
+npm start
+// Point browser to http://localhost:8080
+```
+
+ 
+## Integration
+
+```typescript
+// Content of src/demo.ts
+
+// Dark theme
+import "./assets/styles/themes/rabix-dark/theme";
+import "./plugins/port-drag/theme.dark.scss";
+import "./plugins/selection/theme.dark.scss";
+
+// Light theme
+// import "./assets/styles/theme";
+// import "./plugins/port-drag/theme.scss";
+// import "./plugins/selection/theme.scss";
+
+import {WorkflowFactory}    from "cwlts/models";
+import {Workflow}           from "./graph/workflow";
+import {SVGArrangePlugin}   from "./plugins/arrange/arrange";
+import {SVGNodeMovePlugin}  from "./plugins/node-move/node-move";
+import {SVGPortDragPlugin}  from "./plugins/port-drag/port-drag";
+import {SelectionPlugin}    from "./plugins/selection/selection";
+import {SVGEdgeHoverPlugin} from "./plugins/edge-hover/edge-hover";
+import {ZoomPlugin}         from "./plugins/zoom/zoom";
+
+const sample = require(__dirname + "/../cwl-samples/rna-seq-alignment.json");
+
+const wf = WorkflowFactory.from(sample);
+
+const svgRoot = document.getElementById("svg") as any;
+
+const workflow = new Workflow({
+    model: wf,
+    svgRoot: svgRoot,
+    plugins: [
+        new SVGArrangePlugin(),
+        new SVGEdgeHoverPlugin(),
+        new SVGNodeMovePlugin({
+            movementSpeed: 10
+        }),
+        new SVGPortDragPlugin(),
+        new SelectionPlugin(),
+        new ZoomPlugin(),
+    ]
+});
+
+// workflow.getPlugin(SVGArrangePlugin).arrange();
+window["wf"] = workflow;```
+
 
 ## Preview
 
