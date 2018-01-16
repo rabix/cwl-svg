@@ -63,8 +63,9 @@ const workflow = new Workflow({
 });
 
 // workflow.getPlugin(SVGArrangePlugin).arrange();
-window["wf"] = workflow;```
+window["wf"] = workflow;
 
+```
 
 ## Preview
 
