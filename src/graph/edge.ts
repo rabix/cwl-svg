@@ -34,7 +34,7 @@ export class Edge {
         const sourceCTM = sourceVertex.getCTM() as SVGMatrix;
         const destCTM   = destVertex.getCTM() as SVGMatrix;
 
-        const wfMatrix = containerNode.transform.baseVal[0].matrix;
+        const wfMatrix = containerNode.transform.baseVal.getItem(0).matrix;
 
         const pathStr = Workflow.makeConnectionPath(
             (sourceCTM.e - wfMatrix.e) / sourceCTM.a,
