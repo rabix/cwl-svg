@@ -19,6 +19,31 @@ npm start
  
 ## Integration
 
+
+```html
+<html>
+<head>
+    <style>
+        #svg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- You need to add “cwl-workflow” class to the SVG root for cwl-svg rendering -->
+<svg id="svg" class="cwl-workflow"></svg>
+
+<!-- Add compiled scripts, however they get compiled -->
+<script src="dist/bundle.js"></script>
+
+</body>
+</html>
+```
+
 ```typescript
 // Content of src/demo.ts
 
