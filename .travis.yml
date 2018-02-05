@@ -1,7 +1,11 @@
-sudo: false
+sudo: true
 dist: trusty
 addons:
-  chrome: stable
+  apt:
+    sources:
+      - google-chrome
+    packages:
+      - google-chrome-stable
 language: node_js
 node_js: 9
 before_script:
@@ -9,7 +13,6 @@ before_script:
   - sh -e /etc/init.d/xvfb start
   - sleep 3
 cache:
-  npm: true
   directories:
     - node_modules
 install:
