@@ -1,9 +1,9 @@
-import {Workflow} from "../../";
+import {Workflow}   from "../../";
 import {PluginBase} from "../plugin-base";
 
 export class ZoomPlugin extends PluginBase {
     private svg: SVGSVGElement;
-    private dispose: () => void;
+    private dispose: Function | undefined;
 
     registerWorkflow(workflow: Workflow): void {
         super.registerWorkflow(workflow);
@@ -39,7 +39,10 @@ export class ZoomPlugin extends PluginBase {
     }
 
     destroy(): void {
-        this.dispose();
+        if (typeof this.dispose === "function") {
+            this.dispose();
+        }
+
         this.dispose = undefined;
     }
 }

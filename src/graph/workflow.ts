@@ -1,17 +1,17 @@
-import {WorkflowStepInputModel} from "cwlts/models/generic";
-import {StepModel} from "cwlts/models/generic/StepModel";
-import {WorkflowInputParameterModel} from "cwlts/models/generic/WorkflowInputParameterModel";
-import {WorkflowModel} from "cwlts/models/generic/WorkflowModel";
+import {WorkflowStepInputModel}       from "cwlts/models/generic";
+import {StepModel}                    from "cwlts/models/generic/StepModel";
+import {WorkflowInputParameterModel}  from "cwlts/models/generic/WorkflowInputParameterModel";
+import {WorkflowModel}                from "cwlts/models/generic/WorkflowModel";
 import {WorkflowOutputParameterModel} from "cwlts/models/generic/WorkflowOutputParameterModel";
-import {SVGPlugin} from "../plugins/plugin";
-import {DomEvents} from "../utils/dom-events";
-import {EventHub} from "../utils/event-hub";
-import {Connectable} from "./connectable";
-import {Edge as GraphEdge} from "./edge";
-import {GraphNode} from "./graph-node";
-import {StepNode} from "./step-node";
-import {TemplateParser} from "./template-parser";
-import {WorkflowStepOutputModel} from "cwlts/models";
+import {SVGPlugin}                    from "../plugins/plugin";
+import {DomEvents}                    from "../utils/dom-events";
+import {EventHub}                     from "../utils/event-hub";
+import {Connectable}                  from "./connectable";
+import {Edge as GraphEdge}            from "./edge";
+import {GraphNode}                    from "./graph-node";
+import {StepNode}                     from "./step-node";
+import {TemplateParser}               from "./template-parser";
+import {WorkflowStepOutputModel}      from "cwlts/models";
 
 /**
  * @FIXME validation states of old and newly created edges
@@ -31,13 +31,16 @@ export class Workflow {
     editingEnabled = true;
 
     /** Scale of labels, they are different than scale of other elements in the workflow */
-    labelScale                        = 1;
+    labelScale = 1;
+
     private workflowBoundingClientRect;
-    private plugins: SVGPlugin[]      = [];
-    private handlersThatCanBeDisabled = [];
-    private disposers: Function[]     = [];
+    private plugins: SVGPlugin[]  = [];
+    private disposers: Function[] = [];
 
     private pendingFirstDraw = true;
+
+    /** Stored in order to ensure that once destroyed graph cannot be reused again */
+    private isDestroyed = false;
 
     constructor(parameters: {
         svgRoot: SVGSVGElement,
@@ -61,7 +64,6 @@ export class Workflow {
         this.workflow = this.svgRoot.querySelector(".workflow") as any;
 
         this.invokePlugins("registerWorkflow", this);
-
 
         this.eventHub = new EventHub([
             "connection.create",
@@ -120,6 +122,8 @@ export class Workflow {
     }
 
     draw(model: WorkflowModel = this.model) {
+
+        this.assertNotDestroyed("draw");
 
         // We will need to restore the transformations when we redraw the model, so save the current state
         const oldTransform = this.workflow.getAttribute("transform");
@@ -370,6 +374,8 @@ export class Workflow {
         for (const dispose of this.disposers) {
             dispose();
         }
+
+        this.isDestroyed = true;
     }
 
     resetTransform() {
@@ -377,6 +383,16 @@ export class Workflow {
         this.scaleAtPoint();
     }
 
+    private assertNotDestroyed(method: string) {
+        if (this.isDestroyed) {
+            throw new Error("Cannot call the " + method + " method on a destroyed graph. " +
+                "Destroying this object removes DOM listeners, " +
+                "and reusing it would result in unexpected things not working. " +
+                "Instead, you can just call the “draw” method with a different model, " +
+                "or create a new Workflow object.");
+
+        }
+    }
 
     private addEventListeners(): void {
 
