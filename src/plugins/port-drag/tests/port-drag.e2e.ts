@@ -81,7 +81,7 @@ describe("Dragging from port", () => {
         done();
     });
 
-    it("shows labels on all input ports, but not output ports when dragging close", async function (done) {
+    it("shows labels on all input ports and not output ports when dragging close", async function () {
         const actions    = browser.actions();
         const originPort = await element(by.css("[data-id=first] [data-port-id=first_out] .port-handle"));
 
@@ -91,20 +91,36 @@ describe("Dragging from port", () => {
             .mouseMove({x: 15, y: -20})
             .perform();
 
-
         const {in: inputs, out: outputs} = ports.second;
 
-        for (let portID in inputs) {
-            const labelOpacity = await inputs[portID].$(".label").getCssValue("opacity");
-            expect(Number(labelOpacity)).toBeCloseTo(1, 0.1, "Expected port label to be visible, but it is not");
-        }
+        /**
+         * We need to delay checks because labels fade in and out, so give them some time to appear or disappear
+         */
+        return await new Promise((resolve, reject) => {
 
-        for (let portID in outputs) {
-            const labelOpacity = await outputs[portID].$(".label").getCssValue("opacity");
-            expect(Number(labelOpacity)).toBeCloseTo(0, 0.1, "Expected port label to be invisible, but it is");
-        }
+            setTimeout(async () => {
 
-        done();
+                try {
+
+                    for (let portID in inputs) {
+                        const labelOpacity = await inputs[portID].$(".label").getCssValue("opacity");
+                        expect(Number(labelOpacity)).toBeGreaterThan(0.5, "Expected port label to be visible, but it is not");
+                    }
+
+                    for (let portID in outputs) {
+                        const labelOpacity = await outputs[portID].$(".label").getCssValue("opacity");
+                        expect(Number(labelOpacity)).toBeLessThan(0.5, "Expected port label to be invisible, but it is");
+                    }
+                    resolve();
+
+                } catch (ex) {
+                    reject(ex);
+                }
+
+            }, 500);
+
+        });
+
     });
 
     xit("shows edge information when hovering over newly created edges");

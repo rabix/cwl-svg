@@ -1,16 +1,12 @@
-import "../../../assets/styles/style.scss";
-import "../theme.dark.scss"
-
-import {WorkflowFactory}    from "cwlts/models";
-import {Workflow}           from "../../../";
-import {SVGPortDragPlugin}  from "../port-drag";
-import {SVGEdgeHoverPlugin} from "../../edge-hover/edge-hover";
-import {SVGNodeMovePlugin}  from "../../node-move/node-move";
+import "../../../assets/styles/theme";
+import "../theme";
+import {WorkflowFactory}                                 from "cwlts/models";
+import {SVGEdgeHoverPlugin, SVGNodeMovePlugin, Workflow} from "../../../";
+import {SVGPortDragPlugin}                               from "../port-drag";
 
 const model = WorkflowFactory.from(require(__dirname + "/app.json"));
 
 const svgRoot = document.getElementById("svg") as any;
-
 
 const wf = new Workflow({
     model: model,

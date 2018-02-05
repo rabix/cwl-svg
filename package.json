@@ -15,11 +15,12 @@
     "webpack:watch": "node_modules/.bin/webpack --watch",
     "webdriver:update": "./node_modules/.bin/webdriver-manager update",
     "webdriver:start": "./node_modules/.bin/webdriver-manager start",
-    "pretest": "npx tsc -p tsconfig.test.json",
+    "pretest": "npm run build && npx tsc -p tsconfig.test.json",
     "watch:tests": "tsc -p tsconfig.test.json --watch",
     "test": "npx protractor protractor.config.js",
     "start": "npx webpack-dev-server --no-watch",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "ci": "npm run test"
   },
   "dependencies": {
     "core-js": "^2.5.1"

@@ -1,0 +1,19 @@
+sudo: false
+dist: trusty
+addons:
+  chrome: stable
+language: node_js
+node_js: 9
+before_script:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+  - sleep 3
+cache:
+  npm: true
+  directories:
+    - node_modules
+install:
+  - npm install
+  - npx webdriver-manager update
+script:
+  - npm run ci
