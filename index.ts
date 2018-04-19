@@ -8,6 +8,7 @@ export * from "./src/plugins/validate/validate";
 export * from "./src/plugins/selection/selection";
 export * from "./src/plugins/zoom/zoom";
 export * from "./src/plugins/deletion/deletion";
+export * from "./src/utils/svg-dumper";
 
 // for implementing third-party plugins
 export * from "./src/plugins/plugin-base";
