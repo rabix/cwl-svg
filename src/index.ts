@@ -7,3 +7,4 @@ export * from "./plugins/port-drag/port-drag";
 export * from "./plugins/selection/selection";
 export * from "./plugins/edge-hover/edge-hover";
 export * from "./plugins/deletion/deletion";
+export * from "./utils/svg-dumper";
