@@ -1,6 +1,6 @@
 svg.cwl-workflow {
 
-  fill: $background;
+  background: $background;
   color: $font-color;
   font-family: $font-family;
 
@@ -20,6 +20,11 @@ svg.cwl-workflow {
 
   .workflow {
     user-select: none;
+  }
+
+  .pan-handle {
+    // Cannot be “none” because it wouldn't have a clickable zone
+    fill: transparent;
   }
 
   .label {
