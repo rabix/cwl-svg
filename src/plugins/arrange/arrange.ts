@@ -1,7 +1,8 @@
-import {GraphNode}              from '../../graph/graph-node';
-import {Workflow}               from '../../graph/workflow';
-import {SVGUtils}               from '../../utils/svg-utils';
-import {GraphChange, SVGPlugin} from '../plugin';
+import {GraphNode}                                                  from '../../graph/graph-node';
+import {Workflow}                                                   from '../../graph/workflow';
+import {SVGUtils}                                                   from '../../utils/svg-utils';
+import {GraphChange, SVGPlugin}                                     from '../plugin';
+import {StepModel, WorkflowStepInputModel, WorkflowStepOutputModel} from "cwlts/models";
 
 export class SVGArrangePlugin implements SVGPlugin {
     private workflow: Workflow;
@@ -31,16 +32,23 @@ export class SVGArrangePlugin implements SVGPlugin {
 
     afterRender(): void {
 
-        for (let step of this.workflow.model.steps) {
-            if (step.isVisible) {
+        const model     = this.workflow.model;
+        const drawables = [].concat(
+            model.steps || [],
+            model.inputs || [],
+            model.outputs || []
+        ) as Array<WorkflowStepInputModel | WorkflowStepOutputModel | StepModel>;
 
-                const missingCoordinate = isNaN(parseInt(step.customProps["sbg:x"]));
+        for (let node of drawables) {
+
+            if (node.isVisible) {
+
+                const missingCoordinate = isNaN(parseInt(node.customProps["sbg:x"]));
 
                 if (missingCoordinate) {
                     this.arrange();
+                    return;
                 }
-
-                return;
             }
         }
     }
