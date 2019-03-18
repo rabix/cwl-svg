@@ -14,8 +14,8 @@ export class ZoomPlugin extends PluginBase {
 
     attachWheelListener(): () => void {
         const handler = this.onMouseWheel.bind(this);
-        this.svg.addEventListener("mousewheel", handler, true);
-        return () => this.svg.removeEventListener("mousewheel", handler, true);
+        this.svg.addEventListener("wheel", handler, true);
+        return () => this.svg.removeEventListener("wheel", handler, true);
     }
 
     onMouseWheel(event: MouseWheelEvent) {
