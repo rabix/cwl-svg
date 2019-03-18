@@ -25,7 +25,7 @@ export class StepNode {
 
         // Reposition all edges
         const incomingEdges = this.svg.querySelectorAll(`.edge[data-destination-node="${this.model.connectionId}"]`);
-        const outgoingEdges = this.svg.querySelectorAll(`.edge[data-source-node="${this.model.connectionId}"`);
+        const outgoingEdges = this.svg.querySelectorAll(`.edge[data-source-node="${this.model.connectionId}"]`);
 
         for (const edge of [...incomingEdges, ...outgoingEdges]) {
             Edge.spawnBetweenConnectionIDs(
