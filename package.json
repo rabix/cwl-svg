@@ -26,7 +26,7 @@
     "core-js": "^2.5.1"
   },
   "peerDependencies": {
-    "cwlts": "^1.15.17"
+    "cwlts": "^1.15.30"
   },
   "devDependencies": {
     "@types/core-js": "^0.9.43",
@@ -35,7 +35,7 @@
     "@types/webpack": "^3.8.0",
     "@types/webpack-dev-server": "^2.9.1",
     "css-loader": "^0.28.7",
-    "cwlts": "^1.15.18",
+    "cwlts": "^1.15.30",
     "extract-text-webpack-plugin": "^3.0.2",
     "html-webpack-plugin": "^2.30.1",
     "jasmine": "^2.8.0",
