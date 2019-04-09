@@ -494,7 +494,7 @@ export class Workflow {
         const sourceID      = source.connectionId;
         const destinationID = destination.connectionId;
 
-        const edge = this.svgRoot.querySelector(`.edge[data-source-connection="${sourceID}"][data-destination-connection="${destinationID}"`);
+        const edge = this.svgRoot.querySelector(`.edge[data-source-connection="${sourceID}"][data-destination-connection="${destinationID}"]`);
         edge.remove();
     }
 
