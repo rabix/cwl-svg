@@ -163,6 +163,12 @@ export class SelectionPlugin extends PluginBase {
     }
 
     private selectNode(element: SVGElement): void {
+
+        /**
+         * Bring it to the front (there is no Z-index in svg so top element is the one latest in DOM)
+         */
+        element.parentElement.appendChild(element);
+
         // Fade everything on canvas so we can highlight only selected stuff
         this.svg.classList.add(this.css.fade);
 
