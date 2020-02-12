@@ -4,6 +4,14 @@
 
 CWL-SVG is a Typescript library for visualization of Common Workflow Language workflows
 
+### Citation
+```
+CWL-SVG: an open-source workflow visualization library for the 
+Common Workflow Language. Seven Bridges/Rabix (2017)  
+Available from https://github.com/rabix/cwl-svg
+```
+
+
 ## Installation
 ```
 npm install cwl-svg
