@@ -156,7 +156,7 @@ export class GraphNode {
                                     transform = "matrix(1, 0, 0, 1, 0, 0)"): string {
 
         const portClass = type === "input" ? "input-port" : "output-port";
-        const label     = port.label || port.id;
+        const label     = HtmlUtils.escapeHTML(port.label || port.id);
 
         return `
             <g class="port ${portClass}" transform="${transform || "matrix(1, 0, 0, 1, 0, 0)"}"
