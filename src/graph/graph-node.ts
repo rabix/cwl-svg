@@ -128,9 +128,9 @@ export class GraphNode {
 
         return `
             <g tabindex="-1" class="node ${nodeTypeClass} ${typeClass} ${itemsClass}"
-               data-connection-id="${dataModel.connectionId}"
+               data-connection-id="${HtmlUtils.escapeHTML(dataModel.connectionId)}"
                transform="matrix(1, 0, 0, 1, ${x}, ${y})"
-               data-id="${dataModel.id}">
+               data-id="${HtmlUtils.escapeHTML(dataModel.id)}">
                
                 <g class="core" transform="matrix(1, 0, 0, 1, 0, 0)">
                     <circle cx="0" cy="0" r="${radius}" class="outer"></circle>
