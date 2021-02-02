@@ -160,8 +160,8 @@ export class GraphNode {
 
         return `
             <g class="port ${portClass}" transform="${transform || "matrix(1, 0, 0, 1, 0, 0)"}"
-               data-connection-id="${port.connectionId}"
-               data-port-id="${port.id}"
+               data-connection-id="${HtmlUtils.escapeHTML(port.connectionId)}"
+               data-port-id="${HtmlUtils.escapeHTML(port.id)}"
             >
                 <g class="io-port">
                     <circle cx="0" cy="0" r="7" class="port-handle"></circle>
