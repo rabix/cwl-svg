@@ -5,6 +5,7 @@ export class HtmlUtils {
         "<": "&lt;",
         ">": "&gt;",
         "\"": "&quot;",
+        "\"\"": "&quot;",
         "'": "&#39;",
         "/": "&#x2F;"
     };
