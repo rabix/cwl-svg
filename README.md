@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/rabix/cwl-svg.svg?branch=master)](https://travis-ci.org/rabix/cwl-svg)
 
-CWL-SVG is a Typescript library for visualization of Common Workflow Language workflows
+CWL-SVG is a Typescript library for visualization of Common Workflow Language workflows.
 
 ### Citation
 ```
