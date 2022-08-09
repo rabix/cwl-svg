@@ -4,14 +4,14 @@
     "type": "git",
     "url": "https://github.com/rabix/cwl-svg"
   },
-  "main": "compiled/index.js",
-  "types": "compiled/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "Apache-2.0",
   "author": "Ivan Batic <ivan.batic@live.com> (http://github.com/ivanbatic)",
   "description": "A library for generating an interactive SVG visualization of CWL workflows",
   "version": "2.1.10",
   "scripts": {
-    "build": "rm -rf compiled && npx tsc",
+    "build": "rm -rf dist && npx tsc",
     "webpack:watch": "node_modules/.bin/webpack --watch",
     "webdriver:update": "./node_modules/.bin/webdriver-manager update",
     "webdriver:start": "./node_modules/.bin/webdriver-manager start",
