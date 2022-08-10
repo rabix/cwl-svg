@@ -57,10 +57,10 @@ build:
   script:
     - *install_deps
     - npm run build
-    - npm version --no-git-tag-version --allow-same-version $(infinity version get)
+    - cd dist && npm version --no-git-tag-version --allow-same-version $(infinity version get)
   artifacts:
     paths:
-      - ./
+      - dist
 
 
 internal-publish:
@@ -69,4 +69,4 @@ internal-publish:
     - build
   script:
     - npm config set registry $NEXUS3_NPM_REGISTRY
-    - infinity npm publish .
+    - infinity npm publish dist
