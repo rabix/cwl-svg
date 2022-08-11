@@ -1,0 +1,72 @@
+image: node:12
+
+#===========================================================
+# global variables
+#===========================================================
+
+variables:
+  CACHE_DIR: .npm
+  npm_config_cache: $CI_PROJECT_DIR/$CACHE_DIR
+  INFINITY_VERSION_PRERELEASE_SEPARATOR: "-"
+
+stages:
+  - build
+  - publish
+
+
+#===========================================================
+# global job configuration and templates
+#===========================================================
+
+# output build info in each job
+before_script:
+  - infinity config build-info
+
+
+# for the cache we can rely on the package-lock.json file hash - if it changed, we use a new cache
+# a cache template to use push strategy for updating the cache
+.setup_cache: &setup_cache
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - $CACHE_DIR
+    policy: push
+
+
+# a cache template to use pull strategy to just use the cache
+.use_cache: &use_cache
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - $CACHE_DIR
+    policy: pull
+
+
+# a template for installing dependencies faster
+.install_deps: &install_deps
+  - npm ci --cache $CACHE_DIR --prefer-offline --no-audit --verbose
+
+
+build:
+  stage: build
+  <<: *setup_cache
+  script:
+    - *install_deps
+    - npm run build
+    - cd dist && npm version --no-git-tag-version --allow-same-version $(infinity version get)
+  artifacts:
+    paths:
+      - dist
+
+
+internal-publish:
+  stage: publish
+  dependencies:
+    - build
+  script:
+    - npm config set registry $NEXUS3_NPM_REGISTRY
+    - infinity npm publish dist
