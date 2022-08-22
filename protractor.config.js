@@ -8,8 +8,16 @@ exports.config = {
     baseUrl: "http://localhost:8080",
     specs: ["src/**/*.e2e.js"],
     chromeOptions: {
-        args: ["show-fps-counter=true"]
+        args: [
+            "show-fps-counter=true",
+            "--start-maximized",
+            "--headless",
+            "--disable-gpu",
+            "--no-sandbox",
+            "--disable-dev-shm-usage"
+        ]
     },
+    directConnect: true,
 
 
     onPrepare() {
