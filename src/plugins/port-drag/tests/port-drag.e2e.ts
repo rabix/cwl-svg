@@ -63,6 +63,8 @@ describe("Dragging from port", () => {
         const suggestedPorts    = [inputs.nini, inputs.alpha, inputs.agode];
         const nonSuggestedPorts = [inputs.upato, inputs.egeba];
 
+        browser.sleep(100);
+
         for (let sp of suggestedPorts) {
             const isSuggestion = await hasClass(sp, "__port-drag-suggestion");
             const labelOpacity = await sp.$(".label").getCssValue("opacity");
