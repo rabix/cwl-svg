@@ -1,0 +1,52 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+defaults: &defaults
+  # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+  # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+  docker:
+    - image: cimg/node:12.13.0
+
+# Template for the cache, we can rely on the package-lock.json file hash - if it changed, we use a new cache
+setup_cache: &setup_cache
+  save_cache:
+    paths:
+      - .npm/
+    key: v1-dependencies-{{ checksum "package-lock.json" }}
+
+
+use_cache: &use_cache
+  restore_cache:
+    keys:
+      - v1-dependencies-{{ checksum "package-lock.json" }}
+      # fallback to using the latest cache if no exact match is found
+      - v1-dependencies-
+
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  build:
+    <<: *defaults
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - checkout
+      - *use_cache
+      - run: npm ci --cache .npm --prefer-offline --no-audit --verbose
+      - run: npm run build
+      - *setup_cache
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - .
+
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - build
