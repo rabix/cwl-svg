@@ -1,6 +1,7 @@
 # CWL-SVG
 
 [![CircleCI](https://circleci.com/gh/rabix/cwl-svg.svg?style=svg)](https://circleci.com/gh/rabix/cwl-svg)
+[![npm version](https://img.shields.io/npm/v/cwl-svg.svg)](https://www.npmjs.com/package/cwl-svg)
 
 CWL-SVG is a Typescript library for visualization of Common Workflow Language workflows
 
