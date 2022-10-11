@@ -9,7 +9,7 @@
   "license": "Apache-2.0",
   "author": "Ivan Batic <ivan.batic@live.com> (http://github.com/ivanbatic)",
   "description": "A library for generating an interactive SVG visualization of CWL workflows",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "scripts": {
     "build": "rm -rf dist && copyfiles \"./src/assets/**/*\" \"./src/**/*.scss\" ./package-lock.json ./package.json dist && npx tsc",
     "webpack:watch": "node_modules/.bin/webpack --watch",
