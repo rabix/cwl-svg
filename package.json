@@ -19,7 +19,6 @@
     "watch:tests": "tsc -p tsconfig.test.json --watch",
     "test": "npx protractor protractor.config.js",
     "start": "npx webpack-dev-server --no-watch",
-    "prepare": "npm run build",
     "ci": "npm run test",
     "release:tag": "standard-version -a -t ''"
   },
