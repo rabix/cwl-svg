@@ -13,6 +13,7 @@ stages:
   - build
   - test
   - publish
+  - tag
 
 
 #===========================================================
@@ -52,6 +53,18 @@ before_script:
   - npm ci --cache $CACHE_DIR --prefer-offline --no-audit --verbose
 
 
+# a template for ssh setup
+.setup_ssh: &setup_ssh
+  before_script:
+    # export the SSH_AUTH_SOCK and SSH_AGENT_PID variables
+    - eval "$(infinity ssh agent)"
+    # Use infinity to add gitlab runner to known host for git clone (using ssh)
+    - infinity ssh set-knownhosts
+    # We add a custom user for git operations during CI
+    - git config --global user.email $INFINITY_USER_EMAIL
+    - git config --global user.name $INFINITY_USER_NAME
+
+
 build:
   stage: build
   <<: *setup_cache
@@ -69,6 +82,8 @@ test:e2e:
   <<: *setup_cache
   dependencies:
     - build
+  needs:
+    - build
   script:
     - *install_deps
     - GOOGLE_CHROME_VERSION=$(google-chrome --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')
@@ -78,8 +93,44 @@ test:e2e:
 
 internal-publish:
   stage: publish
+  rules:
+    # trigger only for branches, skip tags
+    - if: '$CI_COMMIT_BRANCH == $CI_COMMIT_REF_NAME'
   dependencies:
+    - build
+  needs:
     - build
   script:
     - npm config set registry $NEXUS3_NPM_REGISTRY
     - infinity npm publish dist
+
+
+release-tag:
+  stage: tag
+  <<: *setup_ssh
+  <<: *use_cache
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_MESSAGE =~ /^release: auto/'
+  dependencies:
+    - build
+    - test:e2e
+  needs:
+    - build
+    - test:e2e
+  script:
+    # we create temporary folder to hold newly cloned project
+    - PROJECT_CLONE=$(mktemp -d)
+    # we clone git project into temporary folder
+    - infinity git clone --destination $PROJECT_CLONE --branch $CI_COMMIT_REF_NAME
+    # we copy cache directory to cloned project
+    - if [ -d $CACHE_DIR ]; then cp -r $CACHE_DIR $PROJECT_CLONE/$CACHE_DIR; fi
+    # we enter the repository root
+    - cd $PROJECT_CLONE
+    # now that our repository is up-to-date we need to install dependencies
+    - *install_deps
+    # now we can run standard-version
+    - npm run release:tag
+    # we push the changes to the triggering branch, including the tag created by standard-version
+    - infinity git push --include-tags
+    # remove cloned repository
+    - rm -rf $PROJECT_CLONE
