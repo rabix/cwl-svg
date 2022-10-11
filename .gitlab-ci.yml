@@ -91,6 +91,9 @@ test:e2e:
 
 internal-publish:
   stage: publish
+  rules:
+    # trigger only for branches, skip tags
+    - if: '$CI_COMMIT_BRANCH == $CI_COMMIT_REF_NAME'
   dependencies:
     - build
   script:
